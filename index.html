@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宏升工業社 - 打卡專用掃描機</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      background: #1b2a5e;
+      color: white;
+      margin: 0;
+      padding: 20px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h2 { margin: 10px 0 20px; font-size: 24px; text-align: center; }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 20px;
+      text-align: center;
+      color: #ffcc80;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📷 宏升工業社 打卡掃描機</h2>
+  <div id="reader"></div>
+  <div id="status">正在啟動相機...請允許相機存取權限</div>
+
+  <script>
+    // ⚠️ 請在此處貼上你的 Google Apps Script 發布網址
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+
+    let isProcessing = false;
+
+    function onScanSuccess(decodedText) {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      const statusEl = document.getElementById("status");
+      statusEl.innerHTML = "<span style='color:#81c784;'>✅ 辨識成功！跳轉打卡中...</span>";
+
+      let targetUrl = "";
+      if (decodedText.startsWith("http")) {
+        targetUrl = decodedText;
+      } else if (decodedText.includes("id=")) {
+        targetUrl = GAS_WEB_APP_URL + "?" + decodedText;
+      } else {
+        targetUrl = GAS_WEB_APP_URL + "?id=" + encodeURIComponent(decodedText.trim());
+      }
+
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 300);
+    }
+
+    window.onload = function() {
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { fps: 15, qrbox: { width: 250, height: 250 }, facingMode: "user" },
+        false
+      );
+      html5QrcodeScanner.render(onScanSuccess, (err) => {});
+      document.getElementById("status").innerText = "請將員工 QR Code 對準畫面中央";
+    };
+  </script>
+</body>
+</html>
