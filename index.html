@@ -19,7 +19,7 @@
             box-sizing: border-box;
         }
         h1 { margin-bottom: 5px; font-size: 24px; text-align: center; }
-        
+
         /* 即時時間顯示區 */
         #clock {
             font-size: 18px;
@@ -31,7 +31,6 @@
             margin: 10px 0 15px 0;
             letter-spacing: 1px;
         }
-
         #reader {
             width: 100%;
             max-width: 450px;
@@ -45,19 +44,30 @@
             font-size: 16px;
             color: #00ffcc;
             text-align: center;
+            min-height: 22px;
+        }
+        #retryBtn {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 20px;
+            font-size: 15px;
+            background: transparent;
+            color: #ffcc80;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-
     <h1>宏升工業社 - 打卡掃描</h1>
-    
+
     <!-- 時間顯示在標題底下、鏡頭上方 -->
     <div id="clock">正在讀取時間...</div>
-
     <!-- QR Code 相機畫面 -->
     <div id="reader"></div>
-    <div class="status" id="status-text">請將員工 QR Code 對準鏡頭</div>
+    <div class="status" id="status-text">正在啟動相機...</div>
+    <button id="retryBtn" onclick="startScanner();">重新啟動相機</button>
 
     <script>
         // 1. 即時時間更新函數
@@ -77,24 +87,72 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. 啟動 QR Code 掃描器
-        function onScanSuccess(decodedText, decodedResult) {
-            document.getElementById('status-text').innerText = "掃描成功！跳轉中...";
-            // 讀取到 QR Code 後跳轉至對應網址/表單
+        // 2. 啟動 QR Code 掃描器（直接抓後鏡頭，跳過選鏡頭與開始按鈕）
+        const statusEl = document.getElementById('status-text');
+        const retryBtn = document.getElementById('retryBtn');
+        let html5Qrcode = null;
+        let hasScanned = false;
+
+        function onScanSuccess(decodedText) {
+            if (hasScanned) return; // 避免同一個QR被連續觸發多次跳轉
+            hasScanned = true;
+            statusEl.innerText = "✅ 掃描成功！跳轉中...";
+            if (html5Qrcode) {
+                html5Qrcode.stop().catch(function () {});
+            }
             window.location.href = decodedText;
         }
 
-        function onScanFailure(error) {
-            // 掃描尋找中，無視常規失敗
+        function onScanFailure() {
+            // 掃描尋找中，無視常規失敗（每一影格找不到QR都會呼叫這個，屬正常現象）
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            /* verbose= */ false
-        );
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    </script>
+        async function startScanner() {
+            retryBtn.style.display = 'none';
+            hasScanned = false;
+            statusEl.innerText = "正在啟動相機...";
 
+            html5Qrcode = new Html5Qrcode("reader");
+
+            const config = {
+                fps: 15,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            try {
+                // 優先直接指定環境鏡頭（後鏡頭），不用跳選單
+                await html5Qrcode.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+                statusEl.innerText = "請將員工 QR Code 對準鏡頭";
+            } catch (err) {
+                // 部分裝置/瀏覽器不支援 facingMode 指定，改用列出鏡頭清單、挑選最後一顆（通常是後鏡頭）
+                try {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras && cameras.length) {
+                        const camId = cameras[cameras.length - 1].id;
+                        await html5Qrcode.start(
+                            camId,
+                            config,
+                            onScanSuccess,
+                            onScanFailure
+                        );
+                        statusEl.innerText = "請將員工 QR Code 對準鏡頭";
+                    } else {
+                        throw new Error("no camera");
+                    }
+                } catch (err2) {
+                    statusEl.innerText = "⚠️ 無法啟動相機，請確認已允許相機權限";
+                    retryBtn.style.display = 'inline-block';
+                }
+            }
+        }
+
+        startScanner();
+    </script>
 </body>
 </html>
