@@ -20,7 +20,6 @@
         }
         h1 { margin-bottom: 5px; font-size: 24px; text-align: center; }
 
-        /* 即時時間顯示區 */
         #clock {
             font-size: 18px;
             font-weight: bold;
@@ -45,6 +44,7 @@
             color: #00ffcc;
             text-align: center;
             min-height: 22px;
+            padding: 0 10px;
         }
         #retryBtn {
             display: none;
@@ -57,90 +57,167 @@
             border-radius: 8px;
             cursor: pointer;
         }
+
+        /* ====== 結果 / 選原因 疊層卡片（不離開此頁，鏡頭不關閉） ====== */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 16, 40, 0.92);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .overlay.show { display: flex; }
+        .card {
+            background: white;
+            color: #333;
+            width: 100%;
+            max-width: 340px;
+            border-radius: 14px;
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-top: 5px solid #e0752c;
+        }
+        .card h2 {
+            margin: 0 0 14px;
+            font-size: 24px;
+        }
+        .card .line { font-size: 18px; line-height: 1.8; margin: 0; }
+        .card .cheer { margin-top: 14px; font-size: 20px; font-weight: bold; color: #e0752c; }
+        .card .countdown { margin-top: 16px; font-size: 14px; color: #999; }
+
+        .lunch-btn {
+            width: 100%; padding: 15px 0; font-size: 19px; margin-top: 10px;
+            background: #2e7d32; color: white; border: none; border-radius: 8px;
+            font-weight: bold; cursor: pointer;
+        }
+        .lunch-btn:active { background: #1b5e20; }
+        .divider { color: #999; font-size: 13px; margin: 16px 0 8px; }
+        select#reasonSelect {
+            width: 100%; padding: 13px; font-size: 18px; margin: 6px 0 14px;
+            border-radius: 8px; border: 1px solid #ccc;
+        }
+        .submit-btn {
+            width: 100%; padding: 15px 0; font-size: 18px;
+            background: #e0752c; color: white; border: none; border-radius: 8px;
+            font-weight: bold; cursor: pointer;
+        }
+        .submit-btn:disabled, .lunch-btn:disabled { background: #ccc; color: #666; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55); display: none; align-items: center;
+            justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white; border-radius: 14px; max-width: 300px; width: 100%;
+            padding: 26px 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); text-align: center;
+        }
+        .modal-icon { font-size: 42px; margin-bottom: 8px; }
+        .modal-title { font-size: 21px; font-weight: bold; color: #1b2a5e; margin-bottom: 12px; }
+        .modal-text { font-size: 17px; line-height: 1.6; color: #333; }
+        .modal-text.small-note { font-size: 15px; color: #888; margin-top: 8px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btn { flex: 1; padding: 13px 0; font-size: 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .modal-btn.cancel { background: #e0e0e0; color: #555; }
+        .modal-btn.confirm { background: #2e7d32; color: white; }
+        .modal-btn.confirm:disabled { background: #ccc; color: #666; }
     </style>
 </head>
 <body>
     <h1>宏升工業社 - 打卡掃描</h1>
 
-    <!-- 時間顯示在標題底下、鏡頭上方 -->
     <div id="clock">正在讀取時間...</div>
-    <!-- QR Code 相機畫面 -->
     <div id="reader"></div>
     <div class="status" id="status-text">正在啟動相機...</div>
     <button id="retryBtn" onclick="startScanner();">重新啟動相機</button>
 
+    <!-- 結果卡片（成功 / 查無此人）-->
+    <div class="overlay" id="resultOverlay">
+        <div class="card" id="resultCard"></div>
+    </div>
+
+    <!-- 選擇異常原因卡片 -->
+    <div class="overlay" id="reasonOverlay">
+        <div class="card">
+            <h2 style="color:#c62828;">⚠️ 非正常打卡時間</h2>
+            <p class="line" id="reasonInfo"></p>
+            <button type="button" class="lunch-btn" id="lunchBtn" onclick="openLunchModal()">🚚 中午送貨返回</button>
+            <div class="divider">或選擇其他原因</div>
+            <select id="reasonSelect"></select>
+            <button type="button" class="submit-btn" id="reasonSubmitBtn" onclick="submitReason()">送出</button>
+        </div>
+    </div>
+
+    <!-- 中午送貨確認彈窗 -->
+    <div class="modal-overlay" id="lunchModalOverlay">
+        <div class="modal-box">
+            <div class="modal-icon">🚚</div>
+            <div class="modal-title">確認回報</div>
+            <div class="modal-text">你選的是：<b>中午送貨</b></div>
+            <div class="modal-text small-note">確定送出嗎？</div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="closeLunchModal()">取消</button>
+                <button type="button" class="modal-btn confirm" id="lunchConfirmBtn" onclick="submitLunch()">確定送出</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 1. 即時時間更新函數
+        // ====== 基本設定 ======
+        // 備援用的 Apps Script 網址（當掃到的 QR 只有員工編號、沒有網址時使用）
+        var FALLBACK_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+
+        // ====== 時間顯示 ======
         function updateClock() {
             const now = new Date();
             const timeString = now.toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
             });
             document.getElementById('clock').innerText = '📅 ' + timeString;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. 啟動 QR Code 掃描器（直接抓後鏡頭，跳過選鏡頭與開始按鈕）
+        // ====== QR 掃描（鏡頭全程只開一次，不因打卡結果重啟）======
         const statusEl = document.getElementById('status-text');
         const retryBtn = document.getElementById('retryBtn');
         let html5Qrcode = null;
-        let hasScanned = false;
+        let busy = false; // 疊層顯示中時暫停辨識，避免重複觸發，但鏡頭不關閉
 
         function onScanSuccess(decodedText) {
-            if (hasScanned) return; // 避免同一個QR被連續觸發多次跳轉
-            hasScanned = true;
-            statusEl.innerText = "✅ 掃描成功！跳轉中...";
-            if (html5Qrcode) {
-                html5Qrcode.stop().catch(function () {});
-            }
-            window.location.href = decodedText;
+            if (busy) return;
+            busy = true;
+            statusEl.innerText = "✅ 掃描成功，處理中...";
+            handleScan(decodedText);
         }
 
         function onScanFailure() {
-            // 掃描尋找中，無視常規失敗（每一影格找不到QR都會呼叫這個，屬正常現象）
+            // 每一影格找不到 QR 都會呼叫這個，屬正常現象，不用處理
         }
 
         async function startScanner() {
             retryBtn.style.display = 'none';
-            hasScanned = false;
             statusEl.innerText = "正在啟動相機...";
 
             html5Qrcode = new Html5Qrcode("reader");
-
-            const config = {
-                fps: 15,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
+            const config = { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
 
             try {
-                // 優先直接指定環境鏡頭（後鏡頭），不用跳選單
-                await html5Qrcode.start(
-                    { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    onScanFailure
-                );
+                await html5Qrcode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
                 statusEl.innerText = "請將員工 QR Code 對準鏡頭";
             } catch (err) {
-                // 部分裝置/瀏覽器不支援 facingMode 指定，改用列出鏡頭清單、挑選最後一顆（通常是後鏡頭）
                 try {
                     const cameras = await Html5Qrcode.getCameras();
                     if (cameras && cameras.length) {
                         const camId = cameras[cameras.length - 1].id;
-                        await html5Qrcode.start(
-                            camId,
-                            config,
-                            onScanSuccess,
-                            onScanFailure
-                        );
+                        await html5Qrcode.start(camId, config, onScanSuccess, onScanFailure);
                         statusEl.innerText = "請將員工 QR Code 對準鏡頭";
                     } else {
                         throw new Error("no camera");
@@ -150,6 +227,152 @@
                     retryBtn.style.display = 'inline-block';
                 }
             }
+        }
+
+        // ====== 解析掃到的內容，取出 (apiBaseUrl, employeeId) ======
+        function parseScan(rawText) {
+            var text = rawText.trim();
+            if (text.indexOf('http') === 0) {
+                try {
+                    var u = new URL(text);
+                    var id = u.searchParams.get('id');
+                    var base = u.origin + u.pathname;
+                    return { base: base, id: id };
+                } catch (e) {
+                    return { base: FALLBACK_SCRIPT_URL, id: text };
+                }
+            }
+            return { base: FALLBACK_SCRIPT_URL, id: text };
+        }
+
+        // ====== 背景呼叫 Apps Script（不跳頁、鏡頭不關閉）======
+        var currentBase = FALLBACK_SCRIPT_URL;
+        var currentId = null;
+        var currentTs = null;
+
+        function handleScan(rawText) {
+            var parsed = parseScan(rawText);
+            if (!parsed.id) {
+                showResultCard({ status: 'error', message: '無法辨識這組 QR Code' });
+                return;
+            }
+            currentBase = parsed.base;
+            currentId = parsed.id;
+            currentTs = Date.now();
+            callApi({ id: currentId, ts: currentTs });
+        }
+
+        function callApi(params) {
+            var url = currentBase + '?mode=api'
+                + '&id=' + encodeURIComponent(params.id)
+                + '&ts=' + encodeURIComponent(params.ts)
+                + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '');
+
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.status === 'need_reason') {
+                        showReasonCard(data);
+                    } else {
+                        showResultCard(data);
+                    }
+                })
+                .catch(function (err) {
+                    showResultCard({ status: 'error', message: '連線失敗，請確認網路後重新掃描' });
+                });
+        }
+
+        // ====== 顯示：成功 / 查無此人（幾秒後自動關閉、恢復掃描）======
+        function showResultCard(data) {
+            document.getElementById('reasonOverlay').classList.remove('show');
+            document.getElementById('lunchModalOverlay').classList.remove('show');
+            var success = data.status === 'success';
+            var card = document.getElementById('resultCard');
+            var icon = success ? '✅' : '⚠️';
+            var titleColor = success ? '#1b2a5e' : '#c62828';
+            var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' + (success ? '打卡成功' : '無法打卡') + '</h2>';
+
+            if (success) {
+                html += '<p class="line">員工編號：' + data.id + '<br>姓名：' + data.name + '<br>狀態：' + data.type + '</p>';
+                if (data.reason) html += '<p class="line">原因：' + data.reason + '</p>';
+                html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
+                if (data.message) html += '<div class="cheer">' + data.message + '</div>';
+            } else {
+                html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
+            }
+            html += '<div class="countdown" id="resultCountdown">3 秒後恢復掃描</div>';
+            card.innerHTML = html;
+
+            document.getElementById('resultOverlay').classList.add('show');
+            statusEl.innerText = success ? '打卡完成' : '請重新掃描';
+
+            var n = 3;
+            var timer = setInterval(function () {
+                n--;
+                var el = document.getElementById('resultCountdown');
+                if (el) el.innerText = n + ' 秒後恢復掃描';
+                if (n <= 0) {
+                    clearInterval(timer);
+                    closeAllOverlaysAndResume();
+                }
+            }, 1000);
+        }
+
+        // ====== 顯示：需選擇異常原因（不倒數，等使用者操作）======
+        function showReasonCard(data) {
+            currentTs = data.ts; // 沿用掃描當下的時間，維持與後端一致
+            document.getElementById('reasonInfo').innerHTML =
+                '員工編號：' + data.id + '<br>姓名：' + data.name;
+
+            var select = document.getElementById('reasonSelect');
+            select.innerHTML = '';
+            (data.reasons || []).forEach(function (r) {
+                var opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('reasonOverlay').classList.add('show');
+            statusEl.innerText = '請選擇打卡異常原因';
+        }
+
+        function submitReason() {
+            var reason = document.getElementById('reasonSelect').value;
+            var btn = document.getElementById('reasonSubmitBtn');
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+            callApi({ id: currentId, ts: currentTs, reason: reason });
+            setTimeout(function () {
+                btn.disabled = false;
+                btn.innerText = '送出';
+            }, 1500);
+        }
+
+        function openLunchModal() {
+            document.getElementById('lunchModalOverlay').classList.add('show');
+        }
+        function closeLunchModal() {
+            document.getElementById('lunchModalOverlay').classList.remove('show');
+        }
+        function submitLunch() {
+            var btn = document.getElementById('lunchConfirmBtn');
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+            callApi({ id: currentId, ts: currentTs, reason: '中午送貨' });
+            setTimeout(function () {
+                closeLunchModal();
+                btn.disabled = false;
+                btn.innerText = '確定送出';
+            }, 1500);
+        }
+
+        function closeAllOverlaysAndResume() {
+            document.getElementById('resultOverlay').classList.remove('show');
+            document.getElementById('reasonOverlay').classList.remove('show');
+            document.getElementById('lunchModalOverlay').classList.remove('show');
+            statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+            busy = false; // 恢復辨識，鏡頭全程沒有關閉過
         }
 
         startScanner();
