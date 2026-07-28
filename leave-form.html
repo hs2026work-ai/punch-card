@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宏升工業社 - 請假申請</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 20px 16px 60px;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 20px;
+            color: #1b2a5e;
+            text-align: center;
+            margin: 10px 0 4px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            border-top: 4px solid #e0752c;
+            padding: 24px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin: 16px 0 6px;
+        }
+        label:first-of-type { margin-top: 0; }
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea { min-height: 70px; resize: vertical; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+        button {
+            width: 100%;
+            padding: 15px 0;
+            font-size: 17px;
+            font-weight: bold;
+            background: #e0752c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 22px;
+            cursor: pointer;
+        }
+        button:disabled { background: #ccc; color: #666; }
+        #statusMsg {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 14px;
+            min-height: 20px;
+        }
+        #statusMsg.error { color: #c62828; }
+        #statusMsg.success { color: #1b5e20; }
+        #loading {
+            text-align: center;
+            padding: 60px 0;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">載入中，請稍候...</div>
+
+    <div id="formWrap" style="display:none;">
+        <h1>宏升工業社</h1>
+        <div class="subtitle">請假申請</div>
+
+        <div class="card">
+            <label for="leaveType">假別</label>
+            <select id="leaveType">
+                <option value="特別假">特別假</option>
+                <option value="事假">事假</option>
+                <option value="病假">病假</option>
+                <option value="請特殊情況時數">請特殊情況時數</option>
+            </select>
+
+            <div class="row">
+                <div>
+                    <label for="startDateTime">起</label>
+                    <input type="datetime-local" id="startDateTime">
+                </div>
+                <div>
+                    <label for="endDateTime">訖</label>
+                    <input type="datetime-local" id="endDateTime">
+                </div>
+            </div>
+
+            <label for="reason">事由</label>
+            <textarea id="reason" placeholder="簡述請假原因"></textarea>
+
+            <div class="hint">
+                ♦️ 產假／產檢假／陪產假及陪產檢／婚假／喪假，請洽人事，不要用這個表單申請。
+            </div>
+
+            <button id="submitBtn" onclick="submitForm()">送出申請</button>
+            <div id="statusMsg"></div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
+        var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+
+        var LIFF_ID = "2010875519-TBex5DN7";
+        var currentUserId = null;
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        // 把 <input type="datetime-local"> 的值 (格式: 2026-07-28T13:00)
+        // 拆成跟後端一致的 "2026/07/28" + "1300"
+        function splitDateTime(value) {
+            if (!value) return { date: '', time: '' };
+            var parts = value.split('T');
+            var dateParts = parts[0].split('-');
+            var dateStr = dateParts[0] + '/' + dateParts[1] + '/' + dateParts[2];
+            var timeStr = (parts[1] || '00:00').replace(':', '');
+            return { date: dateStr, time: timeStr };
+        }
+
+        function showStatus(message, isError) {
+            var el = document.getElementById('statusMsg');
+            el.textContent = message;
+            el.className = isError ? 'error' : 'success';
+        }
+
+        function submitForm() {
+            var leaveType = document.getElementById('leaveType').value;
+            var startVal = document.getElementById('startDateTime').value;
+            var endVal = document.getElementById('endDateTime').value;
+            var reason = document.getElementById('reason').value.trim();
+
+            if (!startVal || !endVal || !reason) {
+                showStatus('請把「起」「訖」「事由」都填寫完整', true);
+                return;
+            }
+
+            var start = splitDateTime(startVal);
+            var end = splitDateTime(endVal);
+
+            var payload = {
+                action: 'submitLeave',
+                userId: currentUserId,
+                leaveType: leaveType,
+                startDate: start.date,
+                startTime: start.time,
+                endDate: end.date,
+                endTime: end.time,
+                reason: reason
+            };
+
+            var btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+            showStatus('', false);
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        showStatus('✅ ' + data.message, false);
+                        setTimeout(function () {
+                            if (window.liff && liff.isInClient()) {
+                                liff.closeWindow();
+                            }
+                        }, 1800);
+                    } else {
+                        showStatus('⚠️ ' + data.message, true);
+                        btn.disabled = false;
+                        btn.innerText = '送出申請';
+                    }
+                })
+                .catch(function () {
+                    showStatus('⚠️ 連線失敗，請確認網路後再試一次', true);
+                    btn.disabled = false;
+                    btn.innerText = '送出申請';
+                });
+        }
+
+        liff.init({ liffId: LIFF_ID })
+            .then(function () {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                return liff.getProfile();
+            })
+            .then(function (profile) {
+                if (!profile) return;
+                currentUserId = profile.userId;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('formWrap').style.display = 'block';
+            })
+            .catch(function (err) {
+                document.getElementById('loading').innerText = '載入失敗，請關閉重新從 LINE 對話開啟一次';
+            });
+    </script>
+</body>
+</html>
