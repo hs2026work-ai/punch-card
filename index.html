@@ -341,27 +341,14 @@
                 });
         }
 
-        // ====== 音效：成功（清脆上揚）/ 失敗（低沉下降）======
+        // ====== 音效：成功 / 失敗（播放實際音檔）======
+        var successAudio = new Audio('sounds/soundssuccess.wav');
+        var errorAudio = new Audio('sounds/soundserror.wav');
+
         function playSuccessSound() {
             try {
-                var ctx = new (window.AudioContext || window.webkitAudioContext)();
-                var t = ctx.currentTime;
-
-                function tone(freq, start, dur) {
-                    var osc = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.001, t + start);
-                    gain.gain.exponentialRampToValueAtTime(0.3, t + start + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
-                    osc.start(t + start);
-                    osc.stop(t + start + dur + 0.02);
-                }
-                tone(880, 0, 0.12);      // 第一聲：A5
-                tone(1318.5, 0.12, 0.18); // 第二聲：E6，上揚
+                successAudio.currentTime = 0;
+                successAudio.play();
             } catch (e) {
                 // 部分瀏覽器不支援時安靜失敗即可
             }
@@ -369,24 +356,8 @@
 
         function playErrorSound() {
             try {
-                var ctx = new (window.AudioContext || window.webkitAudioContext)();
-                var t = ctx.currentTime;
-
-                function tone(freq, start, dur) {
-                    var osc = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.001, t + start);
-                    gain.gain.exponentialRampToValueAtTime(0.25, t + start + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
-                    osc.start(t + start);
-                    osc.stop(t + start + dur + 0.02);
-                }
-                tone(220, 0, 0.22);   // 第一聲：低音
-                tone(140, 0.22, 0.3); // 第二聲：更低，下降
+                errorAudio.currentTime = 0;
+                errorAudio.play();
             } catch (e) {
                 // 部分瀏覽器不支援時安靜失敗即可
             }
