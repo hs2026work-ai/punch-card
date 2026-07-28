@@ -50,23 +50,22 @@
             border: 1px solid #ccc;
             box-sizing: border-box;
             font-family: inherit;
+            background: #fff;
+            color: #333;
         }
         textarea { min-height: 70px; resize: vertical; }
 
-        .row {
+        /* 日期 + 時間 兩個小框並排，取代 datetime-local 原生膠囊樣式 */
+        .datetime-row {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            gap: 10px;
         }
-        .row > div {
+        .datetime-row input {
             flex: 1;
             min-width: 0;
         }
-        @media (min-width: 400px) {
-            .row {
-                flex-direction: row;
-                gap: 10px;
-            }
+        .datetime-row input[type="date"] {
+            flex: 1.4; /* 日期比時間稍寬一點，避免日期被壓縮換行 */
         }
 
         .hint {
@@ -119,15 +118,16 @@
                 <option value="請特殊情況時數">請特殊情況時數</option>
             </select>
 
-            <div class="row">
-                <div>
-                    <label for="startDateTime">開始日期時間</label>
-                    <input type="datetime-local" id="startDateTime">
-                </div>
-                <div>
-                    <label for="endDateTime">結束日期時間</label>
-                    <input type="datetime-local" id="endDateTime">
-                </div>
+            <label for="startDate">開始日期時間</label>
+            <div class="datetime-row">
+                <input type="date" id="startDate">
+                <input type="time" id="startTime">
+            </div>
+
+            <label for="endDate">結束日期時間</label>
+            <div class="datetime-row">
+                <input type="date" id="endDate">
+                <input type="time" id="endTime">
             </div>
 
             <label for="reason">事由</label>
@@ -149,17 +149,17 @@
         var LIFF_ID = "2010875519-TBex5DN7";
         var currentUserId = null;
 
-        function pad(n) { return String(n).padStart(2, '0'); }
+        // 把 <input type="date"> 的值 (格式: 2026-07-28) 轉成後端要的 "2026/07/28"
+        function formatDate(value) {
+            if (!value) return '';
+            var parts = value.split('-');
+            return parts[0] + '/' + parts[1] + '/' + parts[2];
+        }
 
-        // 把 <input type="datetime-local"> 的值 (格式: 2026-07-28T13:00)
-        // 拆成跟後端一致的 "2026/07/28" + "1300"
-        function splitDateTime(value) {
-            if (!value) return { date: '', time: '' };
-            var parts = value.split('T');
-            var dateParts = parts[0].split('-');
-            var dateStr = dateParts[0] + '/' + dateParts[1] + '/' + dateParts[2];
-            var timeStr = (parts[1] || '00:00').replace(':', '');
-            return { date: dateStr, time: timeStr };
+        // 把 <input type="time"> 的值 (格式: 16:08) 轉成後端要的 "1608"
+        function formatTime(value) {
+            if (!value) return '0000';
+            return value.replace(':', '');
         }
 
         function showStatus(message, isError) {
@@ -170,26 +170,25 @@
 
         function submitForm() {
             var leaveType = document.getElementById('leaveType').value;
-            var startVal = document.getElementById('startDateTime').value;
-            var endVal = document.getElementById('endDateTime').value;
+            var startDateVal = document.getElementById('startDate').value;
+            var startTimeVal = document.getElementById('startTime').value;
+            var endDateVal = document.getElementById('endDate').value;
+            var endTimeVal = document.getElementById('endTime').value;
             var reason = document.getElementById('reason').value.trim();
 
-            if (!startVal || !endVal || !reason) {
+            if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal || !reason) {
                 showStatus('請把「開始日期時間」「結束日期時間」「事由」都填寫完整', true);
                 return;
             }
-
-            var start = splitDateTime(startVal);
-            var end = splitDateTime(endVal);
 
             var payload = {
                 action: 'submitLeave',
                 userId: currentUserId,
                 leaveType: leaveType,
-                startDate: start.date,
-                startTime: start.time,
-                endDate: end.date,
-                endTime: end.time,
+                startDate: formatDate(startDateVal),
+                startTime: formatTime(startTimeVal),
+                endDate: formatDate(endDateVal),
+                endTime: formatTime(endTimeVal),
                 reason: reason
             };
 
