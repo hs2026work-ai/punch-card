@@ -53,7 +53,6 @@
         }
         textarea { min-height: 70px; resize: vertical; }
 
-        /* 修正處：日期欄位在窄螢幕改為上下堆疊，避免 datetime-local 原生寬度撐爆容器 */
         .row {
             display: flex;
             flex-direction: column;
@@ -61,7 +60,7 @@
         }
         .row > div {
             flex: 1;
-            min-width: 0; /* 保險：避免 flex item 用內容原生寬度撐開容器 */
+            min-width: 0;
         }
         @media (min-width: 400px) {
             .row {
@@ -122,11 +121,11 @@
 
             <div class="row">
                 <div>
-                    <label for="startDateTime">起</label>
+                    <label for="startDateTime">開始日期時間</label>
                     <input type="datetime-local" id="startDateTime">
                 </div>
                 <div>
-                    <label for="endDateTime">訖</label>
+                    <label for="endDateTime">結束日期時間</label>
                     <input type="datetime-local" id="endDateTime">
                 </div>
             </div>
@@ -176,7 +175,7 @@
             var reason = document.getElementById('reason').value.trim();
 
             if (!startVal || !endVal || !reason) {
-                showStatus('請把「起」「訖」「事由」都填寫完整', true);
+                showStatus('請把「開始日期時間」「結束日期時間」「事由」都填寫完整', true);
                 return;
             }
 
