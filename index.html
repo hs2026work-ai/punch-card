@@ -477,7 +477,7 @@
             var btn = document.getElementById('lunchConfirmBtn');
             btn.disabled = true;
             btn.innerText = '送出中...';
-            callApi({ id: currentId, ts: currentTs, reason: '中午送貨' });
+            callApi({ id: currentId, ts: currentTs, reason: '中午未休息' });
             setTimeout(function () {
                 closeLunchModal();
                 btn.disabled = false;
@@ -549,7 +549,7 @@
             batchSelectedIds = Array.prototype.map.call(boxes, function (b) { return b.value; });
 
             document.getElementById('batchConfirmCount').innerText =
-                '即將為以下 ' + batchSelectedIds.length + ' 位同仁打「下班」與「加班上班」卡：';
+                '即將為以下 ' + batchSelectedIds.length + ' 位同仁打「下班」與「加班開始」卡：';
 
             var listEl = document.getElementById('batchConfirmList');
             listEl.innerHTML = '';
