@@ -55,7 +55,14 @@
         }
         textarea { min-height: 70px; resize: vertical; }
 
-        /* 日期 + 時間 兩個小框並排，取代 datetime-local 原生膠囊樣式 */
+        #empNameDisplay {
+            font-size: 14px;
+            margin-top: 6px;
+            min-height: 18px;
+        }
+        #empNameDisplay.ok { color: #1b5e20; }
+        #empNameDisplay.err { color: #c62828; }
+
         .datetime-row {
             display: flex;
             gap: 10px;
@@ -65,12 +72,13 @@
             min-width: 0;
         }
         .datetime-row input[type="date"] {
-            flex: 1.4; /* 日期比時間稍寬一點，避免日期被壓縮換行 */
+            flex: 1.4;
         }
 
         .hint {
-            font-size: 12px;
-            color: #999;
+            font-size: 17px;
+            font-weight: bold;
+            color: #4f6d92;
             margin-top: 16px;
             line-height: 1.6;
         }
@@ -110,6 +118,10 @@
         <div class="subtitle">請假申請</div>
 
         <div class="card">
+            <label for="empId">員工編號</label>
+            <input type="text" id="empId" placeholder="請輸入員工編號，例如 HS001">
+            <div id="empNameDisplay"></div>
+
             <label for="leaveType">假別</label>
             <select id="leaveType">
                 <option value="特別假">特別假</option>
@@ -149,14 +161,15 @@
         var LIFF_ID = "2010875519-TBex5DN7";
         var currentUserId = null;
 
-        // 把 <input type="date"> 的值 (格式: 2026-07-28) 轉成後端要的 "2026/07/28"
+        var lookedUpEmpName = '';
+        var empLookupValid = false;
+
         function formatDate(value) {
             if (!value) return '';
             var parts = value.split('-');
             return parts[0] + '/' + parts[1] + '/' + parts[2];
         }
 
-        // 把 <input type="time"> 的值 (格式: 16:08) 轉成後端要的 "1608"
         function formatTime(value) {
             if (!value) return '0000';
             return value.replace(':', '');
@@ -168,13 +181,58 @@
             el.className = isError ? 'error' : 'success';
         }
 
+        function lookupEmpName() {
+            var empId = document.getElementById('empId').value.trim();
+            var display = document.getElementById('empNameDisplay');
+
+            empLookupValid = false;
+            lookedUpEmpName = '';
+
+            if (!empId) {
+                display.textContent = '';
+                display.className = '';
+                return;
+            }
+
+            display.textContent = '查詢中...';
+            display.className = '';
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getEmpName', empId: empId })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        display.textContent = '✅ ' + data.name;
+                        display.className = 'ok';
+                        lookedUpEmpName = data.name;
+                        empLookupValid = true;
+                    } else {
+                        display.textContent = '❌ ' + data.message;
+                        display.className = 'err';
+                    }
+                })
+                .catch(function () {
+                    display.textContent = '查詢失敗，請確認網路連線後再試一次';
+                    display.className = 'err';
+                });
+        }
+
         function submitForm() {
+            var empId = document.getElementById('empId').value.trim();
             var leaveType = document.getElementById('leaveType').value;
             var startDateVal = document.getElementById('startDate').value;
             var startTimeVal = document.getElementById('startTime').value;
             var endDateVal = document.getElementById('endDate').value;
             var endTimeVal = document.getElementById('endTime').value;
             var reason = document.getElementById('reason').value.trim();
+
+            if (!empId || !empLookupValid) {
+                showStatus('請輸入正確的員工編號，並確認姓名顯示正常', true);
+                return;
+            }
 
             if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal || !reason) {
                 showStatus('請把「開始日期時間」「結束日期時間」「事由」都填寫完整', true);
@@ -184,6 +242,8 @@
             var payload = {
                 action: 'submitLeave',
                 userId: currentUserId,
+                empId: empId,
+                empName: lookedUpEmpName,
                 leaveType: leaveType,
                 startDate: formatDate(startDateVal),
                 startTime: formatTime(startTimeVal),
@@ -223,6 +283,8 @@
                     btn.innerText = '送出申請';
                 });
         }
+
+        document.getElementById('empId').addEventListener('blur', lookupEmpName);
 
         liff.init({ liffId: LIFF_ID })
             .then(function () {
