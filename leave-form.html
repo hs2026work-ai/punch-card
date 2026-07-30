@@ -55,14 +55,7 @@
         }
         textarea { min-height: 70px; resize: vertical; }
 
-        #empNameDisplay {
-            font-size: 14px;
-            margin-top: 6px;
-            min-height: 18px;
-        }
-        #empNameDisplay.ok { color: #1b5e20; }
-        #empNameDisplay.err { color: #c62828; }
-
+        /* 日期 + 時間 兩個小框並排，取代 datetime-local 原生膠囊樣式 */
         .datetime-row {
             display: flex;
             gap: 10px;
@@ -72,7 +65,7 @@
             min-width: 0;
         }
         .datetime-row input[type="date"] {
-            flex: 1.4;
+            flex: 1.4; /* 日期比時間稍寬一點，避免日期被壓縮換行 */
         }
 
         .hint {
@@ -118,9 +111,10 @@
         <div class="subtitle">請假申請</div>
 
         <div class="card">
-            <label for="empId">員工編號</label>
-            <input type="text" id="empId" placeholder="請輸入員工編號，例如 HS001">
-            <div id="empNameDisplay"></div>
+            <label for="empId">員工姓名</label>
+            <select id="empId">
+                <option value="">請選擇...</option>
+            </select>
 
             <label for="leaveType">假別</label>
             <select id="leaveType">
@@ -161,15 +155,48 @@
         var LIFF_ID = "2010875519-TBex5DN7";
         var currentUserId = null;
 
-        var lookedUpEmpName = '';
-        var empLookupValid = false;
+        // 載入員工清單，填入下拉選單
+        function loadEmpList() {
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getEmpList' })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var select = document.getElementById('empId');
+                    if (data.success && data.list && data.list.length) {
+                        data.list.forEach(function (emp) {
+                            var opt = document.createElement('option');
+                            opt.value = emp.empId;
+                            opt.dataset.name = emp.name;
+                            opt.textContent = emp.name + '（' + emp.empId + '）';
+                            select.appendChild(opt);
+                        });
+                    } else {
+                        var opt = document.createElement('option');
+                        opt.value = '';
+                        opt.textContent = '員工清單載入失敗，請聯絡管理員';
+                        select.appendChild(opt);
+                    }
+                })
+                .catch(function () {
+                    var select = document.getElementById('empId');
+                    var opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = '員工清單載入失敗，請確認網路連線';
+                    select.appendChild(opt);
+                });
+        }
 
+        // 把 <input type="date"> 的值 (格式: 2026-07-28) 轉成後端要的 "2026/07/28"
         function formatDate(value) {
             if (!value) return '';
             var parts = value.split('-');
             return parts[0] + '/' + parts[1] + '/' + parts[2];
         }
 
+        // 把 <input type="time"> 的值 (格式: 16:08) 轉成後端要的 "1608"
         function formatTime(value) {
             if (!value) return '0000';
             return value.replace(':', '');
@@ -181,47 +208,10 @@
             el.className = isError ? 'error' : 'success';
         }
 
-        function lookupEmpName() {
-            var empId = document.getElementById('empId').value.trim();
-            var display = document.getElementById('empNameDisplay');
-
-            empLookupValid = false;
-            lookedUpEmpName = '';
-
-            if (!empId) {
-                display.textContent = '';
-                display.className = '';
-                return;
-            }
-
-            display.textContent = '查詢中...';
-            display.className = '';
-
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'getEmpName', empId: empId })
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.success) {
-                        display.textContent = '✅ ' + data.name;
-                        display.className = 'ok';
-                        lookedUpEmpName = data.name;
-                        empLookupValid = true;
-                    } else {
-                        display.textContent = '❌ ' + data.message;
-                        display.className = 'err';
-                    }
-                })
-                .catch(function () {
-                    display.textContent = '查詢失敗，請確認網路連線後再試一次';
-                    display.className = 'err';
-                });
-        }
-
         function submitForm() {
-            var empId = document.getElementById('empId').value.trim();
+            var empSelect = document.getElementById('empId');
+            var empId = empSelect.value;
+            var empName = empSelect.selectedOptions[0] ? empSelect.selectedOptions[0].dataset.name : '';
             var leaveType = document.getElementById('leaveType').value;
             var startDateVal = document.getElementById('startDate').value;
             var startTimeVal = document.getElementById('startTime').value;
@@ -229,8 +219,8 @@
             var endTimeVal = document.getElementById('endTime').value;
             var reason = document.getElementById('reason').value.trim();
 
-            if (!empId || !empLookupValid) {
-                showStatus('請輸入正確的員工編號，並確認姓名顯示正常', true);
+            if (!empId || !empName) {
+                showStatus('請選擇您的姓名', true);
                 return;
             }
 
@@ -243,7 +233,7 @@
                 action: 'submitLeave',
                 userId: currentUserId,
                 empId: empId,
-                empName: lookedUpEmpName,
+                empName: empName,
                 leaveType: leaveType,
                 startDate: formatDate(startDateVal),
                 startTime: formatTime(startTimeVal),
@@ -284,8 +274,6 @@
                 });
         }
 
-        document.getElementById('empId').addEventListener('blur', lookupEmpName);
-
         liff.init({ liffId: LIFF_ID })
             .then(function () {
                 if (!liff.isLoggedIn()) {
@@ -299,6 +287,7 @@
                 currentUserId = profile.userId;
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('formWrap').style.display = 'block';
+                loadEmpList();
             })
             .catch(function (err) {
                 document.getElementById('loading').innerText = '載入失敗，請關閉重新從 LINE 對話開啟一次';
