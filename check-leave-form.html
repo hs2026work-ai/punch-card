@@ -126,36 +126,37 @@
         <div class="subtitle">請假申請</div>
 
         <div class="card">
-            <label for="empId">員工姓名</label>
+            <label for="empId">員工姓名 NGUYEN,TIEN BAC</label>
             <select id="empId">
                 <option value="">請選擇...</option>
             </select>
 
-            <label for="leaveType">假別</label>
+            <label for="leaveType">假別 Loại nghỉ phép</label>
             <select id="leaveType">
-                <option value="特別假">特別假</option>
-                <option value="事假">事假</option>
-                <option value="病假">病假</option>
-                <option value="請特殊情況時數">請特殊情況時數</option>
+                <option value="特別假">特別假 Phép đặc biệt</option>
+                <option value="事假">事假 Nghỉ việc riêng</option>
+                <option value="病假">病假 Nghỉ ốm</option>
+                <option value="請特殊情況時數">請特殊情況時數 Giờ trường hợp đặc biệt</option>
             </select>
 
-            <label for="startDate">開始日期時間</label>
+            <label for="startDate">開始日期時間 Ngày giờ bắt đầu</label>
             <div class="datetime-row">
                 <input type="date" id="startDate">
                 <input type="time" id="startTime">
             </div>
 
-            <label for="endDate">結束日期時間</label>
+            <label for="endDate">結束日期時間 Ngày giờ kết thúc</label>
             <div class="datetime-row">
                 <input type="date" id="endDate">
                 <input type="time" id="endTime">
             </div>
 
-            <label for="reason">事由</label>
-            <textarea id="reason" placeholder="簡述請假原因"></textarea>
+            <label for="reason">事由 Lý do</label>
+            <textarea id="reason" placeholder="簡述請假原因 / Mô tả ngắn lý do xin nghỉ"></textarea>
 
             <div class="hint">
                 ♦️ 產假／產檢假／陪產假及陪產檢／婚假／喪假，請洽人事，不要用這個表單申請。
+                 Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ／nghỉ cưới／nghỉ tang, vui lòng liên hệ nhân sự, không dùng biểu mẫu này để xin.
             </div>
 
             <button id="submitBtn" onclick="submitForm()">送出申請</button>
