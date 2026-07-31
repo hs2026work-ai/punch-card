@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宏升工業社 - 個人假勤</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 20px 16px 60px;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 20px;
+            color: #1b2a5e;
+            text-align: center;
+            margin: 10px 0 4px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            border-top: 4px solid #e0752c;
+            padding: 20px 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            max-width: 420px;
+            margin: 0 auto 16px;
+        }
+        .card h2 {
+            font-size: 16px;
+            color: #1b2a5e;
+            margin: 0 0 14px;
+        }
+        .empName {
+            text-align: center;
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .quota-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .quota-box {
+            background: #f5f7fa;
+            border-radius: 10px;
+            padding: 12px 6px;
+            text-align: center;
+        }
+        .quota-box .label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+        .quota-box .remaining {
+            font-size: 22px;
+            font-weight: bold;
+            color: #e0752c;
+        }
+        .quota-box .detail {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .special-note {
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+            margin-top: 12px;
+        }
+        .record-item {
+            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+        }
+        .record-item:last-child { border-bottom: none; }
+        .record-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1b2a5e;
+        }
+        .record-date {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .record-status {
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        .record-days {
+            font-size: 13px;
+            color: #999;
+        }
+        #loading {
+            text-align: center;
+            padding: 60px 0;
+            color: #888;
+        }
+        #errorMsg {
+            text-align: center;
+            color: #c62828;
+            font-size: 15px;
+            max-width: 420px;
+            margin: 40px auto;
+            padding: 0 16px;
+            line-height: 1.8;
+        }
+        .no-record {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">載入中，請稍候...</div>
+    <div id="errorMsg" style="display:none;"></div>
+
+    <div id="mainWrap" style="display:none;">
+        <h1>宏升工業社</h1>
+        <div class="subtitle">個人假勤查詢</div>
+
+        <div class="card">
+            <div class="empName" id="empNameDisplay"></div>
+            <h2>📊 假勤額度（<span id="quotaYear"></span> 年度）</h2>
+            <div class="quota-grid">
+                <div class="quota-box">
+                    <div class="label">特休</div>
+                    <div class="remaining" id="specialRemaining">-</div>
+                    <div class="detail" id="specialDetail"></div>
+                </div>
+                <div class="quota-box">
+                    <div class="label">事假</div>
+                    <div class="remaining" id="personalRemaining">-</div>
+                    <div class="detail" id="personalDetail"></div>
+                </div>
+                <div class="quota-box">
+                    <div class="label">病假</div>
+                    <div class="remaining" id="sickRemaining">-</div>
+                    <div class="detail" id="sickDetail"></div>
+                </div>
+            </div>
+            <div class="special-note" id="specialCaseNote"></div>
+        </div>
+
+        <div class="card">
+            <h2>📋 請假紀錄</h2>
+            <div id="recordList"></div>
+        </div>
+    </div>
+
+    <script>
+        var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+        var LIFF_ID = "2010875519-HfpuEzI8";
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainWrap').style.display = 'none';
+            var el = document.getElementById('errorMsg');
+            el.style.display = 'block';
+            el.innerText = message;
+        }
+
+        function renderSummary(data) {
+            document.getElementById('empNameDisplay').innerText =
+                data.empName + '（' + data.empId + '）';
+
+            if (data.quota) {
+                document.getElementById('quotaYear').innerText = data.quota.year;
+
+                document.getElementById('specialRemaining').innerText = data.quota.special.remaining;
+                document.getElementById('specialDetail').innerText =
+                    '已休 ' + data.quota.special.used + ' / 共 ' + data.quota.special.total;
+
+                document.getElementById('personalRemaining').innerText = data.quota.personal.remaining;
+                document.getElementById('personalDetail').innerText =
+                    '已休 ' + data.quota.personal.used + ' / 共 ' + data.quota.personal.total;
+
+                document.getElementById('sickRemaining').innerText = data.quota.sick.remaining;
+                document.getElementById('sickDetail').innerText =
+                    '已休 ' + data.quota.sick.used + ' / 共 ' + data.quota.sick.total;
+
+                document.getElementById('specialCaseNote').innerText =
+                    '請特殊狀況已休：' + data.quota.specialCaseUsed + ' 天';
+            } else {
+                document.getElementById('quotaYear').innerText = '尚無資料';
+            }
+
+            var listEl = document.getElementById('recordList');
+            listEl.innerHTML = '';
+
+            if (!data.records || data.records.length === 0) {
+                listEl.innerHTML = '<div class="no-record">目前尚無請假紀錄</div>';
+            } else {
+                data.records.forEach(function (rec) {
+                    var div = document.createElement('div');
+                    div.className = 'record-item';
+                    div.innerHTML =
+                        '<div class="record-top"><span>' + rec.leaveType + '</span>' +
+                        '<span class="record-days">' + rec.days + ' 天</span></div>' +
+                        '<div class="record-date">' + rec.startDate + ' ~ ' + rec.endDate + '</div>' +
+                        '<div class="record-status">' + rec.status + '</div>';
+                    listEl.appendChild(div);
+                });
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainWrap').style.display = 'block';
+        }
+
+        function loadSummary(userId) {
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getMyLeaveSummary', userId: userId })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        renderSummary(data);
+                    } else {
+                        showError('⚠️ ' + data.message);
+                    }
+                })
+                .catch(function () {
+                    showError('⚠️ 連線失敗，請確認網路連線後重新開啟一次');
+                });
+        }
+
+        liff.init({ liffId: LIFF_ID })
+            .then(function () {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                return liff.getProfile();
+            })
+            .then(function (profile) {
+                if (!profile) return;
+                loadSummary(profile.userId);
+            })
+            .catch(function (err) {
+                showError('載入失敗，請關閉重新從 LINE 對話開啟一次');
+            });
+    </script>
+</body>
+</html>
