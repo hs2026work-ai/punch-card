@@ -124,6 +124,13 @@
             font-size: 14px;
             padding: 20px 0;
         }
+        .stage-row {
+    display: flex;
+    gap: 14px;
+    font-size: 13px;
+    color: #555;
+    margin-top: 8px;
+}
     </style>
 </head>
 <body>
@@ -211,6 +218,13 @@
     return Math.round(Number(val) * 100) / 100; // 四捨五入到小數點後兩位
 }
 
+function stageIcon(val) {
+    if (val === '已核准' || val === '免審') return '✅';
+    if (val === '已拒絕') return '❌';
+    if (val === '審核中') return '🟡';
+    return '⚪';
+}
+
 data.records.forEach(function (rec) {
     var div = document.createElement('div');
     div.className = 'record-item';
@@ -218,7 +232,12 @@ data.records.forEach(function (rec) {
         '<div class="record-top"><span>' + rec.leaveType + '</span>' +
         '<span class="record-days">' + formatDays(rec.days) + ' 天</span></div>' +
         '<div class="record-date">' + rec.startDate + ' ~ ' + rec.endDate + '</div>' +
-        '<div class="record-status">' + rec.status + '</div>';
+        '<div class="record-status">' + rec.status + '</div>' +
+        '<div class="stage-row">' +
+            '<span>' + stageIcon(rec.foreman) + ' 廠長</span>' +
+            '<span>' + stageIcon(rec.manager) + ' 主管</span>' +
+            '<span>' + stageIcon(rec.hr) + ' 人事</span>' +
+        '</div>';
     listEl.appendChild(div);
 });
             }
