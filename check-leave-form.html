@@ -1,0 +1,54 @@
+// ====== LIFF 表單送出的請假申請，走這個函式處理 ======
+function handleLiffLeaveSubmission(payload) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var leaveType = payload.leaveType;
+  var startDate = payload.startDate;
+  var startTime = payload.startTime;
+  var endDate = payload.endDate;
+  var endTime = payload.endTime;
+  var reason = payload.reason;
+  var empId = payload.empId;
+  var userName = payload.empName;
+
+  if (!empId || !userName || !leaveType || !startDate || !startTime || !endDate || !endTime || !reason) {
+    return { success: false, message: '表單資料不完整，請確認每個欄位都已填寫。' };
+  }
+
+  var sheet = ss.getSheetByName("請假紀錄line");
+  if (!sheet) {
+    return { success: false, message: '找不到「請假紀錄line」分頁，請聯絡管理員。' };
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var isDuplicate = false;
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][3]) === String(userName) && String(data[r][4]) === String(leaveType) &&
+        String(data[r][5]) === String(startDate) && String(data[r][7]) === String(startTime)) {
+      isDuplicate = true;
+      break;
+    }
+  }
+  if (isDuplicate) {
+    return { success: false, message: '系統偵測到您已經送出過一筆完全相同的請假申請，請勿重複送出。' };
+  }
+
+  var nextIndex = data.length > 1 ? data.length - 1 + 1 : 1;
+  var timestamp = new Date();
+  var newRowNum = data.length + 1;
+  var fullStart = startDate + ' ' + startTime;
+  var fullEnd = endDate + ' ' + endTime;
+
+  var skipForeman = !needsForemanReview(empId);
+
+  if (skipForeman) {
+    sheet.appendRow([nextIndex, timestamp, empId, userName, leaveType, startDate, endDate, "'" + startTime, "'" + endTime, reason, "免審", "審核中", "", timestamp]);
+    notifyEmployee(ss, empId, "✅ 您的請假申請已成功送出！\n假別：" + leaveType + "\n起訖：" + fullStart + " ~ " + fullEnd + "\n\n目前狀態：等待主管審核");
+    sendApprovalCard(MANAGER_USER_ID, "👔 主管請審核", empId, userName, leaveType, fullStart, fullEnd, reason, newRowNum, 2, timestamp);
+  } else {
+    sheet.appendRow([nextIndex, timestamp, empId, userName, leaveType, startDate, endDate, "'" + startTime, "'" + endTime, reason, "審核中", "", "", timestamp]);
+    notifyEmployee(ss, empId, "✅ 您的請假申請已成功送出！\n假別：" + leaveType + "\n起訖：" + fullStart + " ~ " + fullEnd + "\n\n目前狀態：等待廠長審核");
+    sendApprovalCard(FOREMAN_USER_ID, "🏭 廠長請審核", empId, userName, leaveType, fullStart, fullEnd, reason, newRowNum, 1, timestamp);
+  }
+
+  return { success: true, message: '請假申請已送出，等待審核' };
+}
