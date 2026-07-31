@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>宏升工業社 - 請假申請</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -55,7 +54,6 @@
         }
         textarea { min-height: 70px; resize: vertical; }
 
-        /* 日期 + 時間 兩個小框並排，取代 datetime-local 原生膠囊樣式 */
         .datetime-row {
             display: flex;
             gap: 10px;
@@ -65,7 +63,7 @@
             min-width: 0;
         }
         .datetime-row input[type="date"] {
-            flex: 1.4; /* 日期比時間稍寬一點，避免日期被壓縮換行 */
+            flex: 1.4;
         }
 
         .hint {
@@ -101,6 +99,23 @@
             padding: 60px 0;
             color: #888;
         }
+
+        /* ====== 返回主頁（打卡掃描頁）按鈕 ====== */
+        #backHomeBtn {
+            display: block;
+            max-width: 420px;
+            margin: 0 auto 16px;
+            padding: 12px 0;
+            font-size: 15px;
+            font-weight: bold;
+            background: #e0e0e0;
+            color: #333;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        #backHomeBtn:active { background: #cfcfcf; }
     </style>
 </head>
 <body>
@@ -146,14 +161,13 @@
             <button id="submitBtn" onclick="submitForm()">送出申請</button>
             <div id="statusMsg"></div>
         </div>
+
+        <a id="backHomeBtn" href="https://hs2026work-ai.github.io/punch-card/">⬅️ 返回主頁（打卡掃描）</a>
     </div>
 
     <script>
         // ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
         var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
-
-        var LIFF_ID = "2010875519-TBex5DN7";
-        var currentUserId = null;
 
         // 載入員工清單，填入下拉選單
         function loadEmpList() {
@@ -189,14 +203,12 @@
                 });
         }
 
-        // 把 <input type="date"> 的值 (格式: 2026-07-28) 轉成後端要的 "2026/07/28"
         function formatDate(value) {
             if (!value) return '';
             var parts = value.split('-');
             return parts[0] + '/' + parts[1] + '/' + parts[2];
         }
 
-        // 把 <input type="time"> 的值 (格式: 16:08) 轉成後端要的 "1608"
         function formatTime(value) {
             if (!value) return '0000';
             return value.replace(':', '');
@@ -231,7 +243,6 @@
 
             var payload = {
                 action: 'submitLeave',
-                userId: currentUserId,
                 empId: empId,
                 empName: empName,
                 leaveType: leaveType,
@@ -256,11 +267,7 @@
                 .then(function (data) {
                     if (data.success) {
                         showStatus('✅ ' + data.message, false);
-                        setTimeout(function () {
-                            if (window.liff && liff.isInClient()) {
-                                liff.closeWindow();
-                            }
-                        }, 1800);
+                        btn.innerText = '已送出';
                     } else {
                         showStatus('⚠️ ' + data.message, true);
                         btn.disabled = false;
@@ -274,24 +281,10 @@
                 });
         }
 
-        liff.init({ liffId: LIFF_ID })
-            .then(function () {
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-                return liff.getProfile();
-            })
-            .then(function (profile) {
-                if (!profile) return;
-                currentUserId = profile.userId;
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('formWrap').style.display = 'block';
-                loadEmpList();
-            })
-            .catch(function (err) {
-                document.getElementById('loading').innerText = '載入失敗，請關閉重新從 LINE 對話開啟一次';
-            });
+        // 不再需要LINE登入，頁面一打開就直接顯示表單、載入員工清單
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('formWrap').style.display = 'block';
+        loadEmpList();
     </script>
 </body>
 </html>
