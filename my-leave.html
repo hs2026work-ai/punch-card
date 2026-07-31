@@ -206,16 +206,21 @@
             if (!data.records || data.records.length === 0) {
                 listEl.innerHTML = '<div class="no-record">目前尚無請假紀錄</div>';
             } else {
-                data.records.forEach(function (rec) {
-                    var div = document.createElement('div');
-                    div.className = 'record-item';
-                    div.innerHTML =
-                        '<div class="record-top"><span>' + rec.leaveType + '</span>' +
-                        '<span class="record-days">' + rec.days + ' 天</span></div>' +
-                        '<div class="record-date">' + rec.startDate + ' ~ ' + rec.endDate + '</div>' +
-                        '<div class="record-status">' + rec.status + '</div>';
-                    listEl.appendChild(div);
-                });
+              function formatDays(val) {
+    if (val === null || val === undefined || val === '') return val;
+    return Math.round(Number(val) * 100) / 100; // 四捨五入到小數點後兩位
+}
+
+data.records.forEach(function (rec) {
+    var div = document.createElement('div');
+    div.className = 'record-item';
+    div.innerHTML =
+        '<div class="record-top"><span>' + rec.leaveType + '</span>' +
+        '<span class="record-days">' + formatDays(rec.days) + ' 天</span></div>' +
+        '<div class="record-date">' + rec.startDate + ' ~ ' + rec.endDate + '</div>' +
+        '<div class="record-status">' + rec.status + '</div>';
+    listEl.appendChild(div);
+});
             }
 
             document.getElementById('loading').style.display = 'none';
