@@ -174,10 +174,17 @@
         .modal-btn.confirm { background: #2e7d32; color: white; }
         .modal-btn.confirm:disabled { background: #ccc; color: #666; }
 
-        input#earlyTimeInput {
-            width: 100%; padding: 12px; font-size: 20px; margin: 14px 0 4px;
+        .early-time-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin: 14px 0 4px;
+        }
+        .early-time-row select {
+            width: 112px; padding: 12px 8px; font-size: 20px;
             border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
             text-align: center; background: white;
+        }
+        .early-time-colon {
+            font-size: 24px; font-weight: bold; color: #333;
         }
 
         /* ====== 進站授權碼遮罩 ====== */
@@ -276,7 +283,11 @@
             <div class="modal-icon">⏰</div>
             <div class="modal-title">提前上班</div>
             <div class="modal-text">請選擇你實際到班的時間</div>
-            <input type="time" id="earlyTimeInput" step="60">
+            <div class="early-time-row">
+                <select id="earlyHourSelect" aria-label="小時" onchange="refreshEarlyMinuteOptions()"></select>
+                <span class="early-time-colon">:</span>
+                <select id="earlyMinuteSelect" aria-label="分鐘"></select>
+            </div>
             <div class="modal-actions">
                 <button type="button" class="modal-btn cancel" onclick="closeEarlyModal()">取消</button>
                 <button type="button" class="modal-btn confirm" id="earlyConfirmBtn" onclick="submitEarly()">確定送出</button>
@@ -520,12 +531,62 @@
             callApi({ id: currentId, ts: currentTs, reason: reasonVal });
         }
 
+        function parseHHMM(value, fallback) {
+            var text = /^\d{2}:\d{2}$/.test(value || '') ? value : fallback;
+            var parts = text.split(':');
+            return { hour: Number(parts[0]), minute: Number(parts[1]) };
+        }
+
+        function pad2(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function refreshEarlyMinuteOptions(preferredMinute) {
+            var hourSelect = document.getElementById('earlyHourSelect');
+            var minuteSelect = document.getElementById('earlyMinuteSelect');
+            var minTime = parseHHMM(currentEarlyMinTime, '05:00');
+            var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+            var selectedHour = Number(hourSelect.value);
+            var startMinute = selectedHour === minTime.hour ? minTime.minute : 0;
+            var endMinute = selectedHour === maxTime.hour ? maxTime.minute : 59;
+            var wanted = preferredMinute === undefined ? Number(minuteSelect.value) : Number(preferredMinute);
+
+            minuteSelect.innerHTML = '';
+            for (var minute = startMinute; minute <= endMinute; minute++) {
+                var opt = document.createElement('option');
+                opt.value = pad2(minute);
+                opt.textContent = pad2(minute) + ' 分';
+                minuteSelect.appendChild(opt);
+            }
+
+            if (wanted >= startMinute && wanted <= endMinute) {
+                minuteSelect.value = pad2(wanted);
+            } else {
+                minuteSelect.value = pad2(startMinute);
+            }
+        }
+
+        function prepareEarlyTimeSelects() {
+            var hourSelect = document.getElementById('earlyHourSelect');
+            var minTime = parseHHMM(currentEarlyMinTime, '05:00');
+            var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+            var defaultTime = parseHHMM(currentEarlyDefaultTime, '07:00');
+
+            hourSelect.innerHTML = '';
+            for (var hour = minTime.hour; hour <= maxTime.hour; hour++) {
+                var opt = document.createElement('option');
+                opt.value = pad2(hour);
+                opt.textContent = pad2(hour) + ' 時';
+                hourSelect.appendChild(opt);
+            }
+
+            var defaultHour = Math.min(Math.max(defaultTime.hour, minTime.hour), maxTime.hour);
+            hourSelect.value = pad2(defaultHour);
+            refreshEarlyMinuteOptions(defaultTime.minute);
+        }
+
         function openEarlyModal() {
-            var input = document.getElementById('earlyTimeInput');
-            input.min = currentEarlyMinTime;
-            input.max = currentEarlyMaxTime;
-            input.step = '60'; // 允許選到每一分鐘
-            input.value = currentEarlyDefaultTime;
+            prepareEarlyTimeSelects();
             document.getElementById('earlyModalOverlay').classList.add('show');
         }
 
@@ -537,8 +598,9 @@
             var btn = document.getElementById('earlyConfirmBtn');
             btn.disabled = true;
             btn.innerText = '送出中...';
-            var input = document.getElementById('earlyTimeInput');
-            var val = input.value;
+            var hour = document.getElementById('earlyHourSelect').value;
+            var minute = document.getElementById('earlyMinuteSelect').value;
+            var val = hour && minute ? hour + ':' + minute : '';
             if (!val) {
                 alert('請選擇實際到班時間');
                 btn.disabled = false;
