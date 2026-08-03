@@ -174,9 +174,10 @@
         .modal-btn.confirm { background: #2e7d32; color: white; }
         .modal-btn.confirm:disabled { background: #ccc; color: #666; }
 
-        select#earlySelect {
-            width: 100%; padding: 12px; font-size: 17px; margin: 14px 0 4px;
+        input#earlyTimeInput {
+            width: 100%; padding: 12px; font-size: 20px; margin: 14px 0 4px;
             border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
+            text-align: center; background: white;
         }
 
         /* ====== 進站授權碼遮罩 ====== */
@@ -275,8 +276,7 @@
             <div class="modal-icon">⏰</div>
             <div class="modal-title">提前上班</div>
             <div class="modal-text">請選擇你實際到班的時間</div>
-            <select id="earlySelect" onchange="updateEarlyPreview()"></select>
-            <div class="modal-text small-note" id="earlyPreview"></div>
+            <input type="time" id="earlyTimeInput" step="60">
             <div class="modal-actions">
                 <button type="button" class="modal-btn cancel" onclick="closeEarlyModal()">取消</button>
                 <button type="button" class="modal-btn confirm" id="earlyConfirmBtn" onclick="submitEarly()">確定送出</button>
@@ -424,8 +424,15 @@
         }
 
         var currentEarlyReason = '';
-        var currentEarlyOptions = [];
+        var currentEarlyMinTime = '05:00';
+        var currentEarlyMaxTime = '07:59';
+        var currentEarlyDefaultTime = '07:00';
         var currentNormalCheckInTime = '08:00';
+
+        function formatHours(value) {
+            var n = Number(value || 0);
+            return Number.isInteger(n) ? String(n) : String(n);
+        }
 
         function showResultCard(data) {
             document.getElementById('reasonOverlay').classList.remove('show');
@@ -460,7 +467,16 @@
                 }
 
                 html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
-                if (data.message) html += '<div class="cheer">' + data.message + '</div>';
+                if (data.message) {
+                    html += '<div class="cheer">' + data.message;
+                    // 提前上班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
+                    if (data.isEarlyCheckInMakeup && data.earlyTime) {
+                        html += '<div style="margin-top:8px;font-size:16px;line-height:1.5;">' +
+                            data.earlyTime + ' ～ ' + (data.normalCheckInTime || currentNormalCheckInTime) +
+                            '，共 ' + formatHours(data.overtimeHours) + ' 小時</div>';
+                    }
+                    html += '</div>';
+                }
 
                 if (data.canMarkAfternoonNoBreak) {
                     showAfternoonBtn = true;
@@ -471,7 +487,9 @@
                 if (data.canMarkEarlyCheckIn) {
                     showEarlyBtn = true;
                     currentEarlyReason = data.earlyCheckInReason;
-                    currentEarlyOptions = data.earlyCheckInOptions || [];
+                    currentEarlyMinTime = data.earlyCheckInMinTime || '05:00';
+                    currentEarlyMaxTime = data.earlyCheckInMaxTime || '07:59';
+                    currentEarlyDefaultTime = data.earlyCheckInDefaultTime || '07:00';
                     currentNormalCheckInTime = data.normalCheckInTime || '08:00';
                     html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()">⏰ 我今天比較早到，回報實際到班時間</button>';
                 }
@@ -503,15 +521,11 @@
         }
 
         function openEarlyModal() {
-            var select = document.getElementById('earlySelect');
-            select.innerHTML = '';
-            currentEarlyOptions.forEach(function (t) {
-                var opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                select.appendChild(opt);
-            });
-            updateEarlyPreview();
+            var input = document.getElementById('earlyTimeInput');
+            input.min = currentEarlyMinTime;
+            input.max = currentEarlyMaxTime;
+            input.step = '60'; // 允許選到每一分鐘
+            input.value = currentEarlyDefaultTime;
             document.getElementById('earlyModalOverlay').classList.add('show');
         }
 
@@ -519,24 +533,18 @@
             document.getElementById('earlyModalOverlay').classList.remove('show');
         }
 
-        function updateEarlyPreview() {
-            var val = document.getElementById('earlySelect').value;
-            var previewEl = document.getElementById('earlyPreview');
-            if (!val) { previewEl.innerText = ''; return; }
-            var toMinutes = function (hhmm) {
-                var parts = hhmm.split(':');
-                return Number(parts[0]) * 60 + Number(parts[1]);
-            };
-            var diff = (toMinutes(currentNormalCheckInTime) - toMinutes(val)) / 60;
-            if (diff < 0) diff = 0;
-            previewEl.innerText = val + ' ~ ' + currentNormalCheckInTime + '，共 ' + diff + ' 小時';
-        }
-
         function submitEarly() {
             var btn = document.getElementById('earlyConfirmBtn');
             btn.disabled = true;
             btn.innerText = '送出中...';
-            var val = document.getElementById('earlySelect').value;
+            var input = document.getElementById('earlyTimeInput');
+            var val = input.value;
+            if (!val) {
+                alert('請選擇實際到班時間');
+                btn.disabled = false;
+                btn.innerText = '確定送出';
+                return;
+            }
             callApi({ id: currentId, ts: currentTs, reason: currentEarlyReason, earlyTime: val });
             setTimeout(function () {
                 closeEarlyModal();
@@ -581,7 +589,9 @@
 
             // 加入「提前上班」補登；選取後會再跳出實際到班時間選單
             currentEarlyReason = data.earlyReason || '';
-            currentEarlyOptions = data.earlyCheckInOptions || [];
+            currentEarlyMinTime = data.earlyCheckInMinTime || '05:00';
+            currentEarlyMaxTime = data.earlyCheckInMaxTime || '07:59';
+            currentEarlyDefaultTime = data.earlyCheckInDefaultTime || '07:00';
             currentNormalCheckInTime = data.normalCheckInTime || '08:00';
 
             if (currentEarlyReason) {
