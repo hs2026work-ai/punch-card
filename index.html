@@ -135,6 +135,13 @@
         }
         .mark-afternoon-btn:active { background: #5d4037; }
 
+        .mark-early-btn {
+            width: 100%; padding: 13px 0; font-size: 16px; margin-top: 14px;
+            background: #3a5a9c; color: white; border: none; border-radius: 8px;
+            font-weight: bold; cursor: pointer;
+        }
+        .mark-early-btn:active { background: #24406f; }
+
         .divider { color: #999; font-size: 13px; margin: 16px 0 8px; }
         select#reasonSelect {
             width: 100%; padding: 13px; font-size: 18px; margin: 6px 0 14px;
@@ -166,6 +173,11 @@
         .modal-btn.cancel { background: #e0e0e0; color: #555; }
         .modal-btn.confirm { background: #2e7d32; color: white; }
         .modal-btn.confirm:disabled { background: #ccc; color: #666; }
+
+        select#earlySelect {
+            width: 100%; padding: 12px; font-size: 17px; margin: 14px 0 4px;
+            border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
+        }
 
         /* ====== 進站授權碼遮罩 ====== */
         #accessGateOverlay {
@@ -254,6 +266,20 @@
             <div class="modal-actions">
                 <button type="button" class="modal-btn cancel" onclick="closeMakeupModal()">取消</button>
                 <button type="button" class="modal-btn confirm" id="makeupConfirmBtn" onclick="submitMakeup()">確定送出</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="earlyModalOverlay">
+        <div class="modal-box">
+            <div class="modal-icon">⏰</div>
+            <div class="modal-title">提前上班</div>
+            <div class="modal-text">請選擇你實際到班的時間</div>
+            <select id="earlySelect" onchange="updateEarlyPreview()"></select>
+            <div class="modal-text small-note" id="earlyPreview"></div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="closeEarlyModal()">取消</button>
+                <button type="button" class="modal-btn confirm" id="earlyConfirmBtn" onclick="submitEarly()">確定送出</button>
             </div>
         </div>
     </div>
@@ -369,7 +395,8 @@
             var url = currentBase + '?mode=api'
                 + '&id=' + encodeURIComponent(params.id)
                 + '&ts=' + encodeURIComponent(params.ts)
-                + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '');
+                + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '')
+                + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '');
 
             fetch(url)
                 .then(function (r) { return r.json(); })
@@ -396,9 +423,14 @@
             try { errorAudio.currentTime = 0; errorAudio.play(); } catch (e) {}
         }
 
+        var currentEarlyReason = '';
+        var currentEarlyOptions = [];
+        var currentNormalCheckInTime = '08:00';
+
         function showResultCard(data) {
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
+            document.getElementById('earlyModalOverlay').classList.remove('show');
             var success = data.status === 'success';
             if (success) { playSuccessSound(); } else { playErrorSound(); }
             var card = document.getElementById('resultCard');
@@ -407,6 +439,7 @@
             var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' + (success ? '打卡成功' : '無法打卡') + '</h2>';
 
             var showAfternoonBtn = false;
+            var showEarlyBtn = false;
 
             if (success) {
                 html += '<p class="line">員工編號：' + data.id + '<br>姓名：' + data.name + '<br>狀態：' + data.type + '</p>';
@@ -419,10 +452,18 @@
                     html += '<button type="button" class="mark-afternoon-btn" onclick="markAfternoonNoBreak(\'' +
                         data.afternoonReason + '\')">☕ 下午（17:00-17:30）沒有休息</button>';
                 }
+
+                if (data.canMarkEarlyCheckIn) {
+                    showEarlyBtn = true;
+                    currentEarlyReason = data.earlyCheckInReason;
+                    currentEarlyOptions = data.earlyCheckInOptions || [];
+                    currentNormalCheckInTime = data.normalCheckInTime || '08:00';
+                    html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()">⏰ 我今天比較早到，回報實際到班時間</button>';
+                }
             } else {
                 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
             }
-            var countdownSeconds = showAfternoonBtn ? 8 : 3;
+            var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 3;
             html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
             card.innerHTML = html;
 
@@ -443,6 +484,49 @@
 
         function markAfternoonNoBreak(reasonVal) {
             callApi({ id: currentId, ts: currentTs, reason: reasonVal });
+        }
+
+        function openEarlyModal() {
+            var select = document.getElementById('earlySelect');
+            select.innerHTML = '';
+            currentEarlyOptions.forEach(function (t) {
+                var opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                select.appendChild(opt);
+            });
+            updateEarlyPreview();
+            document.getElementById('earlyModalOverlay').classList.add('show');
+        }
+
+        function closeEarlyModal() {
+            document.getElementById('earlyModalOverlay').classList.remove('show');
+        }
+
+        function updateEarlyPreview() {
+            var val = document.getElementById('earlySelect').value;
+            var previewEl = document.getElementById('earlyPreview');
+            if (!val) { previewEl.innerText = ''; return; }
+            var toMinutes = function (hhmm) {
+                var parts = hhmm.split(':');
+                return Number(parts[0]) * 60 + Number(parts[1]);
+            };
+            var diff = (toMinutes(currentNormalCheckInTime) - toMinutes(val)) / 60;
+            if (diff < 0) diff = 0;
+            previewEl.innerText = val + ' ~ ' + currentNormalCheckInTime + '，共 ' + diff + ' 小時';
+        }
+
+        function submitEarly() {
+            var btn = document.getElementById('earlyConfirmBtn');
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+            var val = document.getElementById('earlySelect').value;
+            callApi({ id: currentId, ts: currentTs, reason: currentEarlyReason, earlyTime: val });
+            setTimeout(function () {
+                closeEarlyModal();
+                btn.disabled = false;
+                btn.innerText = '確定送出';
+            }, 1500);
         }
 
         var makeupLabels = {};
@@ -520,6 +604,7 @@
             document.getElementById('resultOverlay').classList.remove('show');
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
+            document.getElementById('earlyModalOverlay').classList.remove('show');
             statusEl.innerText = '請將員工 QR Code 對準鏡頭';
             busy = false;
         }
