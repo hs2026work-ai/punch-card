@@ -270,6 +270,29 @@
             return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
         }
 
+        // 計算請假區間與每天 12:00～13:00 午休的重疊分鐘數。
+        // 只扣除實際落在請假區間內的午休時間，例如 11:30～12:30 只扣 30 分鐘。
+        function calculateLunchBreakMinutes(start, end) {
+            var total = 0;
+            var cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+            var lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+
+            while (cursor.getTime() <= lastDay.getTime()) {
+                var lunchStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0, 0);
+                var lunchEnd = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 13, 0, 0, 0);
+                var overlapStart = Math.max(start.getTime(), lunchStart.getTime());
+                var overlapEnd = Math.min(end.getTime(), lunchEnd.getTime());
+
+                if (overlapEnd > overlapStart) {
+                    total += Math.round((overlapEnd - overlapStart) / 60000);
+                }
+
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            return total;
+        }
+
         function calculateLeaveDuration() {
             var startDateVal = document.getElementById('startDate').value;
             var startTimeVal = buildTime('startHour', 'startMinute');
@@ -282,9 +305,9 @@
 
             var start = buildLocalDateTime(startDateVal, startTimeVal);
             var end = buildLocalDateTime(endDateVal, endTimeVal);
-            var diffMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+            var totalMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
 
-            if (diffMinutes <= 0) {
+            if (totalMinutes <= 0) {
                 return {
                     complete: true,
                     valid: false,
@@ -292,21 +315,38 @@
                 };
             }
 
-            if (diffMinutes % 30 !== 0) {
+            var lunchMinutes = calculateLunchBreakMinutes(start, end);
+            var leaveMinutes = totalMinutes - lunchMinutes;
+
+            if (leaveMinutes <= 0) {
                 return {
                     complete: true,
                     valid: false,
-                    minutes: diffMinutes,
-                    hours: diffMinutes / 60,
-                    message: '請假時數須以 0.5 小時為一個單位'
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    message: '所選時間全部位於 12:00～13:00 午休時段，不計請假時數'
+                };
+            }
+
+            if (leaveMinutes % 30 !== 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    minutes: leaveMinutes,
+                    hours: leaveMinutes / 60,
+                    message: '扣除午休後，請假時數須以 0.5 小時為一個單位'
                 };
             }
 
             return {
                 complete: true,
                 valid: true,
-                minutes: diffMinutes,
-                hours: diffMinutes / 60
+                totalMinutes: totalMinutes,
+                lunchMinutes: lunchMinutes,
+                minutes: leaveMinutes,
+                hours: leaveMinutes / 60
             };
         }
 
@@ -333,7 +373,10 @@
 
             currentLeaveHours = result.hours;
             summary.className = 'valid';
-            summary.textContent = '已選擇請假時數：' + formatHours(result.hours) + ' 小時';
+            summary.textContent = '已選擇請假時數：' + formatHours(result.hours) + ' 小時' +
+                (result.lunchMinutes > 0
+                    ? '（已扣除 12:00～13:00 午休 ' + formatHours(result.lunchMinutes / 60) + ' 小時）'
+                    : '');
         }
 
         function showStatus(message, isError) {
