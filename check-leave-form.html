@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏升工業社 - 請假申請</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>宏升工業社 - 請假申請（一般網頁版）</title>
     <style>
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -24,6 +27,13 @@
             font-size: 13px;
             color: #888;
             margin-bottom: 20px;
+        }
+        .version {
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: -14px;
+            margin-bottom: 16px;
         }
         .card {
             background: white;
@@ -57,13 +67,42 @@
         .datetime-row {
             display: flex;
             gap: 10px;
-        }
-        .datetime-row input {
-            flex: 1;
-            min-width: 0;
+            align-items: stretch;
         }
         .datetime-row input[type="date"] {
             flex: 1.4;
+            min-width: 0;
+        }
+        .time-selects {
+            display: flex;
+            flex: 1;
+            gap: 6px;
+            min-width: 0;
+        }
+        .time-selects select {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 7px;
+            text-align: center;
+        }
+
+        #leaveHoursSummary {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #eef3fa;
+            color: #1b2a5e;
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+        #leaveHoursSummary.error {
+            background: #fff0f0;
+            color: #c62828;
+        }
+        #leaveHoursSummary.valid {
+            background: #edf7ee;
+            color: #1b5e20;
         }
 
         .hint {
@@ -99,12 +138,10 @@
             padding: 60px 0;
             color: #888;
         }
-
-        /* ====== 返回主頁（打卡掃描頁）按鈕 ====== */
         #backHomeBtn {
             display: block;
             max-width: 420px;
-            margin: 0 auto 16px;
+            margin: 16px auto 0;
             padding: 12px 0;
             font-size: 15px;
             font-weight: bold;
@@ -116,6 +153,12 @@
             box-sizing: border-box;
         }
         #backHomeBtn:active { background: #cfcfcf; }
+
+        @media (max-width: 380px) {
+            .datetime-row { gap: 7px; }
+            .time-selects { gap: 4px; }
+            .time-selects select { padding-left: 4px; padding-right: 4px; }
+        }
     </style>
 </head>
 <body>
@@ -124,9 +167,10 @@
     <div id="formWrap" style="display:none;">
         <h1>宏升工業社</h1>
         <div class="subtitle">請假申請</div>
+        <div class="version">一般網頁版・午休扣除 v3</div>
 
         <div class="card">
-            <label for="empId">員工姓名 NGUYEN,TIEN BAC</label>
+            <label for="empId">員工姓名 Họ tên nhân viên</label>
             <select id="empId">
                 <option value="">請選擇...</option>
             </select>
@@ -142,21 +186,29 @@
             <label for="startDate">開始日期時間 Ngày giờ bắt đầu</label>
             <div class="datetime-row">
                 <input type="date" id="startDate">
-                <input type="time" id="startTime">
+                <div class="time-selects">
+                    <select id="startHour" aria-label="開始小時"></select>
+                    <select id="startMinute" aria-label="開始分鐘"></select>
+                </div>
             </div>
 
             <label for="endDate">結束日期時間 Ngày giờ kết thúc</label>
             <div class="datetime-row">
                 <input type="date" id="endDate">
-                <input type="time" id="endTime">
+                <div class="time-selects">
+                    <select id="endHour" aria-label="結束小時"></select>
+                    <select id="endMinute" aria-label="結束分鐘"></select>
+                </div>
             </div>
+
+            <div id="leaveHoursSummary">請假時數：請先選擇完整的開始與結束時間</div>
 
             <label for="reason">事由 Lý do</label>
             <textarea id="reason" placeholder="簡述請假原因 / Mô tả ngắn lý do xin nghỉ"></textarea>
 
             <div class="hint">
                 ♦️ 產假／產檢假／陪產假及陪產檢／婚假／喪假，請洽人事，不要用這個表單申請。
-                 Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ／nghỉ cưới／nghỉ tang, vui lòng liên hệ nhân sự, không dùng biểu mẫu này để xin.
+                Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ／nghỉ cưới／nghỉ tang, vui lòng liên hệ nhân sự, không dùng biểu mẫu này để xin.
             </div>
 
             <button id="submitBtn" onclick="submitForm()">送出申請</button>
@@ -167,10 +219,39 @@
     </div>
 
     <script>
-        // ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
         var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+        var currentLeaveHours = null;
 
-        // 載入員工清單，填入下拉選單
+        function pad2(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function initializeTimeSelect(hourId, minuteId) {
+            var hourSelect = document.getElementById(hourId);
+            var minuteSelect = document.getElementById(minuteId);
+
+            hourSelect.innerHTML = '<option value="">時</option>';
+            for (var h = 0; h <= 23; h++) {
+                var hour = pad2(h);
+                hourSelect.innerHTML += '<option value="' + hour + '">' + hour + ' 時</option>';
+            }
+
+            minuteSelect.innerHTML = '<option value="">分</option>';
+            for (var m = 0; m <= 55; m += 5) {
+                var minute = pad2(m);
+                minuteSelect.innerHTML += '<option value="' + minute + '">' + minute + ' 分</option>';
+            }
+        }
+
+        function initializeTimeSelectors() {
+            initializeTimeSelect('startHour', 'startMinute');
+            initializeTimeSelect('endHour', 'endMinute');
+
+            ['startDate', 'startHour', 'startMinute', 'endDate', 'endHour', 'endMinute'].forEach(function (id) {
+                document.getElementById(id).addEventListener('change', updateLeaveHoursSummary);
+            });
+        }
+
         function loadEmpList() {
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
@@ -210,9 +291,138 @@
             return parts[0] + '/' + parts[1] + '/' + parts[2];
         }
 
+        function buildTime(hourId, minuteId) {
+            var hour = document.getElementById(hourId).value;
+            var minute = document.getElementById(minuteId).value;
+            if (!hour || !minute) return '';
+            return hour + ':' + minute;
+        }
+
         function formatTime(value) {
             if (!value) return '0000';
             return value.replace(':', '');
+        }
+
+        function buildLocalDateTime(dateValue, timeValue) {
+            if (!dateValue || !timeValue) return null;
+            var dateParts = dateValue.split('-');
+            var timeParts = timeValue.split(':');
+            if (dateParts.length !== 3 || timeParts.length !== 2) return null;
+
+            return new Date(
+                Number(dateParts[0]),
+                Number(dateParts[1]) - 1,
+                Number(dateParts[2]),
+                Number(timeParts[0]),
+                Number(timeParts[1]),
+                0,
+                0
+            );
+        }
+
+        function formatHours(hours) {
+            return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+        }
+
+        function calculateLunchBreakMinutes(start, end) {
+            var total = 0;
+            var cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+            var lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+
+            while (cursor.getTime() <= lastDay.getTime()) {
+                var lunchStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0, 0);
+                var lunchEnd = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 13, 0, 0, 0);
+                var overlapStart = Math.max(start.getTime(), lunchStart.getTime());
+                var overlapEnd = Math.min(end.getTime(), lunchEnd.getTime());
+
+                if (overlapEnd > overlapStart) {
+                    total += Math.round((overlapEnd - overlapStart) / 60000);
+                }
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return total;
+        }
+
+        function calculateLeaveDuration() {
+            var startDateVal = document.getElementById('startDate').value;
+            var startTimeVal = buildTime('startHour', 'startMinute');
+            var endDateVal = document.getElementById('endDate').value;
+            var endTimeVal = buildTime('endHour', 'endMinute');
+
+            if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal) {
+                return { complete: false, valid: false };
+            }
+
+            var start = buildLocalDateTime(startDateVal, startTimeVal);
+            var end = buildLocalDateTime(endDateVal, endTimeVal);
+            var totalMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+            if (totalMinutes <= 0) {
+                return { complete: true, valid: false, message: '結束日期時間必須晚於開始日期時間' };
+            }
+
+            var lunchMinutes = calculateLunchBreakMinutes(start, end);
+            var leaveMinutes = totalMinutes - lunchMinutes;
+
+            if (leaveMinutes <= 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    message: '所選時間全部位於 12:00～13:00 午休時段，不計請假時數'
+                };
+            }
+
+            if (leaveMinutes % 30 !== 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    minutes: leaveMinutes,
+                    hours: leaveMinutes / 60,
+                    message: '扣除午休後，請假時數須以 0.5 小時為一個單位'
+                };
+            }
+
+            return {
+                complete: true,
+                valid: true,
+                totalMinutes: totalMinutes,
+                lunchMinutes: lunchMinutes,
+                minutes: leaveMinutes,
+                hours: leaveMinutes / 60
+            };
+        }
+
+        function updateLeaveHoursSummary() {
+            var summary = document.getElementById('leaveHoursSummary');
+            var result = calculateLeaveDuration();
+            summary.className = '';
+            currentLeaveHours = null;
+
+            if (!result.complete) {
+                summary.textContent = '請假時數：請先選擇完整的開始與結束時間';
+                return;
+            }
+
+            if (!result.valid) {
+                summary.className = 'error';
+                if (typeof result.hours === 'number' && result.hours > 0) {
+                    summary.textContent = '目前區間：' + result.hours.toFixed(2) + ' 小時；⚠️ ' + result.message;
+                } else {
+                    summary.textContent = '⚠️ ' + result.message;
+                }
+                return;
+            }
+
+            currentLeaveHours = result.hours;
+            summary.className = 'valid';
+            summary.textContent = '已選擇請假時數：' + formatHours(result.hours) + ' 小時' +
+                (result.lunchMinutes > 0
+                    ? '（已扣除 12:00～13:00 午休 ' + formatHours(result.lunchMinutes / 60) + ' 小時）'
+                    : '');
         }
 
         function showStatus(message, isError) {
@@ -227,9 +437,9 @@
             var empName = empSelect.selectedOptions[0] ? empSelect.selectedOptions[0].dataset.name : '';
             var leaveType = document.getElementById('leaveType').value;
             var startDateVal = document.getElementById('startDate').value;
-            var startTimeVal = document.getElementById('startTime').value;
+            var startTimeVal = buildTime('startHour', 'startMinute');
             var endDateVal = document.getElementById('endDate').value;
-            var endTimeVal = document.getElementById('endTime').value;
+            var endTimeVal = buildTime('endHour', 'endMinute');
             var reason = document.getElementById('reason').value.trim();
 
             if (!empId || !empName) {
@@ -242,6 +452,13 @@
                 return;
             }
 
+            var duration = calculateLeaveDuration();
+            if (!duration.valid) {
+                showStatus(duration.message || '請確認請假日期時間', true);
+                updateLeaveHoursSummary();
+                return;
+            }
+
             var payload = {
                 action: 'submitLeave',
                 empId: empId,
@@ -251,6 +468,7 @@
                 startTime: formatTime(startTimeVal),
                 endDate: formatDate(endDateVal),
                 endTime: formatTime(endTimeVal),
+                leaveHours: duration.hours,
                 reason: reason
             };
 
@@ -267,7 +485,7 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.success) {
-                        showStatus('✅ ' + data.message, false);
+                        showStatus('✅ ' + data.message + '（共 ' + formatHours(duration.hours) + ' 小時）', false);
                         btn.innerText = '已送出';
                     } else {
                         showStatus('⚠️ ' + data.message, true);
@@ -282,7 +500,7 @@
                 });
         }
 
-        // 不再需要LINE登入，頁面一打開就直接顯示表單、載入員工清單
+        initializeTimeSelectors();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('formWrap').style.display = 'block';
         loadEmpList();
