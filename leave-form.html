@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>宏升工業社 - 請假申請</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -149,6 +152,7 @@
     <div id="formWrap" style="display:none;">
         <h1>宏升工業社</h1>
         <div class="subtitle">請假申請</div>
+        <div style="text-align:center;font-size:11px;color:#aaa;margin-top:-14px;margin-bottom:16px;">LINE 版・午休扣除 v3</div>
 
         <div class="card">
             <div id="empInfo"></div>
@@ -194,6 +198,8 @@
     </div>
 
     <script>
+        console.log("宏升請假表單：LINE 版・午休扣除 v3");
+
         // ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
         var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
