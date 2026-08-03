@@ -431,19 +431,34 @@
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
+
             var success = data.status === 'success';
+            var isMakeup = success && data.isMakeup === true;
+
             if (success) { playSuccessSound(); } else { playErrorSound(); }
+
             var card = document.getElementById('resultCard');
             var icon = success ? '✅' : '⚠️';
             var titleColor = success ? '#1b2a5e' : '#c62828';
-            var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' + (success ? '打卡成功' : '無法打卡') + '</h2>';
+            var successTitle = isMakeup ? '補登成功' : '打卡成功';
+            var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' +
+                (success ? successTitle : '無法打卡') + '</h2>';
 
             var showAfternoonBtn = false;
             var showEarlyBtn = false;
 
             if (success) {
-                html += '<p class="line">員工編號：' + data.id + '<br>姓名：' + data.name + '<br>狀態：' + data.type + '</p>';
-                if (data.reason) html += '<p class="line">原因：' + data.reason + '</p>';
+                var detailHtml = '員工編號：' + data.id + '<br>姓名：' + data.name;
+                // 補登成功時不再顯示「狀態：下班／加班開始／上班」，避免員工誤以為又打了一次卡
+                if (!isMakeup && data.type) {
+                    detailHtml += '<br>狀態：' + data.type;
+                }
+                html += '<p class="line">' + detailHtml + '</p>';
+
+                if (data.reason) {
+                    html += '<p class="line">原因：' + data.reason + '</p>';
+                }
+
                 html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
                 if (data.message) html += '<div class="cheer">' + data.message + '</div>';
 
@@ -463,12 +478,13 @@
             } else {
                 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
             }
+
             var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 3;
             html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
             card.innerHTML = html;
 
             document.getElementById('resultOverlay').classList.add('show');
-            statusEl.innerText = success ? '打卡完成' : '請重新掃描';
+            statusEl.innerText = success ? (isMakeup ? '補登完成' : '打卡完成') : '請重新掃描';
 
             var n = countdownSeconds;
             var timer = setInterval(function () {
@@ -532,7 +548,9 @@
         var makeupLabels = {};
 
         function showReasonCard(data) {
+            currentId = data.id;
             currentTs = data.ts;
+
             document.getElementById('reasonInfo').innerHTML =
                 '員工編號：' + data.id + '<br>姓名：' + data.name;
 
@@ -561,6 +579,19 @@
             makeupSelect.appendChild(afternoonOpt);
             makeupLabels[data.afternoonReason] = { text: data.afternoonReason, icon: '☕' };
 
+            // 加入「提前上班」補登；選取後會再跳出實際到班時間選單
+            currentEarlyReason = data.earlyReason || '';
+            currentEarlyOptions = data.earlyCheckInOptions || [];
+            currentNormalCheckInTime = data.normalCheckInTime || '08:00';
+
+            if (currentEarlyReason) {
+                var earlyOpt = document.createElement('option');
+                earlyOpt.value = currentEarlyReason;
+                earlyOpt.textContent = currentEarlyReason;
+                makeupSelect.appendChild(earlyOpt);
+                makeupLabels[currentEarlyReason] = { text: currentEarlyReason, icon: '⏰' };
+            }
+
             document.getElementById('reasonOverlay').classList.add('show');
             statusEl.innerText = '請選擇打卡異常原因';
         }
@@ -579,6 +610,13 @@
 
         function openMakeupModal() {
             var val = document.getElementById('makeupSelect').value;
+
+            // 「提前上班」需要先選實際到班時間，不走一般的確認視窗
+            if (val === currentEarlyReason) {
+                openEarlyModal();
+                return;
+            }
+
             var info = makeupLabels[val] || { text: val, icon: '📝' };
             document.getElementById('makeupModalLabel').innerText = info.text;
             document.getElementById('makeupModalIcon').innerText = info.icon;
@@ -588,10 +626,18 @@
             document.getElementById('makeupModalOverlay').classList.remove('show');
         }
         function submitMakeup() {
+            var val = document.getElementById('makeupSelect').value;
+
+            // 防呆：提前上班一定要先選時間
+            if (val === currentEarlyReason) {
+                closeMakeupModal();
+                openEarlyModal();
+                return;
+            }
+
             var btn = document.getElementById('makeupConfirmBtn');
             btn.disabled = true;
             btn.innerText = '送出中...';
-            var val = document.getElementById('makeupSelect').value;
             callApi({ id: currentId, ts: currentTs, reason: val });
             setTimeout(function () {
                 closeMakeupModal();
