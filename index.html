@@ -437,7 +437,7 @@
 
         function onScanSuccess(decodedText) {
             var now = Date.now();
-            if (busy || now - lastScanAt < 800) return;
+            if (busy || now - lastScanAt < 500) return;
             lastScanAt = now;
             busy = true;
             statusEl.innerText = "✅ 掃描成功，處理中...";
@@ -489,16 +489,25 @@
         }
 
         function scannerConfig() {
+            var usingFront = false;
+            var selected = cameraSelect ? cameraSelect.selectedOptions[0] : null;
+            if (selected) {
+                usingFront = selected.text.toLowerCase().includes("前") ||
+                             selected.text.toLowerCase().includes("front") ||
+                             selected.text.toLowerCase().includes("facetime");
+            }
+
             return {
-                fps: 25,
-                qrbox: function (viewfinderWidth, viewfinderHeight) {
-                    var size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8);
-                    size = Math.max(220, Math.min(size, 380));
-                    return { width: size, height: size };
+                fps: 35,
+                qrbox: {
+                    width: 150,
+                    height: 150
                 },
                 aspectRatio: 1.0,
-                disableFlip: false,
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+                disableFlip: !usingFront,
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
             };
         }
 
