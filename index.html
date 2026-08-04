@@ -322,7 +322,30 @@
             </div>
             <div class="divider">或選擇其他原因</div>
             <select id="reasonSelect"></select>
-            <button type="button" class="submit-btn" id="reasonSubmitBtn" onclick="submitReason()">送出</button>
+            <div style="display:flex;gap:10px;margin-top:12px;">
+
+    <button
+        type="button"
+        class="modal-btn cancel"
+        style="flex:1;"
+        onclick="closeAllOverlaysAndResume()">
+
+        ← 返回
+
+    </button>
+
+    <button
+        type="button"
+        class="submit-btn"
+        id="reasonSubmitBtn"
+        style="flex:1;"
+        onclick="submitReason()">
+
+        送出
+
+    </button>
+
+</div>
         </div>
     </div>
 
@@ -438,13 +461,22 @@ let barcodeDetector = ('BarcodeDetector' in window) ? new BarcodeDetector({forma
 let detectorRunning = false;
 
         function onScanSuccess(decodedText) {
-            var now = Date.now();
-            if (busy || now - lastScanAt < 500) return;
-            lastScanAt = now;
-            busy = true;
-            statusEl.innerText = "✅ 掃描成功，處理中...";
-            handleScan(decodedText);
-        }
+
+    var now = Date.now();
+
+    if (busy || now - lastScanAt < 500) return;
+
+    lastScanAt = now;
+    busy = true;
+
+    // 掃到立即播放成功音
+    playSuccessSound();
+
+    statusEl.innerText = "✅ 已掃描，資料處理中...";
+
+    handleScan(decodedText);
+
+}
 
         function onScanFailure() {}
 
@@ -737,23 +769,21 @@ async function stopScannerSafely() {
                 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
             }
 
-            var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 3;
+            var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 1;
             html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
             card.innerHTML = html;
 
             document.getElementById('resultOverlay').classList.add('show');
-            statusEl.innerText = success ? (isMakeup ? '補登完成' : '打卡完成') : '請重新掃描';
+            statusEl.innerText = success
+    ? "請將員工 QR Code 對準鏡頭"
+    : "請重新掃描";
 
             var n = countdownSeconds;
-            var timer = setInterval(function () {
-                n--;
-                var el = document.getElementById('resultCountdown');
-                if (el) el.innerText = n + ' 秒後恢復掃描';
-                if (n <= 0) {
-                    clearInterval(timer);
-                    closeAllOverlaysAndResume();
-                }
-            }, 1000);
+            setTimeout(function(){
+
+    closeAllOverlaysAndResume();
+
+},1000);
         }
 
         function markAfternoonNoBreak(reasonVal) {
@@ -815,7 +845,7 @@ async function stopScannerSafely() {
             for (var hour = minTime.hour; hour <= maxTime.hour; hour++) {
                 var opt = document.createElement('option');
                 opt.value = pad2(hour);
-                opt.textContent = pad2(hour) + ' 時';
+                opt.textContent = pad2(hour) + ' 點';
                 hourSelect.appendChild(opt);
             }
 
@@ -875,7 +905,7 @@ async function stopScannerSafely() {
             for (var hour = 0; hour <= 23; hour++) {
                 var hourOpt = document.createElement('option');
                 hourOpt.value = pad2(hour);
-                hourOpt.textContent = pad2(hour) + ' 時';
+                hourOpt.textContent = pad2(hour) + ' 點';
                 hourSelect.appendChild(hourOpt);
             }
 
