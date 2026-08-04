@@ -395,9 +395,13 @@
         const retryBtn = document.getElementById('retryBtn');
         let html5Qrcode = null;
         let busy = false;
+        let lastScanAt = 0;
+        let scannerStarting = false;
 
         function onScanSuccess(decodedText) {
-            if (busy) return;
+            const now = Date.now();
+            if (busy || now - lastScanAt < 800) return;
+            lastScanAt = now;
             busy = true;
             statusEl.innerText = "✅ 掃描成功，處理中...";
             handleScan(decodedText);
@@ -406,29 +410,61 @@
         function onScanFailure() {}
 
         async function startScanner() {
+            if (scannerStarting) return;
+            scannerStarting = true;
             retryBtn.style.display = 'none';
-            statusEl.innerText = "正在啟動相機...";
-
-            html5Qrcode = new Html5Qrcode("reader");
-            const config = { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            statusEl.innerText = "正在啟動前鏡頭...";
 
             try {
-                await html5Qrcode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
-                statusEl.innerText = "請將員工 QR Code 對準鏡頭";
-            } catch (err) {
-                try {
-                    const cameras = await Html5Qrcode.getCameras();
-                    if (cameras && cameras.length) {
-                        const camId = cameras[cameras.length - 1].id;
-                        await html5Qrcode.start(camId, config, onScanSuccess, onScanFailure);
-                        statusEl.innerText = "請將員工 QR Code 對準鏡頭";
-                    } else {
-                        throw new Error("no camera");
-                    }
-                } catch (err2) {
-                    statusEl.innerText = "⚠️ 無法啟動相機，請確認已允許相機權限";
-                    retryBtn.style.display = 'inline-block';
+                if (html5Qrcode) {
+                    try { await html5Qrcode.stop(); } catch (e) {}
+                    try { await html5Qrcode.clear(); } catch (e) {}
                 }
+
+                html5Qrcode = new Html5Qrcode("reader");
+                const config = {
+                    fps: 25,
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.80);
+                        return { width: size, height: size };
+                    },
+                    aspectRatio: 1.0,
+                    disableFlip: false,
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+                };
+
+                try {
+                    await html5Qrcode.start(
+                        { facingMode: { exact: "user" } },
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                } catch (frontErr) {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (!cameras || !cameras.length) throw frontErr;
+
+                    const frontCamera = cameras.find(function(c) {
+                        const label = String(c.label || '').toLowerCase();
+                        return label.includes('front') || label.includes('user') ||
+                               label.includes('前') || label.includes('facetime');
+                    }) || cameras[0];
+
+                    await html5Qrcode.start(
+                        frontCamera.id,
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                }
+
+                statusEl.innerText = "請將員工 QR Code 對準前鏡頭";
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "⚠️ 無法啟動前鏡頭，請確認相機權限後重試";
+                retryBtn.style.display = 'inline-block';
+            } finally {
+                scannerStarting = false;
             }
         }
 
@@ -904,7 +940,7 @@
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
             document.getElementById('overtimeOutModalOverlay').classList.remove('show');
-            statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+            statusEl.innerText = '請將員工 QR Code 對準前鏡頭';
             busy = false;
         }
 
