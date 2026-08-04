@@ -187,6 +187,33 @@
             font-size: 24px; font-weight: bold; color: #333;
         }
 
+        .overtime-out-field {
+            text-align: left;
+            margin-top: 12px;
+        }
+        .overtime-out-field label {
+            display: block;
+            font-size: 15px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        .overtime-out-field select,
+        .overtime-out-field textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 17px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-family: inherit;
+            background: white;
+        }
+        .overtime-out-field textarea {
+            min-height: 76px;
+            resize: vertical;
+        }
+
         /* ====== 進站授權碼遮罩 ====== */
         #accessGateOverlay {
             position: fixed;
@@ -291,6 +318,40 @@
             <div class="modal-actions">
                 <button type="button" class="modal-btn cancel" onclick="closeEarlyModal()">取消</button>
                 <button type="button" class="modal-btn confirm" id="earlyConfirmBtn" onclick="submitEarly()">確定送出</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="overtimeOutModalOverlay">
+        <div class="modal-box">
+            <div class="modal-icon">🚚</div>
+            <div class="modal-title">加班（外出）</div>
+
+            <div class="overtime-out-field">
+                <label for="overtimeOutModeSelect">補登項目</label>
+                <select id="overtimeOutModeSelect">
+                    <option value="提前上班">提前上班</option>
+                    <option value="晚回來">晚回來</option>
+                </select>
+            </div>
+
+            <div class="overtime-out-field">
+                <label>時間</label>
+                <div class="early-time-row" style="margin-top:0;">
+                    <select id="overtimeOutHourSelect" aria-label="小時"></select>
+                    <span class="early-time-colon">:</span>
+                    <select id="overtimeOutMinuteSelect" aria-label="分鐘"></select>
+                </div>
+            </div>
+
+            <div class="overtime-out-field">
+                <label for="overtimeOutMemo">事由</label>
+                <textarea id="overtimeOutMemo" maxlength="200" placeholder="例如：至客戶現場安裝、送貨"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="closeOvertimeOutModal()">取消</button>
+                <button type="button" class="modal-btn confirm" id="overtimeOutConfirmBtn" onclick="submitOvertimeOut()">確定送出</button>
             </div>
         </div>
     </div>
@@ -407,7 +468,10 @@
                 + '&id=' + encodeURIComponent(params.id)
                 + '&ts=' + encodeURIComponent(params.ts)
                 + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '')
-                + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '');
+                + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '')
+                + (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
+                + (params.overtimeOutTime ? '&overtimeOutTime=' + encodeURIComponent(params.overtimeOutTime) : '')
+                + (params.overtimeOutMemo ? '&overtimeOutMemo=' + encodeURIComponent(params.overtimeOutMemo) : '');
 
             fetch(url)
                 .then(function (r) { return r.json(); })
@@ -439,6 +503,7 @@
         var currentEarlyMaxTime = '07:59';
         var currentEarlyDefaultTime = '07:00';
         var currentNormalCheckInTime = '08:00';
+        var currentOvertimeOutReason = '';
 
         function formatHours(value) {
             var n = Number(value || 0);
@@ -449,6 +514,7 @@
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
+            document.getElementById('overtimeOutModalOverlay').classList.remove('show');
 
             var success = data.status === 'success';
             var isMakeup = success && data.isMakeup === true;
@@ -485,6 +551,12 @@
                         html += '<div style="margin-top:8px;font-size:16px;line-height:1.5;">' +
                             data.earlyTime + ' ～ ' + (data.normalCheckInTime || currentNormalCheckInTime) +
                             '，共 ' + formatHours(data.overtimeHours) + ' 小時</div>';
+                    }
+                    if (data.isOvertimeOutMakeup) {
+                        html += '<div style="margin-top:8px;font-size:16px;line-height:1.6;">' +
+                            '項目：' + (data.overtimeOutMode || '') + '<br>' +
+                            '時間：' + (data.overtimeOutTime || '') + '<br>' +
+                            '事由：' + escapeText(data.memo || '') + '</div>';
                     }
                     html += '</div>';
                 }
@@ -615,6 +687,93 @@
             }, 1500);
         }
 
+
+        function escapeText(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function prepareOvertimeOutTimeSelects() {
+            var hourSelect = document.getElementById('overtimeOutHourSelect');
+            var minuteSelect = document.getElementById('overtimeOutMinuteSelect');
+            var now = new Date();
+
+            hourSelect.innerHTML = '';
+            minuteSelect.innerHTML = '';
+
+            for (var hour = 0; hour <= 23; hour++) {
+                var hourOpt = document.createElement('option');
+                hourOpt.value = pad2(hour);
+                hourOpt.textContent = pad2(hour) + ' 時';
+                hourSelect.appendChild(hourOpt);
+            }
+
+            for (var minute = 0; minute <= 59; minute++) {
+                var minuteOpt = document.createElement('option');
+                minuteOpt.value = pad2(minute);
+                minuteOpt.textContent = pad2(minute) + ' 分';
+                minuteSelect.appendChild(minuteOpt);
+            }
+
+            hourSelect.value = pad2(now.getHours());
+            minuteSelect.value = pad2(now.getMinutes());
+        }
+
+        function openOvertimeOutModal() {
+            prepareOvertimeOutTimeSelects();
+            document.getElementById('overtimeOutModeSelect').value = '提前上班';
+            document.getElementById('overtimeOutMemo').value = '';
+            document.getElementById('overtimeOutModalOverlay').classList.add('show');
+        }
+
+        function closeOvertimeOutModal() {
+            document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+        }
+
+        function submitOvertimeOut() {
+            var btn = document.getElementById('overtimeOutConfirmBtn');
+            var mode = document.getElementById('overtimeOutModeSelect').value;
+            var hour = document.getElementById('overtimeOutHourSelect').value;
+            var minute = document.getElementById('overtimeOutMinuteSelect').value;
+            var memo = document.getElementById('overtimeOutMemo').value.trim();
+            var selectedTime = hour && minute ? hour + ':' + minute : '';
+
+            if (!mode) {
+                alert('請選擇提前上班或晚回來');
+                return;
+            }
+            if (!selectedTime) {
+                alert('請選擇時間');
+                return;
+            }
+            if (!memo) {
+                alert('請填寫事由');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+
+            callApi({
+                id: currentId,
+                ts: currentTs,
+                reason: currentOvertimeOutReason,
+                overtimeOutMode: mode,
+                overtimeOutTime: selectedTime,
+                overtimeOutMemo: memo
+            });
+
+            setTimeout(function () {
+                closeOvertimeOutModal();
+                btn.disabled = false;
+                btn.innerText = '確定送出';
+            }, 1500);
+        }
+
         var makeupLabels = {};
 
         function showReasonCard(data) {
@@ -664,6 +823,15 @@
                 makeupLabels[currentEarlyReason] = { text: currentEarlyReason, icon: '⏰' };
             }
 
+            currentOvertimeOutReason = data.overtimeOutReason || '';
+            if (currentOvertimeOutReason) {
+                var overtimeOutOpt = document.createElement('option');
+                overtimeOutOpt.value = currentOvertimeOutReason;
+                overtimeOutOpt.textContent = currentOvertimeOutReason;
+                makeupSelect.appendChild(overtimeOutOpt);
+                makeupLabels[currentOvertimeOutReason] = { text: currentOvertimeOutReason, icon: '🚚' };
+            }
+
             document.getElementById('reasonOverlay').classList.add('show');
             statusEl.innerText = '請選擇打卡異常原因';
         }
@@ -689,6 +857,12 @@
                 return;
             }
 
+            // 「加班（外出）」需選擇提前上班／晚回來、時間及填寫事由
+            if (val === currentOvertimeOutReason) {
+                openOvertimeOutModal();
+                return;
+            }
+
             var info = makeupLabels[val] || { text: val, icon: '📝' };
             document.getElementById('makeupModalLabel').innerText = info.text;
             document.getElementById('makeupModalIcon').innerText = info.icon;
@@ -704,6 +878,12 @@
             if (val === currentEarlyReason) {
                 closeMakeupModal();
                 openEarlyModal();
+                return;
+            }
+
+            if (val === currentOvertimeOutReason) {
+                closeMakeupModal();
+                openOvertimeOutModal();
                 return;
             }
 
@@ -723,6 +903,7 @@
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
+            document.getElementById('overtimeOutModalOverlay').classList.remove('show');
             statusEl.innerText = '請將員工 QR Code 對準鏡頭';
             busy = false;
         }
