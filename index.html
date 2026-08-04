@@ -38,6 +38,34 @@
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
+        .camera-control {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+        .camera-control label {
+            white-space: nowrap;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .camera-control select {
+            flex: 1;
+            min-width: 0;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: white;
+            color: #333;
+            box-sizing: border-box;
+        }
         .status {
             margin-top: 15px;
             font-size: 16px;
@@ -267,6 +295,12 @@
     <h1>宏升工業社 - 打卡掃描</h1>
 
     <div id="clock">正在讀取時間...</div>
+    <div class="camera-control">
+        <label for="cameraSelect">📷 使用鏡頭</label>
+        <select id="cameraSelect" onchange="changeCamera()">
+            <option value="">正在讀取鏡頭...</option>
+        </select>
+    </div>
     <div id="reader"></div>
     <div class="status" id="status-text">正在啟動相機...</div>
     <button id="retryBtn" onclick="startScanner();">重新啟動相機</button>
@@ -393,13 +427,16 @@
 
         const statusEl = document.getElementById('status-text');
         const retryBtn = document.getElementById('retryBtn');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const CAMERA_STORAGE_KEY = 'punchCardCameraId_v1';
         let html5Qrcode = null;
         let busy = false;
         let lastScanAt = 0;
+        let availableCameras = [];
         let scannerStarting = false;
 
         function onScanSuccess(decodedText) {
-            const now = Date.now();
+            var now = Date.now();
             if (busy || now - lastScanAt < 800) return;
             lastScanAt = now;
             busy = true;
@@ -409,63 +446,117 @@
 
         function onScanFailure() {}
 
-        async function startScanner() {
+        function cameraLabel(camera, index) {
+            var label = String(camera.label || '').trim();
+            if (label) return label;
+            return '鏡頭 ' + (index + 1);
+        }
+
+        function isFrontCameraLabel(label) {
+            var text = String(label || '').toLowerCase();
+            return text.includes('front') || text.includes('user') || text.includes('facetime') ||
+                text.includes('前') || text.includes('正面');
+        }
+
+        function isBackCameraLabel(label) {
+            var text = String(label || '').toLowerCase();
+            return text.includes('back') || text.includes('rear') || text.includes('environment') ||
+                text.includes('後') || text.includes('背面');
+        }
+
+        function populateCameraSelect(cameras) {
+            cameraSelect.innerHTML = '';
+            cameras.forEach(function (camera, index) {
+                var opt = document.createElement('option');
+                opt.value = camera.id;
+                var label = cameraLabel(camera, index);
+                if (isFrontCameraLabel(label)) label = '前鏡頭｜' + label;
+                else if (isBackCameraLabel(label)) label = '後鏡頭｜' + label;
+                opt.textContent = label;
+                cameraSelect.appendChild(opt);
+            });
+        }
+
+        function chooseInitialCamera(cameras) {
+            var savedId = localStorage.getItem(CAMERA_STORAGE_KEY);
+            if (savedId && cameras.some(function (c) { return c.id === savedId; })) {
+                return savedId;
+            }
+
+            // iPad 第10代優先找 FaceTime／Front／前鏡頭；找不到才使用第一顆。
+            var front = cameras.find(function (c) { return isFrontCameraLabel(c.label); });
+            return front ? front.id : cameras[0].id;
+        }
+
+        function scannerConfig() {
+            return {
+                fps: 25,
+                qrbox: function (viewfinderWidth, viewfinderHeight) {
+                    var size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8);
+                    size = Math.max(220, Math.min(size, 380));
+                    return { width: size, height: size };
+                },
+                aspectRatio: 1.0,
+                disableFlip: false,
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            };
+        }
+
+        async function stopScannerSafely() {
+            if (!html5Qrcode) return;
+            try {
+                if (html5Qrcode.isScanning) await html5Qrcode.stop();
+            } catch (e) {}
+            try { await html5Qrcode.clear(); } catch (e) {}
+            html5Qrcode = null;
+        }
+
+        async function loadCameras() {
+            availableCameras = await Html5Qrcode.getCameras();
+            if (!availableCameras || !availableCameras.length) {
+                throw new Error('找不到可使用的鏡頭');
+            }
+            populateCameraSelect(availableCameras);
+            return availableCameras;
+        }
+
+        async function startScanner(cameraId) {
             if (scannerStarting) return;
             scannerStarting = true;
             retryBtn.style.display = 'none';
-            statusEl.innerText = "正在啟動前鏡頭...";
+            statusEl.innerText = '正在啟動相機...';
 
             try {
-                if (html5Qrcode) {
-                    try { await html5Qrcode.stop(); } catch (e) {}
-                    try { await html5Qrcode.clear(); } catch (e) {}
-                }
+                await stopScannerSafely();
+                var cameras = availableCameras.length ? availableCameras : await loadCameras();
+                var selectedId = cameraId || chooseInitialCamera(cameras);
+                cameraSelect.value = selectedId;
+                localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
 
-                html5Qrcode = new Html5Qrcode("reader");
-                const config = {
-                    fps: 25,
-                    qrbox: function(viewfinderWidth, viewfinderHeight) {
-                        const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.80);
-                        return { width: size, height: size };
-                    },
-                    aspectRatio: 1.0,
-                    disableFlip: false,
-                    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-                };
-
-                try {
-                    await html5Qrcode.start(
-                        { facingMode: { exact: "user" } },
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                } catch (frontErr) {
-                    const cameras = await Html5Qrcode.getCameras();
-                    if (!cameras || !cameras.length) throw frontErr;
-
-                    const frontCamera = cameras.find(function(c) {
-                        const label = String(c.label || '').toLowerCase();
-                        return label.includes('front') || label.includes('user') ||
-                               label.includes('前') || label.includes('facetime');
-                    }) || cameras[0];
-
-                    await html5Qrcode.start(
-                        frontCamera.id,
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                }
-
-                statusEl.innerText = "請將員工 QR Code 對準前鏡頭";
+                html5Qrcode = new Html5Qrcode('reader', { verbose: false });
+                await html5Qrcode.start(
+                    selectedId,
+                    scannerConfig(),
+                    onScanSuccess,
+                    onScanFailure
+                );
+                statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+                busy = false;
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "⚠️ 無法啟動前鏡頭，請確認相機權限後重試";
+                statusEl.innerText = '⚠️ 無法啟動相機，請重新選擇鏡頭或確認相機權限';
                 retryBtn.style.display = 'inline-block';
             } finally {
                 scannerStarting = false;
             }
+        }
+
+        async function changeCamera() {
+            var selectedId = cameraSelect.value;
+            if (!selectedId) return;
+            localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
+            busy = true;
+            await startScanner(selectedId);
         }
 
         function parseScan(rawText) {
@@ -940,7 +1031,7 @@
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
             document.getElementById('overtimeOutModalOverlay').classList.remove('show');
-            statusEl.innerText = '請將員工 QR Code 對準前鏡頭';
+            statusEl.innerText = '請將員工 QR Code 對準鏡頭';
             busy = false;
         }
 
