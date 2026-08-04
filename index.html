@@ -434,6 +434,8 @@
         let lastScanAt = 0;
         let availableCameras = [];
         let scannerStarting = false;
+let barcodeDetector = ('BarcodeDetector' in window) ? new BarcodeDetector({formats:['qr_code']}) : null;
+let detectorRunning = false;
 
         function onScanSuccess(decodedText) {
             var now = Date.now();
@@ -511,7 +513,25 @@
             };
         }
 
-        async function stopScannerSafely() {
+        
+        async function startBarcodeLoop(){
+            if(!barcodeDetector || detectorRunning || !html5Qrcode) return;
+            detectorRunning=true;
+            const video=document.querySelector('#reader video');
+            async function loop(){
+                if(!detectorRunning||!video){requestAnimationFrame(loop);return;}
+                try{
+                    const codes=await barcodeDetector.detect(video);
+                    if(codes&&codes.length&&codes[0].rawValue){
+                        onScanSuccess(codes[0].rawValue);
+                    }
+                }catch(e){}
+                requestAnimationFrame(loop);
+            }
+            requestAnimationFrame(loop);
+        }
+
+async function stopScannerSafely() {
             if (!html5Qrcode) return;
             try {
                 if (html5Qrcode.isScanning) await html5Qrcode.stop();
@@ -551,6 +571,7 @@
                 );
                 statusEl.innerText = '請將員工 QR Code 對準鏡頭';
                 busy = false;
+                startBarcodeLoop();
             } catch (err) {
                 console.error(err);
                 statusEl.innerText = '⚠️ 無法啟動相機，請重新選擇鏡頭或確認相機權限';
