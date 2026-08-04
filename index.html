@@ -466,7 +466,20 @@
         function checkGateCode() {
             var input = document.getElementById('gateInput').value.trim();
             var errorEl = document.getElementById('gateError');
-           if (input === ACCESS_CODE) {
+          if (input === ACCESS_CODE) {
+
+    successAudio.currentTime = 0;
+
+    successAudio.play()
+        .then(function () {
+            successAudio.pause();
+            successAudio.currentTime = 0;
+        })
+        .catch(function (e) {
+            console.log("unlock failed", e);
+        });
+
+    localStorage.setItem(GATE_STORAGE_KEY, '1');
 
     unlockAudio();
 
