@@ -242,6 +242,47 @@
             resize: vertical;
         }
 
+
+        /* ====== 掃描後立即顯示的處理畫面 ====== */
+        #processingOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 16, 40, 0.96);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1200;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #processingOverlay.show { display: flex; }
+        .processing-box {
+            width: 100%;
+            max-width: 320px;
+            background: white;
+            color: #333;
+            border-radius: 14px;
+            padding: 30px 24px;
+            text-align: center;
+            border-top: 5px solid #2e7d32;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .processing-icon {
+            font-size: 52px;
+            margin-bottom: 10px;
+        }
+        .processing-title {
+            color: #1b2a5e;
+            font-size: 23px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .processing-text {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
         /* ====== 進站授權碼遮罩 ====== */
         #accessGateOverlay {
             position: fixed;
@@ -307,6 +348,14 @@
 
     <a id="leaveRequestBtn" href="https://hs2026work-ai.github.io/punch-card/check-leave-form.html">📝 請假申請 Xin nghi phep</a>
 
+    <div id="processingOverlay">
+        <div class="processing-box">
+            <div class="processing-icon">✅</div>
+            <div class="processing-title">QR 已讀取</div>
+            <div class="processing-text">資料處理中，請稍候…<br>QR 可以移開了</div>
+        </div>
+    </div>
+
     <div class="overlay" id="resultOverlay">
         <div class="card" id="resultCard"></div>
     </div>
@@ -346,6 +395,20 @@
     </button>
 
 </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="reasonConfirmOverlay">
+        <div class="modal-box">
+            <div class="modal-icon">⚠️</div>
+            <div class="modal-title">確認送出</div>
+            <div class="modal-text">異常原因：<br><b id="reasonConfirmLabel"></b></div>
+            <div class="modal-text small-note">請確認選擇是否正確，送出後會寫入打卡紀錄。</div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="closeReasonConfirm()">← 返回</button>
+                <button type="button" class="modal-btn confirm" id="reasonConfirmBtn" onclick="confirmSubmitReason()">確定送出</button>
+            </div>
         </div>
     </div>
 
@@ -461,29 +524,19 @@ let barcodeDetector = ('BarcodeDetector' in window) ? new BarcodeDetector({forma
 let detectorRunning = false;
 
         function onScanSuccess(decodedText) {
+            var now = Date.now();
 
-    var now = Date.now();
+            if (busy || now - lastScanAt < 500) return;
 
-    if (busy || now - lastScanAt < 500) return;
+            lastScanAt = now;
+            busy = true;
 
-    lastScanAt = now;
-    busy = true;
+            // QR 一辨識到就立即播放提示音並顯示處理畫面
+            playSuccessSound();
+            showProcessingOverlay();
+            statusEl.innerText = "✅ QR 已讀取，資料處理中...";
 
-    // 掃到立即播放成功音
-    playSuccessSound();
-
-    statusEl.innerText = "✅ 已掃描，資料處理中...";
-
-    handleScan(decodedText);
-
-}
-
-        function onScanFailure() {}
-
-        function cameraLabel(camera, index) {
-            var label = String(camera.label || '').trim();
-            if (label) return label;
-            return '鏡頭 ' + (index + 1);
+            handleScan(decodedText);
         }
 
         function isFrontCameraLabel(label) {
@@ -665,6 +718,7 @@ async function stopScannerSafely() {
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
+                    hideProcessingOverlay();
                     if (data.status === 'need_reason') {
                         showReasonCard(data);
                     } else {
@@ -672,6 +726,7 @@ async function stopScannerSafely() {
                     }
                 })
                 .catch(function (err) {
+                    hideProcessingOverlay();
                     showResultCard({ status: 'error', message: '連線失敗，請確認網路後重新掃描' });
                 });
         }
@@ -687,6 +742,14 @@ async function stopScannerSafely() {
             try { errorAudio.currentTime = 0; errorAudio.play(); } catch (e) {}
         }
 
+        function showProcessingOverlay() {
+            document.getElementById('processingOverlay').classList.add('show');
+        }
+
+        function hideProcessingOverlay() {
+            document.getElementById('processingOverlay').classList.remove('show');
+        }
+
         var currentEarlyReason = '';
         var currentEarlyMinTime = '05:00';
         var currentEarlyMaxTime = '07:59';
@@ -700,15 +763,18 @@ async function stopScannerSafely() {
         }
 
         function showResultCard(data) {
+            hideProcessingOverlay();
             document.getElementById('reasonOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
             document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+            document.getElementById('reasonConfirmOverlay').classList.remove('show');
+            hideProcessingOverlay();
 
             var success = data.status === 'success';
             var isMakeup = success && data.isMakeup === true;
 
-            if (success) { playSuccessSound(); } else { playErrorSound(); }
+            if (!success) { playErrorSound(); }
 
             var card = document.getElementById('resultCard');
             var icon = success ? '✅' : '⚠️';
@@ -778,12 +844,9 @@ async function stopScannerSafely() {
     ? "請將員工 QR Code 對準鏡頭"
     : "請重新掃描";
 
-            var n = countdownSeconds;
-            setTimeout(function(){
-
-    closeAllOverlaysAndResume();
-
-},1000);
+            setTimeout(function () {
+                closeAllOverlaysAndResume();
+            }, countdownSeconds * 1000);
         }
 
         function markAfternoonNoBreak(reasonVal) {
@@ -974,6 +1037,7 @@ async function stopScannerSafely() {
         var makeupLabels = {};
 
         function showReasonCard(data) {
+            hideProcessingOverlay();
             currentId = data.id;
             currentTs = data.ts;
 
@@ -1035,14 +1099,40 @@ async function stopScannerSafely() {
 
         function submitReason() {
             var reason = document.getElementById('reasonSelect').value;
-            var btn = document.getElementById('reasonSubmitBtn');
+            if (!reason) {
+                alert('請先選擇異常原因');
+                return;
+            }
+
+            document.getElementById('reasonConfirmLabel').innerText = reason;
+            document.getElementById('reasonConfirmOverlay').classList.add('show');
+        }
+
+        function closeReasonConfirm() {
+            document.getElementById('reasonConfirmOverlay').classList.remove('show');
+        }
+
+        function confirmSubmitReason() {
+            var reason = document.getElementById('reasonSelect').value;
+            var btn = document.getElementById('reasonConfirmBtn');
+
+            if (!reason) {
+                closeReasonConfirm();
+                alert('請先選擇異常原因');
+                return;
+            }
+
             btn.disabled = true;
             btn.innerText = '送出中...';
+            showProcessingOverlay();
+
             callApi({ id: currentId, ts: currentTs, reason: reason });
+
             setTimeout(function () {
+                closeReasonConfirm();
                 btn.disabled = false;
-                btn.innerText = '送出';
-            }, 1500);
+                btn.innerText = '確定送出';
+            }, 800);
         }
 
         function openMakeupModal() {
@@ -1098,9 +1188,11 @@ async function stopScannerSafely() {
         function closeAllOverlaysAndResume() {
             document.getElementById('resultOverlay').classList.remove('show');
             document.getElementById('reasonOverlay').classList.remove('show');
+            document.getElementById('reasonConfirmOverlay').classList.remove('show');
             document.getElementById('makeupModalOverlay').classList.remove('show');
             document.getElementById('earlyModalOverlay').classList.remove('show');
             document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+            hideProcessingOverlay();
             statusEl.innerText = '請將員工 QR Code 對準鏡頭';
             busy = false;
         }
