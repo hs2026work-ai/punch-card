@@ -349,7 +349,53 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="makeupModalOverlay">
+<div class="modal-overlay" id="reasonConfirmOverlay">
+
+    <div class="modal-box">
+
+        <div class="modal-icon">⚠️</div>
+
+        <div class="modal-title">
+
+            確認送出
+
+        </div>
+
+        <div class="modal-text">
+
+            原因：
+
+            <br>
+
+            <b id="reasonConfirmLabel"></b>
+
+        </div>
+
+        <div class="modal-actions">
+
+            <button
+                class="modal-btn cancel"
+                onclick="closeReasonConfirm()">
+
+                ← 返回
+
+            </button>
+
+            <button
+                class="modal-btn confirm"
+                id="reasonConfirmBtn"
+                onclick="confirmSubmitReason()">
+
+                確定送出
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>    
+<div class="modal-overlay" id="makeupModalOverlay">
         <div class="modal-box">
             <div class="modal-icon" id="makeupModalIcon">🍡</div>
             <div class="modal-title">確認回報</div>
@@ -783,7 +829,7 @@ async function stopScannerSafely() {
 
     closeAllOverlaysAndResume();
 
-},1000);
+},countdownSeconds * 1000);
         }
 
         function markAfternoonNoBreak(reasonVal) {
@@ -1033,18 +1079,57 @@ async function stopScannerSafely() {
             statusEl.innerText = '請選擇打卡異常原因';
         }
 
-        function submitReason() {
-            var reason = document.getElementById('reasonSelect').value;
-            var btn = document.getElementById('reasonSubmitBtn');
-            btn.disabled = true;
-            btn.innerText = '送出中...';
-            callApi({ id: currentId, ts: currentTs, reason: reason });
-            setTimeout(function () {
-                btn.disabled = false;
-                btn.innerText = '送出';
-            }, 1500);
-        }
+function submitReason() {
 
+    var reason = document.getElementById('reasonSelect').value;
+
+    if (!reason) {
+        alert("請先選擇異常原因");
+        return;
+    }
+
+    document.getElementById("reasonConfirmLabel").innerText = reason;
+
+    document
+        .getElementById("reasonConfirmOverlay")
+        .classList
+        .add("show");
+
+}
+function closeReasonConfirm(){
+
+    document
+        .getElementById("reasonConfirmOverlay")
+        .classList
+        .remove("show");
+
+}
+
+function confirmSubmitReason(){
+
+    var reason = document.getElementById("reasonSelect").value;
+
+    var btn = document.getElementById("reasonConfirmBtn");
+
+    btn.disabled = true;
+    btn.innerText = "送出中...";
+
+    callApi({
+        id: currentId,
+        ts: currentTs,
+        reason: reason
+    });
+
+    setTimeout(function(){
+
+        btn.disabled = false;
+        btn.innerText = "確定送出";
+
+        closeReasonConfirm();
+
+    },1500);
+
+}
         function openMakeupModal() {
             var val = document.getElementById('makeupSelect').value;
 
@@ -1095,15 +1180,20 @@ async function stopScannerSafely() {
             }, 1500);
         }
 
-        function closeAllOverlaysAndResume() {
-            document.getElementById('resultOverlay').classList.remove('show');
-            document.getElementById('reasonOverlay').classList.remove('show');
-            document.getElementById('makeupModalOverlay').classList.remove('show');
-            document.getElementById('earlyModalOverlay').classList.remove('show');
-            document.getElementById('overtimeOutModalOverlay').classList.remove('show');
-            statusEl.innerText = '請將員工 QR Code 對準鏡頭';
-            busy = false;
-        }
+       function closeAllOverlaysAndResume() {
+    document.getElementById('resultOverlay').classList.remove('show');
+    document.getElementById('reasonOverlay').classList.remove('show');
+
+    // 新增這一行
+    document.getElementById('reasonConfirmOverlay').classList.remove('show');
+
+    document.getElementById('makeupModalOverlay').classList.remove('show');
+    document.getElementById('earlyModalOverlay').classList.remove('show');
+    document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+
+    statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+    busy = false;
+}
 
         if (localStorage.getItem(GATE_STORAGE_KEY) === '1') {
             document.getElementById('accessGateOverlay').classList.add('hidden');
