@@ -776,23 +776,33 @@ async function stopScannerSafely() {
             var minTime = parseHHMM(currentEarlyMinTime, '05:00');
             var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
             var selectedHour = Number(hourSelect.value);
-            var startMinute = selectedHour === minTime.hour ? minTime.minute : 0;
-            var endMinute = selectedHour === maxTime.hour ? maxTime.minute : 59;
             var wanted = preferredMinute === undefined ? Number(minuteSelect.value) : Number(preferredMinute);
 
             minuteSelect.innerHTML = '';
-            for (var minute = startMinute; minute <= endMinute; minute++) {
-                var opt = document.createElement('option');
-                opt.value = pad2(minute);
-                opt.textContent = pad2(minute) + ' 分';
-                minuteSelect.appendChild(opt);
-            }
 
-            if (wanted >= startMinute && wanted <= endMinute) {
-                minuteSelect.value = pad2(wanted);
-            } else {
-                minuteSelect.value = pad2(startMinute);
-            }
+            [0, 30].forEach(function (minute) {
+                var total = selectedHour * 60 + minute;
+                var minTotal = minTime.hour * 60 + minTime.minute;
+                var maxTotal = maxTime.hour * 60 + maxTime.minute;
+
+                if (total >= minTotal && total <= maxTotal) {
+                    var opt = document.createElement('option');
+                    opt.value = pad2(minute);
+                    opt.textContent = pad2(minute) + ' 分';
+                    minuteSelect.appendChild(opt);
+                }
+            });
+
+            if (!minuteSelect.options.length) return;
+
+            var preferredValue = wanted >= 30 ? '30' : '00';
+            var hasPreferred = Array.from(minuteSelect.options).some(function (opt) {
+                return opt.value === preferredValue;
+            });
+
+            minuteSelect.value = hasPreferred
+                ? preferredValue
+                : minuteSelect.options[0].value;
         }
 
         function prepareEarlyTimeSelects() {
@@ -869,15 +879,15 @@ async function stopScannerSafely() {
                 hourSelect.appendChild(hourOpt);
             }
 
-            for (var minute = 0; minute <= 59; minute++) {
+            [0, 30].forEach(function (minute) {
                 var minuteOpt = document.createElement('option');
                 minuteOpt.value = pad2(minute);
                 minuteOpt.textContent = pad2(minute) + ' 分';
                 minuteSelect.appendChild(minuteOpt);
-            }
+            });
 
             hourSelect.value = pad2(now.getHours());
-            minuteSelect.value = pad2(now.getMinutes());
+            minuteSelect.value = now.getMinutes() >= 30 ? '30' : '00';
         }
 
         function openOvertimeOutModal() {
