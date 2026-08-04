@@ -466,8 +466,11 @@
         function checkGateCode() {
             var input = document.getElementById('gateInput').value.trim();
             var errorEl = document.getElementById('gateError');
-            if (input === ACCESS_CODE) {
-                localStorage.setItem(GATE_STORAGE_KEY, '1');
+           if (input === ACCESS_CODE) {
+
+    unlockAudio();
+
+    localStorage.setItem(GATE_STORAGE_KEY, '1');
                 document.getElementById('accessGateOverlay').classList.add('hidden');
                 errorEl.innerText = '';
                 startScanner();
@@ -723,15 +726,34 @@ async function stopScannerSafely() {
         }
 
         var successAudio = new Audio('sounds/soundssuccess.wav');
-        var errorAudio = new Audio('sounds/soundserror.wav');
+var errorAudio = new Audio('sounds/soundserror.wav');
+
+successAudio.preload = "auto";
+errorAudio.preload = "auto";
+
+successAudio.load();
+errorAudio.load();
 
         function playSuccessSound() {
             try { successAudio.currentTime = 0; successAudio.play(); } catch (e) {}
         }
 
-        function playErrorSound() {
-            try { errorAudio.currentTime = 0; errorAudio.play(); } catch (e) {}
-        }
+        function unlockAudio() {
+
+    Promise.all([
+        successAudio.play().catch(function () {}),
+        errorAudio.play().catch(function () {})
+    ]).finally(function () {
+
+        successAudio.pause();
+        errorAudio.pause();
+
+        successAudio.currentTime = 0;
+        errorAudio.currentTime = 0;
+
+    });
+
+}
 
         var currentEarlyReason = '';
         var currentEarlyMinTime = '05:00';
