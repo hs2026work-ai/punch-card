@@ -715,9 +715,15 @@ async function stopScannerSafely() {
         }
 
         function callApi(params) {
-            var url = currentBase + '?mode=api'
-                + '&id=' + encodeURIComponent(params.id)
-                + '&ts=' + encodeURIComponent(params.ts)
+    var safeTs = Number(params.ts);
+
+    if (!Number.isFinite(safeTs) || safeTs <= 0) {
+        safeTs = Date.now();
+    }
+
+    var url = currentBase + '?mode=api'
+        + '&id=' + encodeURIComponent(params.id)
+        + '&ts=' + encodeURIComponent(safeTs)
                 + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '')
                 + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '')
                 + (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
@@ -1055,8 +1061,19 @@ errorAudio.load();
         var makeupLabels = {};
 
         function showReasonCard(data) {
-            currentId = data.id;
-            currentTs = data.ts;
+    currentId = data.id || currentId;
+
+    // 後端有回傳有效時間才更新，避免空值覆蓋原本掃描時間
+    var returnedTs = Number(data.ts);
+
+    if (Number.isFinite(returnedTs) && returnedTs > 0) {
+        currentTs = returnedTs;
+    }
+
+    // 最後防呆
+    if (!Number.isFinite(Number(currentTs)) || Number(currentTs) <= 0) {
+        currentTs = Date.now();
+    }
 
             document.getElementById('reasonInfo').innerHTML =
                 '員工編號：' + data.id + '<br>姓名：' + data.name;
