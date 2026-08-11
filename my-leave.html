@@ -78,6 +78,18 @@
             text-align: center;
             margin-top: 12px;
         }
+        /* 家庭照顧假 / 生理假：純文字列，跟上面方塊風格區分開，不做成方塊 */
+        .extra-info {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed #ddd;
+        }
+        .extra-info-item {
+            font-size: 13px;
+            color: #555;
+            text-align: center;
+            line-height: 1.9;
+        }
         .record-item {
             border-bottom: 1px solid #eee;
             padding: 12px 0;
@@ -161,6 +173,12 @@
                     <div class="detail" id="sickDetail"></div>
                 </div>
             </div>
+
+            <div class="extra-info" id="extraInfo" style="display:none;">
+                <div class="extra-info-item" id="familyCareInfo"></div>
+                <div class="extra-info-item" id="menstrualInfo" style="display:none;"></div>
+            </div>
+
             <div class="special-note" id="specialCaseNote"></div>
         </div>
 
@@ -180,6 +198,12 @@
             var el = document.getElementById('errorMsg');
             el.style.display = 'block';
             el.innerText = message;
+        }
+
+        // 判斷是否為女性使用者（後端 gender 欄位，值為「女」）。
+        function isFemale(data) {
+            var g = String(data.gender || '').trim().toLowerCase();
+            return g === '女' || g === 'f' || g === 'female';
         }
 
         function renderSummary(data) {
@@ -206,6 +230,33 @@
             } else {
                 document.getElementById('quotaYear').innerText = '尚無資料';
             }
+
+            // 家庭照顧假／生理假：純文字顯示，不做成方塊
+            var extraInfoEl = document.getElementById('extraInfo');
+            var familyCareEl = document.getElementById('familyCareInfo');
+            var menstrualEl = document.getElementById('menstrualInfo');
+
+            if (data.familyCare) {
+                familyCareEl.innerText =
+                    '家庭照顧假已休：' + data.familyCare.used + ' 次（剩餘 ' + data.familyCare.remaining +
+                    ' 次 / 共 ' + data.familyCare.total + ' 次）';
+                familyCareEl.style.display = 'block';
+            } else {
+                familyCareEl.innerText = '';
+                familyCareEl.style.display = 'none';
+            }
+
+            if (isFemale(data) && data.menstrual) {
+                menstrualEl.innerText =
+                    '生理假已休：' + data.menstrual.used + ' 次（剩餘 ' + data.menstrual.remaining +
+                    ' 次 / 共 ' + data.menstrual.total + ' 次）';
+                menstrualEl.style.display = 'block';
+            } else {
+                menstrualEl.innerText = '';
+                menstrualEl.style.display = 'none';
+            }
+
+            extraInfoEl.style.display = (data.familyCare || (isFemale(data) && data.menstrual)) ? 'block' : 'none';
 
             var listEl = document.getElementById('recordList');
             listEl.innerHTML = '';
