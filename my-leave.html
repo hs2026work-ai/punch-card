@@ -61,6 +61,20 @@
             font-size: 13px;
             color: #888;
             margin-bottom: 6px;
+            min-height: 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .quota-box .label-zh {
+            font-size: 14px;
+            color: #555;
+            font-weight: bold;
+        }
+        .quota-box .label-vi {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
         }
         .quota-box .remaining {
             font-size: 22px;
@@ -71,12 +85,6 @@
             font-size: 12px;
             color: #999;
             margin-top: 4px;
-        }
-        .special-note {
-            font-size: 13px;
-            color: #666;
-            text-align: center;
-            margin-top: 12px;
         }
         /* 家庭照顧假 / 生理假：純文字列，跟上面方塊風格區分開，不做成方塊 */
         .extra-info {
@@ -89,6 +97,21 @@
             color: #555;
             text-align: center;
             line-height: 1.9;
+        }
+        .policy-note {
+            margin-top: 14px;
+            padding: 10px 12px;
+            background: #f9f6f1;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #999;
+            text-align: left;
+            line-height: 1.8;
+        }
+        .policy-note-title {
+            color: #888;
+            font-weight: bold;
+            margin-bottom: 2px;
         }
         .record-item {
             border-bottom: 1px solid #eee;
@@ -155,20 +178,20 @@
 
         <div class="card">
             <div class="empName" id="empNameDisplay"></div>
-            <h2>📊 假勤額度Hạn mức nghỉ phép（<span id="quotaYear"></span> 年度）</h2>
+            <h2>📊 假勤額度 Hạn mức nghỉ phép<br>（<span id="quotaYear"></span> 年度）</h2>
             <div class="quota-grid">
                 <div class="quota-box">
-                    <div class="label">特別假 Nghi phep dac biet</div>
+                    <div class="label"><span class="label-zh">特別假</span><span class="label-vi">Nghi phep dac biet</span></div>
                     <div class="remaining" id="specialRemaining">-</div>
                     <div class="detail" id="specialDetail"></div>
                 </div>
                 <div class="quota-box">
-                    <div class="label">事假 Xin nghi </div>
+                    <div class="label"><span class="label-zh">事假</span><span class="label-vi">Xin nghi</span></div>
                     <div class="remaining" id="personalRemaining">-</div>
                     <div class="detail" id="personalDetail"></div>
                 </div>
                 <div class="quota-box">
-                    <div class="label">病假 Nghi om</div>
+                    <div class="label"><span class="label-zh">病假</span><span class="label-vi">Nghi om</span></div>
                     <div class="remaining" id="sickRemaining">-</div>
                     <div class="detail" id="sickDetail"></div>
                 </div>
@@ -179,7 +202,11 @@
                 <div class="extra-info-item" id="menstrualInfo" style="display:none;"></div>
             </div>
 
-            <div class="special-note" id="specialCaseNote"></div>
+            <div class="policy-note">
+                <div class="policy-note-title">備註：</div>
+                <div>・家庭照顧假併入事假計算</div>
+                <div>・生理假前 3 日不列入病假天數，第 4 日起列入病假天數</div>
+            </div>
         </div>
 
         <div class="card">
@@ -224,9 +251,6 @@
                 document.getElementById('sickRemaining').innerText = data.quota.sick.remaining;
                 document.getElementById('sickDetail').innerText =
                     '已休 ' + data.quota.sick.used + ' / 共 ' + data.quota.sick.total;
-
-                document.getElementById('specialCaseNote').innerText =
-                    '請特殊狀況已休：' + data.quota.specialCaseUsed + ' 天';
             } else {
                 document.getElementById('quotaYear').innerText = '尚無資料';
             }
