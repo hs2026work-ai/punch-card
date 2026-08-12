@@ -1,22 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>宏升工業社 - 請假申請</title>
-    <title>宏升工業社 - 個人假勤</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<style>
-body {
-@@ -33,433 +30,282 @@
-background: white;
-border-radius: 12px;
-border-top: 4px solid #e0752c;
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>宏升工業社 - 請假申請</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body {
@@ -43,525 +33,433 @@ border-top: 4px solid #e0752c;
             background: white;
             border-radius: 12px;
             border-top: 4px solid #e0752c;
-padding: 24px 20px;
-            padding: 20px 18px;
-box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-max-width: 420px;
+            padding: 24px 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             max-width: 420px;
-margin: 0 auto;
-            margin: 0 auto 16px;
-}
+            margin: 0 auto;
         }
-label {
-display: block;
-font-size: 14px;
-@@ -30,37 +48,27 @@
-select, input, textarea {
-width: 100%;
-padding: 12px;
-        .card h2 {
-font-size: 16px;
-            font-size: 16px;
-border-radius: 8px;
-border: 1px solid #ccc;
-box-sizing: border-box;
-font-family: inherit;
-background: #fff;
-color: #333;
-            color: #1b2a5e;
-            margin: 0 0 14px;
-}
-        }
-textarea { min-height: 70px; resize: vertical; }
-
-#empInfo {
-font-size: 14px;
-color: #1b5e20;
-        .empName {
-            text-align: center;
-            font-size: 15px;
+        label {
+            display: block;
+            font-size: 14px;
             color: #666;
-margin-bottom: 16px;
-}
+            margin: 16px 0 6px;
+        }
+        label:first-of-type { margin-top: 0; }
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-family: inherit;
+            background: #fff;
+            color: #333;
+        }
+        textarea { min-height: 70px; resize: vertical; }
+
+        #empInfo {
+            font-size: 14px;
+            color: #1b5e20;
             margin-bottom: 16px;
         }
 
-.datetime-row {
-display: flex;
-        .quota-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-gap: 10px;
-            gap: 10px;
-align-items: stretch;
-}
-        }
-.datetime-row input[type="date"] {
-flex: 1.4;
-min-width: 0;
-@@ -75,12 +83,8 @@
-flex: 1;
-min-width: 0;
-padding: 12px 7px;
-        .quota-box {
-            background: #f5f7fa;
-            border-radius: 10px;
-            padding: 12px 6px;
-text-align: center;
-}
-            text-align: center;
-        }
-
-#leaveHoursSummary {
-margin-top: 10px;
-@@ -89,138 +93,69 @@
-background: #eef3fa;
-color: #1b2a5e;
-font-size: 15px;
-        .quota-box .label {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 6px;
-        }
-        .quota-box .remaining {
-            font-size: 22px;
-font-weight: bold;
-            font-weight: bold;
-line-height: 1.5;
-            color: #e0752c;
-}
-        }
-#leaveHoursSummary.error {
-background: #fff0f0;
-color: #c62828;
-        .quota-box .detail {
-            font-size: 12px;
-            color: #999;
-            margin-top: 4px;
-}
-        }
-#leaveHoursSummary.valid {
-background: #edf7ee;
-color: #1b5e20;
-        /* 家庭照顧假 / 生理假：純文字列，跟上面方塊風格區分開，不做成方塊 */
-        .extra-info {
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 1px dashed #ddd;
-}
-        }
-
-.hint {
-font-size: 17px;
-font-weight: bold;
-color: #4f6d92;
-margin-top: 16px;
-line-height: 1.6;
-        .extra-info-item {
-            font-size: 13px;
-            color: #555;
-            text-align: center;
-            line-height: 1.9;
-}
-        }
-button {
-width: 100%;
-padding: 15px 0;
-font-size: 17px;
-        .record-item {
-            border-bottom: 1px solid #eee;
-            padding: 12px 0;
-        }
-        .record-item:last-child { border-bottom: none; }
-        .record-top {
+        .datetime-row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 15px;
-font-weight: bold;
-            font-weight: bold;
-background: #e0752c;
-color: white;
-border: none;
-border-radius: 8px;
-margin-top: 22px;
-cursor: pointer;
+            gap: 10px;
+            align-items: stretch;
+        }
+        .datetime-row input[type="date"] {
+            flex: 1.4;
+            min-width: 0;
+        }
+        .time-selects {
+            display: flex;
+            flex: 1;
+            gap: 6px;
+            min-width: 0;
+        }
+        .time-selects select {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 7px;
+            text-align: center;
+        }
+
+        #leaveHoursSummary {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #eef3fa;
             color: #1b2a5e;
-}
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 1.5;
         }
-button:disabled { background: #ccc; color: #666; }
-#statusMsg {
-text-align: center;
-font-size: 14px;
-margin-top: 14px;
-min-height: 20px;
-white-space: pre-line;
-        .record-date {
-            font-size: 13px;
-            color: #666;
-            margin-top: 4px;
-}
-        .record-status {
-            font-size: 13px;
-            margin-top: 6px;
+        #leaveHoursSummary.error {
+            background: #fff0f0;
+            color: #c62828;
         }
-        .record-days {
-            font-size: 13px;
-            color: #999;
-}
-#statusMsg.error { color: #c62828; }
-#statusMsg.success { color: #1b5e20; }
-#loading {
-text-align: center;
-padding: 60px 0;
-color: #888;
-}
+        #leaveHoursSummary.valid {
+            background: #edf7ee;
+            color: #1b5e20;
+        }
+
+        .hint {
+            font-size: 17px;
+            font-weight: bold;
+            color: #4f6d92;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+        button {
+            width: 100%;
+            padding: 15px 0;
+            font-size: 17px;
+            font-weight: bold;
+            background: #e0752c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 22px;
+            cursor: pointer;
+        }
+        button:disabled { background: #ccc; color: #666; }
+        #statusMsg {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 14px;
+            min-height: 20px;
+            white-space: pre-line;
+        }
+        #statusMsg.error { color: #c62828; }
+        #statusMsg.success { color: #1b5e20; }
         #loading {
             text-align: center;
             padding: 60px 0;
             color: #888;
         }
 
-@media (max-width: 380px) {
-.datetime-row { gap: 7px; }
-.time-selects { gap: 4px; }
-.time-selects select { padding-left: 4px; padding-right: 4px; }
-        #errorMsg {
-            text-align: center;
-            color: #c62828;
-            font-size: 15px;
-            max-width: 420px;
-            margin: 40px auto;
-            padding: 0 16px;
-            line-height: 1.8;
-}
-        .no-record {
-            text-align: center;
-            color: #999;
-            font-size: 14px;
-            padding: 20px 0;
-        }
-        .stage-row {
-    display: flex;
-    gap: 14px;
-    font-size: 13px;
-    color: #555;
-    margin-top: 8px;
-}
-</style>
+        @media (max-width: 380px) {
+            .datetime-row { gap: 7px; }
+            .time-selects { gap: 4px; }
+            .time-selects select { padding-left: 4px; padding-right: 4px; }
         }
     </style>
 </head>
 <body>
-<div id="loading">載入中，請稍候...</div>
-    <div id="errorMsg" style="display:none;"></div>
     <div id="loading">載入中，請稍候...</div>
 
-<div id="formWrap" style="display:none;">
-    <div id="mainWrap" style="display:none;">
-<h1>宏升工業社</h1>
+    <div id="formWrap" style="display:none;">
         <h1>宏升工業社</h1>
-<div class="subtitle">請假申請</div>
-<div style="text-align:center;font-size:11px;color:#aaa;margin-top:-14px;margin-bottom:16px;">LINE 版・午休扣除 v4</div>
-        <div class="subtitle">個人假勤查詢</div>
+        <div class="subtitle">請假申請</div>
+        <div style="text-align:center;font-size:11px;color:#aaa;margin-top:-14px;margin-bottom:16px;">LINE 版・午休扣除 v4</div>
 
-<div class="card">
         <div class="card">
-<div id="empInfo"></div>
+            <div id="empInfo"></div>
 
-<label for="leaveType">假別 Loại nghỉ phép</label>
-@@ -239,14 +174,7 @@ <h1>宏升工業社</h1>
-<div class="time-selects">
-<select id="startHour" aria-label="開始小時"></select>
-<select id="startMinute" aria-label="開始分鐘"></select>
-            <div class="empName" id="empNameDisplay"></div>
-            <h2>📊 假勤額度Hạn mức nghỉ phép（<span id="quotaYear"></span> 年度）</h2>
-            <div class="quota-grid">
-                <div class="quota-box">
-                    <div class="label">特別假 Nghi phep dac biet</div>
-                    <div class="remaining" id="specialRemaining">-</div>
-                    <div class="detail" id="specialDetail"></div>
-</div>
+            <label for="leaveType">假別 Loại nghỉ phép</label>
+            <select id="leaveType">
+                <option value="特別假">特別假 Phép đặc biệt</option>
+                <option value="事假">事假 Nghỉ việc riêng</option>
+                <option value="病假">病假 Nghỉ ốm</option>
+                <option value="公假">公假 Nghỉ phép công vụ</option>
+                <option value="家庭照顧假">家庭照顧假 Nghỉ chăm sóc gia đình</option>
+                <option value="生理假">生理假 Nghỉ kinh nguyệt</option>
+            </select>
+
+            <label for="startDate">開始日期時間 Ngày giờ bắt đầu</label>
+            <div class="datetime-row">
+                <input type="date" id="startDate">
+                <div class="time-selects">
+                    <select id="startHour" aria-label="開始小時"></select>
+                    <select id="startMinute" aria-label="開始分鐘"></select>
                 </div>
-</div>
-
-<label for="endDate">結束日期時間 Ngày giờ kết thúc</label>
-@@ -255,17 +183,8 @@ <h2>📊 假勤額度Hạn mức nghỉ phép（<span id="quotaYear"></span> 年
-<div class="time-selects">
-<select id="endHour" aria-label="結束小時"></select>
-<select id="endMinute" aria-label="結束分鐘"></select>
-                <div class="quota-box">
-                    <div class="label">事假 Xin nghi </div>
-                    <div class="remaining" id="personalRemaining">-</div>
-                    <div class="detail" id="personalDetail"></div>
-</div>
-                <div class="quota-box">
-                    <div class="label">病假 Nghi om</div>
-                    <div class="remaining" id="sickRemaining">-</div>
-                    <div class="detail" id="sickDetail"></div>
-</div>
-</div>
             </div>
 
-<div id="leaveHoursSummary">請假時數：請先選擇完整的開始與結束時間</div>
-
-@@ -274,26 +193,18 @@ <h2>📊 假勤額度Hạn mức nghỉ phép（<span id="quotaYear"></span> 年
-<div class="hint">
-♦️ 產假／產檢假／陪產假及陪產檢／婚假／喪假，請洽人事，不要用這個表單申請。
-Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ／nghỉ cưới／nghỉ tang, vui lòng liên hệ nhân sự, không dùng biểu mẫu này để xin.
-            <div class="extra-info" id="extraInfo" style="display:none;">
-                <div class="extra-info-item" id="familyCareInfo"></div>
-                <div class="extra-info-item" id="menstrualInfo" style="display:none;"></div>
-</div>
-        </div>
+            <label for="endDate">結束日期時間 Ngày giờ kết thúc</label>
+            <div class="datetime-row">
+                <input type="date" id="endDate">
+                <div class="time-selects">
+                    <select id="endHour" aria-label="結束小時"></select>
+                    <select id="endMinute" aria-label="結束分鐘"></select>
+                </div>
             </div>
 
-<button id="submitBtn" onclick="submitForm()">送出申請</button>
-<div id="statusMsg"></div>
-        <div class="card">
-            <h2>📋 請假紀錄 bản ghi</h2>
-            <div id="recordList"></div>
-</div>
-</div>
+            <div id="leaveHoursSummary">請假時數：請先選擇完整的開始與結束時間</div>
+
+            <label for="reason">事由 Lý do</label>
+            <textarea id="reason" placeholder="簡述請假原因 / Mô tả ngắn lý do xin nghỉ"></textarea>
+            <div class="hint">
+                ♦️ 產假／產檢假／陪產假及陪產檢／婚假／喪假，請洽人事，不要用這個表單申請。
+                Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ／nghỉ cưới／nghỉ tang, vui lòng liên hệ nhân sự, không dùng biểu mẫu này để xin.
+            </div>
+
+            <button id="submitBtn" onclick="submitForm()">送出申請</button>
+            <div id="statusMsg"></div>
         </div>
     </div>
 
-<script>
     <script>
-console.log("宏升請假表單：LINE 版・午休扣除 v4");
+        console.log("宏升請假表單：LINE 版・午休扣除 v4");
 
-// ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
-var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
-        var LIFF_ID = "2010875519-HfpuEzI8";
+        // ⚠️ 請把下面這行換成你「請假紀錄」Apps Script 專案部署後的 Web App 網址（結尾是 /exec）
         var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
-var LIFF_ID = "2010875519-TBex5DN7";
-var currentUserId = null;
-@@ -327,49 +238,31 @@ <h2>📋 請假紀錄 bản ghi</h2>
-['startDate', 'startHour', 'startMinute', 'endDate', 'endHour', 'endMinute'].forEach(function (id) {
-document.getElementById(id).addEventListener('change', updateLeaveHoursSummary);
-});
-        function showError(message) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('mainWrap').style.display = 'none';
-            var el = document.getElementById('errorMsg');
-            el.style.display = 'block';
-            el.innerText = message;
-}
+        var LIFF_ID = "2010875519-TBex5DN7";
+        var currentUserId = null;
+        var currentLeaveHours = null;
+
+        function pad2(value) {
+            return String(value).padStart(2, '0');
         }
 
-function formatDate(value) {
-if (!value) return '';
-var parts = value.split('-');
-return parts[0] + '/' + parts[1] + '/' + parts[2];
-        // 判斷是否為女性使用者（後端 gender 欄位，值為「女」）。
-        function isFemale(data) {
-            var g = String(data.gender || '').trim().toLowerCase();
-            return g === '女' || g === 'f' || g === 'female';
-}
+        function initializeTimeSelect(hourId, minuteId) {
+            var hourSelect = document.getElementById(hourId);
+            var minuteSelect = document.getElementById(minuteId);
+
+            hourSelect.innerHTML = '<option value="">時</option>';
+            for (var h = 0; h <= 23; h++) {
+                var hour = pad2(h);
+                hourSelect.innerHTML += '<option value="' + hour + '">' + hour + ' 時</option>';
+            }
+
+            minuteSelect.innerHTML = '<option value="">分</option>';
+            for (var m = 0; m <= 55; m += 5) {
+                var minute = pad2(m);
+                minuteSelect.innerHTML += '<option value="' + minute + '">' + minute + ' 分</option>';
+            }
         }
 
-function buildTime(hourId, minuteId) {
-var hour = document.getElementById(hourId).value;
-var minute = document.getElementById(minuteId).value;
-if (!hour || !minute) return '';
-return hour + ':' + minute;
-}
-        function renderSummary(data) {
-            document.getElementById('empNameDisplay').innerText =
-                data.empName + '（' + data.empId + '）';
+        function initializeTimeSelectors() {
+            initializeTimeSelect('startHour', 'startMinute');
+            initializeTimeSelect('endHour', 'endMinute');
 
-function formatTime(value) {
-if (!value) return '0000';
-return value.replace(':', '');
-}
-            if (data.quota) {
-                document.getElementById('quotaYear').innerText = data.quota.year;
-
-function buildLocalDateTime(dateValue, timeValue) {
-if (!dateValue || !timeValue) return null;
-var dateParts = dateValue.split('-');
-var timeParts = timeValue.split(':');
-if (dateParts.length !== 3 || timeParts.length !== 2) return null;
-                document.getElementById('specialRemaining').innerText = data.quota.special.remaining;
-                document.getElementById('specialDetail').innerText =
-                    '已休 ' + data.quota.special.used + ' / 共 ' + data.quota.special.total;
-
-return new Date(
-Number(dateParts[0]),
-@@ -402,17 +295,9 @@ <h2>📋 請假紀錄 bản ghi</h2>
-if (overlapEnd > overlapStart) {
-total += Math.round((overlapEnd - overlapStart) / 60000);
-}
-                document.getElementById('personalRemaining').innerText = data.quota.personal.remaining;
-                document.getElementById('personalDetail').innerText =
-                    '已休 ' + data.quota.personal.used + ' / 共 ' + data.quota.personal.total;
-
-cursor.setDate(cursor.getDate() + 1);
-                document.getElementById('sickRemaining').innerText = data.quota.sick.remaining;
-                document.getElementById('sickDetail').innerText =
-                    '已休 ' + data.quota.sick.used + ' / 共 ' + data.quota.sick.total;
-            } else {
-                document.getElementById('quotaYear').innerText = '尚無資料';
-}
-            }
-
-return total;
-}
-@@ -425,20 +310,7 @@ <h2>📋 請假紀錄 bản ghi</h2>
-
-if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal) {
-return { complete: false, valid: false };
-            // 家庭照顧假／生理假：純文字顯示，不做成方塊
-            var extraInfoEl = document.getElementById('extraInfo');
-            var familyCareEl = document.getElementById('familyCareInfo');
-            var menstrualEl = document.getElementById('menstrualInfo');
-
-            if (data.familyCare) {
-                familyCareEl.innerText =
-                    '家庭照顧假已休：' + data.familyCare.used + ' 次（剩餘 ' + data.familyCare.remaining +
-                    ' 次 / 共 ' + data.familyCare.total + ' 次）';
-                familyCareEl.style.display = 'block';
-            } else {
-                familyCareEl.innerText = '';
-                familyCareEl.style.display = 'none';
-}
-            }
-
-var start = buildLocalDateTime(startDateVal, startTimeVal);
-var end = buildLocalDateTime(endDateVal, endTimeVal);
-@@ -463,15 +335,7 @@ <h2>📋 請假紀錄 bản ghi</h2>
-lunchMinutes: lunchMinutes,
-message: '所選時間全部位於 12:00～13:00 午休時段，不計請假時數'
-};
-            if (isFemale(data) && data.menstrual) {
-                menstrualEl.innerText =
-                    '生理假已休：' + data.menstrual.used + ' 次（剩餘 ' + data.menstrual.remaining +
-                    ' 次 / 共 ' + data.menstrual.total + ' 次）';
-                menstrualEl.style.display = 'block';
-            } else {
-                menstrualEl.innerText = '';
-                menstrualEl.style.display = 'none';
-}
-            }
-
-if (leaveMinutes % 30 !== 0) {
-return {
-@@ -483,43 +347,7 @@ <h2>📋 請假紀錄 bản ghi</h2>
-hours: leaveMinutes / 60,
-message: '扣除午休後，請假時數須以 0.5 小時為一個單位'
-};
-            extraInfoEl.style.display = (data.familyCare || (isFemale(data) && data.menstrual)) ? 'block' : 'none';
-
-            var listEl = document.getElementById('recordList');
-            listEl.innerHTML = '';
-
-            if (!data.records || data.records.length === 0) {
-                listEl.innerHTML = '<div class="no-record">目前尚無請假紀錄</div>';
-            } else {
-              function formatDays(val) {
-    if (val === null || val === undefined || val === '') return val;
-    return Math.round(Number(val) * 100) / 100; // 四捨五入到小數點後兩位
-}
-
-function stageIcon(val) {
-    if (val === '已核准' || val === '免審') return '✅';
-    if (val === '已拒絕') return '❌';
-    if (val === '審核中') return '🟡';
-    return '⚪';
-}
-
-data.records.forEach(function (rec) {
-    var div = document.createElement('div');
-    div.className = 'record-item';
-    div.innerHTML =
-        '<div class="record-top"><span>' + rec.leaveType + '</span>' +
-        '<span class="record-days">' + formatDays(rec.days) + ' 天</span></div>' +
-        '<div class="record-date">' + rec.startDate + ' ~ ' + rec.endDate + '</div>' +
-        '<div class="record-status">' + rec.status + '</div>' +
-        '<div class="stage-row">' +
-            '<span>' + stageIcon(rec.foreman) + ' 廠長</span>' +
-            '<span>' + stageIcon(rec.manager) + ' 主管</span>' +
-            '<span>' + stageIcon(rec.sectionChief) + ' 課長</span>' +
-            '<span>' + stageIcon(rec.hr) + ' 人事</span>' +
-        '</div>';
-    listEl.appendChild(div);
-});
-}
-            }
-
-return {
-complete: true,
-@@ -529,9 +357,7 @@ <h2>📋 請假紀錄 bản ghi</h2>
-minutes: leaveMinutes,
-hours: leaveMinutes / 60
-};
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('mainWrap').style.display = 'block';
-}
+            ['startDate', 'startHour', 'startMinute', 'endDate', 'endHour', 'endMinute'].forEach(function (id) {
+                document.getElementById(id).addEventListener('change', updateLeaveHoursSummary);
+            });
         }
 
-function updateLeaveHoursSummary() {
-var summary = document.getElementById('leaveHoursSummary');
-@@ -605,56 +431,52 @@ <h2>📋 請假紀錄 bản ghi</h2>
-btn.innerText = '送出中...';
-showStatus('', false);
+        function formatDate(value) {
+            if (!value) return '';
+            var parts = value.split('-');
+            return parts[0] + '/' + parts[1] + '/' + parts[2];
+        }
 
-        function loadSummary(userId) {
-fetch(APPS_SCRIPT_URL, {
-method: 'POST',
-headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        function buildTime(hourId, minuteId) {
+            var hour = document.getElementById(hourId).value;
+            var minute = document.getElementById(minuteId).value;
+            if (!hour || !minute) return '';
+            return hour + ':' + minute;
+        }
+
+        function formatTime(value) {
+            if (!value) return '0000';
+            return value.replace(':', '');
+        }
+
+        function buildLocalDateTime(dateValue, timeValue) {
+            if (!dateValue || !timeValue) return null;
+            var dateParts = dateValue.split('-');
+            var timeParts = timeValue.split(':');
+            if (dateParts.length !== 3 || timeParts.length !== 2) return null;
+
+            return new Date(
+                Number(dateParts[0]),
+                Number(dateParts[1]) - 1,
+                Number(dateParts[2]),
+                Number(timeParts[0]),
+                Number(timeParts[1]),
+                0,
+                0
+            );
+        }
+
+        function formatHours(hours) {
+            return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+        }
+
+        // 計算請假區間與每天 12:00～13:00 午休的重疊分鐘數。
+        // 只扣除實際落在請假區間內的午休時間，例如 11:30～12:30 只扣 30 分鐘。
+        function calculateLunchBreakMinutes(start, end) {
+            var total = 0;
+            var cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+            var lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+
+            while (cursor.getTime() <= lastDay.getTime()) {
+                var lunchStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0, 0);
+                var lunchEnd = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 13, 0, 0, 0);
+                var overlapStart = Math.max(start.getTime(), lunchStart.getTime());
+                var overlapEnd = Math.min(end.getTime(), lunchEnd.getTime());
+
+                if (overlapEnd > overlapStart) {
+                    total += Math.round((overlapEnd - overlapStart) / 60000);
+                }
+
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            return total;
+        }
+
+        function calculateLeaveDuration() {
+            var startDateVal = document.getElementById('startDate').value;
+            var startTimeVal = buildTime('startHour', 'startMinute');
+            var endDateVal = document.getElementById('endDate').value;
+            var endTimeVal = buildTime('endHour', 'endMinute');
+
+            if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal) {
+                return { complete: false, valid: false };
+            }
+
+            var start = buildLocalDateTime(startDateVal, startTimeVal);
+            var end = buildLocalDateTime(endDateVal, endTimeVal);
+            var totalMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+            if (totalMinutes <= 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    message: '結束日期時間必須晚於開始日期時間'
+                };
+            }
+
+            var lunchMinutes = calculateLunchBreakMinutes(start, end);
+            var leaveMinutes = totalMinutes - lunchMinutes;
+
+            if (leaveMinutes <= 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    message: '所選時間全部位於 12:00～13:00 午休時段，不計請假時數'
+                };
+            }
+
+            if (leaveMinutes % 30 !== 0) {
+                return {
+                    complete: true,
+                    valid: false,
+                    totalMinutes: totalMinutes,
+                    lunchMinutes: lunchMinutes,
+                    minutes: leaveMinutes,
+                    hours: leaveMinutes / 60,
+                    message: '扣除午休後，請假時數須以 0.5 小時為一個單位'
+                };
+            }
+
+            return {
+                complete: true,
+                valid: true,
+                totalMinutes: totalMinutes,
+                lunchMinutes: lunchMinutes,
+                minutes: leaveMinutes,
+                hours: leaveMinutes / 60
+            };
+        }
+
+        function updateLeaveHoursSummary() {
+            var summary = document.getElementById('leaveHoursSummary');
+            var result = calculateLeaveDuration();
+            summary.className = '';
+            currentLeaveHours = null;
+
+            if (!result.complete) {
+                summary.textContent = '請假時數：請先選擇完整的開始與結束時間';
+                return;
+            }
+
+            if (!result.valid) {
+                summary.className = 'error';
+                if (typeof result.hours === 'number' && result.hours > 0) {
+                    summary.textContent = '目前區間：' + result.hours.toFixed(2) + ' 小時；⚠️ ' + result.message;
+                } else {
+                    summary.textContent = '⚠️ ' + result.message;
+                }
+                return;
+            }
+
+            currentLeaveHours = result.hours;
+            summary.className = 'valid';
+            summary.textContent = '已選擇請假時數：' + formatHours(result.hours) + ' 小時' +
+                (result.lunchMinutes > 0
+                    ? '（已扣除 12:00～13:00 午休 ' + formatHours(result.lunchMinutes / 60) + ' 小時）'
+                    : '');
+        }
+
+        function showStatus(message, isError) {
+            var el = document.getElementById('statusMsg');
+            el.textContent = message;
+            el.className = isError ? 'error' : 'success';
+        }
+
+        function submitForm() {
+            var leaveType = document.getElementById('leaveType').value;
+            var startDateVal = document.getElementById('startDate').value;
+            var startTimeVal = buildTime('startHour', 'startMinute');
+            var endDateVal = document.getElementById('endDate').value;
+            var endTimeVal = buildTime('endHour', 'endMinute');
+            var reason = document.getElementById('reason').value.trim();
+
+            if (!startDateVal || !startTimeVal || !endDateVal || !endTimeVal || !reason) {
+                showStatus('請把「開始日期時間」「結束日期時間」「事由」都填寫完整', true);
+                return;
+            }
+
+            var duration = calculateLeaveDuration();
+            if (!duration.valid) {
+                showStatus(duration.message || '請確認請假日期時間', true);
+                updateLeaveHoursSummary();
+                return;
+            }
+
+            var payload = {
+                action: 'submitLeave',
+                userId: currentUserId,
+                leaveType: leaveType,
+                startDate: formatDate(startDateVal),
+                startTime: formatTime(startTimeVal),
+                endDate: formatDate(endDateVal),
+                endTime: formatTime(endTimeVal),
+                leaveHours: duration.hours,
+                reason: reason
+            };
+
+            var btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = '送出中...';
+            showStatus('', false);
+
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-body: JSON.stringify(payload)
-                body: JSON.stringify({ action: 'getMyLeaveSummary', userId: userId })
-})
-.then(function (r) { return r.json(); })
-.then(function (data) {
-if (data.success) {
+                body: JSON.stringify(payload)
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.success) {
-showStatus('✅ ' + data.message + '（共 ' + formatHours(duration.hours) + ' 小時）', false);
-setTimeout(function () {
-if (window.liff && liff.isInClient()) {
-liff.closeWindow();
-}
-}, 1800);
-                        renderSummary(data);
-} else {
+                        showStatus('✅ ' + data.message + '（共 ' + formatHours(duration.hours) + ' 小時）', false);
+                        setTimeout(function () {
+                            if (window.liff && liff.isInClient()) {
+                                liff.closeWindow();
+                            }
+                        }, 1800);
                     } else {
-showStatus('⚠️ ' + data.message, true);
-btn.disabled = false;
-btn.innerText = '送出申請';
-                        showError('⚠️ ' + data.message);
-}
-})
-.catch(function () {
+                        showStatus('⚠️ ' + data.message, true);
+                        btn.disabled = false;
+                        btn.innerText = '送出申請';
                     }
                 })
                 .catch(function () {
-showStatus('⚠️ 連線失敗，請確認網路後再試一次', true);
-btn.disabled = false;
-btn.innerText = '送出申請';
-                    showError('⚠️ 連線失敗，請確認網路連線後重新開啟一次');
-});
-}
+                    showStatus('⚠️ 連線失敗，請確認網路後再試一次', true);
+                    btn.disabled = false;
+                    btn.innerText = '送出申請';
                 });
         }
 
-initializeTimeSelectors();
+        initializeTimeSelectors();
 
-liff.init({ liffId: LIFF_ID })
-.then(function () {
-if (!liff.isLoggedIn()) {
-@@ -470,12 +316,10 @@ <h1>宏升工業社</h1>
-})
-.then(function (profile) {
-if (!profile) return;
         liff.init({ liffId: LIFF_ID })
             .then(function () {
                 if (!liff.isLoggedIn()) {
@@ -572,18 +470,12 @@ if (!profile) return;
             })
             .then(function (profile) {
                 if (!profile) return;
-currentUserId = profile.userId;
-document.getElementById('loading').style.display = 'none';
-document.getElementById('formWrap').style.display = 'block';
-                loadSummary(profile.userId);
-})
+                currentUserId = profile.userId;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('formWrap').style.display = 'block';
             })
-.catch(function () {
-document.getElementById('loading').innerText = '載入失敗，請關閉重新從 LINE 對話開啟一次';
-            .catch(function (err) {
-                showError('載入失敗，請關閉重新從 LINE 對話開啟一次');
-});
-</script>
+            .catch(function () {
+                document.getElementById('loading').innerText = '載入失敗，請關閉重新從 LINE 對話開啟一次';
             });
     </script>
 </body>
