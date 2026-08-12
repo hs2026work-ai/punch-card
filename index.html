@@ -1,276 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宏升工業社 - 打卡專用掃描機</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-    body {
-        font-family: "Microsoft JhengHei", Arial, sans-serif;
-        font-size: 18px;
-        background: #1b2a5e;
-        color: white;
-        margin: 0;
-        padding: 20px 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        box-sizing: border-box;
-    }
-    h1 { margin-bottom: 5px; font-size: 26px; text-align: center; }
+body {
+font-family: "Microsoft JhengHei", Arial, sans-serif;
+background: #1b2a5e;
+color: white;
+margin: 0;
+padding: 20px 10px;
+display: flex;
+flex-direction: column;
+align-items: center;
+min-height: 100vh;
+box-sizing: border-box;
+}
+h1 { margin-bottom: 5px; font-size: 24px; text-align: center; }
 
-    #clock {
-        font-size: 20px;
-        font-weight: bold;
-        color: #ffd700;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 8px 16px;
-        border-radius: 20px;
-        margin: 10px 0 15px 0;
-        letter-spacing: 1px;
-    }
-    #reader {
-        width: 100%;
-        max-width: 450px;
-        background: white;
-        padding: 10px;
-        border-radius: 12px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    }
-    .camera-control {
-        width: 100%;
-        max-width: 450px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 12px;
-        padding: 10px 12px;
-        background: rgba(255,255,255,0.12);
-        border-radius: 10px;
-        box-sizing: border-box;
-    }
-    .camera-control label {
-        white-space: nowrap;
-        font-size: 18px;
-        font-weight: bold;
-    }
-    .camera-control select {
-        flex: 1;
-        min-width: 0;
-        padding: 10px;
-        font-size: 18px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        background: white;
-        color: #333;
-        box-sizing: border-box;
-    }
-    .status {
-        margin-top: 15px;
-        font-size: 18px;
-        color: #00ffcc;
-        text-align: center;
-        min-height: 22px;
-        padding: 0 10px;
-    }
-    #retryBtn {
-        display: none;
-        margin-top: 12px;
-        padding: 10px 20px;
-        font-size: 17px;
-        background: transparent;
-        color: #ffcc80;
-        border: 1px solid #ffcc80;
-        border-radius: 8px;
-        cursor: pointer;
-    }
+#clock {
+font-size: 18px;
+font-weight: bold;
+color: #ffd700;
+background: rgba(255, 255, 255, 0.1);
+padding: 8px 16px;
+border-radius: 20px;
+margin: 10px 0 15px 0;
+letter-spacing: 1px;
+}
+#reader {
+width: 100%;
+max-width: 450px;
+background: white;
+padding: 10px;
+border-radius: 12px;
+box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+.camera-control {
+width: 100%;
+max-width: 450px;
+display: flex;
+align-items: center;
+gap: 10px;
+margin: 0 0 12px;
+padding: 10px 12px;
+background: rgba(255,255,255,0.12);
+border-radius: 10px;
+box-sizing: border-box;
+}
+.camera-control label {
+white-space: nowrap;
+font-size: 16px;
+font-weight: bold;
+}
+.camera-control select {
+flex: 1;
+min-width: 0;
+padding: 10px;
+font-size: 16px;
+border-radius: 8px;
+border: 1px solid #ccc;
+background: white;
+color: #333;
+box-sizing: border-box;
+}
+.status {
+margin-top: 15px;
+font-size: 16px;
+color: #00ffcc;
+text-align: center;
+min-height: 22px;
+padding: 0 10px;
+}
+#retryBtn {
+display: none;
+margin-top: 12px;
+padding: 10px 20px;
+font-size: 15px;
+background: transparent;
+color: #ffcc80;
+border: 1px solid #ffcc80;
+border-radius: 8px;
+cursor: pointer;
+}
 
-    #leaveRequestBtn {
-        width: 100%;
-        max-width: 450px;
-        margin-top: 20px;
-        padding: 15px 0;
-        font-size: 19px;
-        font-weight: bold;
-        background: #e0752c;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        text-decoration: none;
-        text-align: center;
-        box-sizing: border-box;
-        display: block;
-    }
-    #leaveRequestBtn:active { background: #c9631f; }
+#leaveRequestBtn {
+width: 100%;
+max-width: 450px;
+margin-top: 20px;
+padding: 15px 0;
+font-size: 17px;
+font-weight: bold;
+background: #e0752c;
+color: white;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+text-decoration: none;
+text-align: center;
+box-sizing: border-box;
+display: block;
+}
+#leaveRequestBtn:active { background: #c9631f; }
 
-    .overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(10, 16, 40, 0.92);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 999;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-    .overlay.show { display: flex; }
-    .card {
-        background: white;
-        color: #333;
-        width: 100%;
-        max-width: 340px;
-        border-radius: 14px;
-        padding: 30px 24px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        border-top: 5px solid #e0752c;
-    }
-    .card h2 {
-        margin: 0 0 14px;
-        font-size: 26px;
-    }
-    .card .line { font-size: 20px; line-height: 1.8; margin: 0; }
-    .card .cheer { margin-top: 14px; font-size: 22px; font-weight: bold; color: #e0752c; }
-    .card .countdown { margin-top: 16px; font-size: 16px; color: #999; }
+.overlay {
+position: fixed;
+top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(10, 16, 40, 0.92);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 999;
+padding: 20px;
+box-sizing: border-box;
+}
+.overlay.show { display: flex; }
+.card {
+background: white;
+color: #333;
+width: 100%;
+max-width: 340px;
+border-radius: 14px;
+padding: 30px 24px;
+text-align: center;
+box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+border-top: 5px solid #e0752c;
+}
+.card h2 {
+margin: 0 0 14px;
+font-size: 24px;
+}
+.card .line { font-size: 18px; line-height: 1.8; margin: 0; }
+.card .cheer { margin-top: 14px; font-size: 20px; font-weight: bold; color: #e0752c; }
+.card .countdown { margin-top: 16px; font-size: 14px; color: #999; }
 
-    .makeup-section {
-        text-align: left;
-        background: #f5f5f5;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 14px;
-        margin-top: 10px;
-    }
-    .makeup-label { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
-    select#makeupSelect {
-        width: 100%; padding: 12px; font-size: 19px; margin-bottom: 10px;
-        border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
-    }
-    .makeup-btn {
-        width: 100%; padding: 14px 0; font-size: 20px; margin-top: 4px;
-        background: #2e7d32; color: white; border: none; border-radius: 8px;
-        font-weight: bold; cursor: pointer;
-    }
-    .makeup-btn:active { background: #1b5e20; }
+.makeup-section {
+text-align: left;
+background: #f5f5f5;
+border: 1px solid #ddd;
+border-radius: 8px;
+padding: 14px;
+margin-top: 10px;
+}
+.makeup-label { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px; }
+select#makeupSelect {
+width: 100%; padding: 12px; font-size: 17px; margin-bottom: 10px;
+border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
+}
+.makeup-btn {
+width: 100%; padding: 14px 0; font-size: 18px; margin-top: 4px;
+background: #2e7d32; color: white; border: none; border-radius: 8px;
+font-weight: bold; cursor: pointer;
+}
+.makeup-btn:active { background: #1b5e20; }
 
-    .mark-afternoon-btn {
-        width: 100%; padding: 13px 0; font-size: 18px; margin-top: 14px;
-        background: #8d6e63; color: white; border: none; border-radius: 8px;
-        font-weight: bold; cursor: pointer;
-    }
-    .mark-afternoon-btn:active { background: #5d4037; }
+.mark-afternoon-btn {
+width: 100%; padding: 13px 0; font-size: 16px; margin-top: 14px;
+background: #8d6e63; color: white; border: none; border-radius: 8px;
+font-weight: bold; cursor: pointer;
+}
+.mark-afternoon-btn:active { background: #5d4037; }
 
-    .mark-early-btn {
-        width: 100%; padding: 13px 0; font-size: 18px; margin-top: 14px;
-        background: #3a5a9c; color: white; border: none; border-radius: 8px;
-        font-weight: bold; cursor: pointer;
-    }
-    .mark-early-btn:active { background: #24406f; }
+.mark-early-btn {
+width: 100%; padding: 13px 0; font-size: 16px; margin-top: 14px;
+background: #3a5a9c; color: white; border: none; border-radius: 8px;
+font-weight: bold; cursor: pointer;
+}
+.mark-early-btn:active { background: #24406f; }
 
-    .divider { color: #999; font-size: 15px; margin: 16px 0 8px; }
-    select#reasonSelect {
-        width: 100%; padding: 13px; font-size: 20px; margin: 6px 0 14px;
-        border-radius: 8px; border: 1px solid #ccc;
-    }
-    .submit-btn {
-        width: 100%; padding: 15px 0; font-size: 20px;
-        background: #e0752c; color: white; border: none; border-radius: 8px;
-        font-weight: bold; cursor: pointer;
-    }
-    .submit-btn:disabled, .makeup-btn:disabled { background: #ccc; color: #666; }
+.divider { color: #999; font-size: 13px; margin: 16px 0 8px; }
+select#reasonSelect {
+width: 100%; padding: 13px; font-size: 18px; margin: 6px 0 14px;
+border-radius: 8px; border: 1px solid #ccc;
+}
+.submit-btn {
+width: 100%; padding: 15px 0; font-size: 18px;
+background: #e0752c; color: white; border: none; border-radius: 8px;
+font-weight: bold; cursor: pointer;
+}
+.submit-btn:disabled, .makeup-btn:disabled { background: #ccc; color: #666; }
 
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.55); display: none; align-items: center;
-        justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box;
-    }
-    .modal-overlay.show { display: flex; }
-    .modal-box {
-        background: white; border-radius: 14px; max-width: 300px; width: 100%;
-        padding: 26px 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); text-align: center;
-    }
-    .modal-icon { font-size: 44px; margin-bottom: 8px; }
-    .modal-title { font-size: 23px; font-weight: bold; color: #1b2a5e; margin-bottom: 12px; }
-    .modal-text { font-size: 19px; line-height: 1.6; color: #333; }
-    .modal-text.small-note { font-size: 17px; color: #888; margin-top: 8px; }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-    .modal-btn { flex: 1; padding: 13px 0; font-size: 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-    .modal-btn.cancel { background: #e0e0e0; color: #555; }
-    .modal-btn.confirm { background: #2e7d32; color: white; }
-    .modal-btn.confirm:disabled { background: #ccc; color: #666; }
+.modal-overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.55); display: none; align-items: center;
+justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+background: white; border-radius: 14px; max-width: 300px; width: 100%;
+padding: 26px 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); text-align: center;
+}
+.modal-icon { font-size: 42px; margin-bottom: 8px; }
+.modal-title { font-size: 21px; font-weight: bold; color: #1b2a5e; margin-bottom: 12px; }
+.modal-text { font-size: 17px; line-height: 1.6; color: #333; }
+.modal-text.small-note { font-size: 15px; color: #888; margin-top: 8px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-btn { flex: 1; padding: 13px 0; font-size: 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+.modal-btn.cancel { background: #e0e0e0; color: #555; }
+.modal-btn.confirm { background: #2e7d32; color: white; }
+.modal-btn.confirm:disabled { background: #ccc; color: #666; }
 
-    .early-time-row {
-        display: flex; align-items: center; justify-content: center;
-        gap: 10px; margin: 14px 0 4px;
-    }
-    .early-time-row select {
-        width: 112px; padding: 12px 8px; font-size: 22px;
-        border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
-        text-align: center; background: white;
-    }
-    .early-time-colon {
-        font-size: 26px; font-weight: bold; color: #333;
-    }
+.early-time-row {
+display: flex; align-items: center; justify-content: center;
+gap: 10px; margin: 14px 0 4px;
+}
+.early-time-row select {
+width: 112px; padding: 12px 8px; font-size: 20px;
+border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
+text-align: center; background: white;
+}
+.early-time-colon {
+font-size: 24px; font-weight: bold; color: #333;
+}
 
-    .overtime-out-field {
-        text-align: left;
-        margin-top: 12px;
-    }
-    .overtime-out-field label {
-        display: block;
-        font-size: 17px;
-        font-weight: bold;
-        color: #555;
-        margin-bottom: 6px;
-    }
-    .overtime-out-field select,
-    .overtime-out-field textarea {
-        width: 100%;
-        padding: 12px;
-        font-size: 19px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-        font-family: inherit;
-        background: white;
-    }
-    .overtime-out-field textarea {
-        min-height: 76px;
-        resize: vertical;
-    }
+.overtime-out-field {
+text-align: left;
+margin-top: 12px;
+}
+.overtime-out-field label {
+display: block;
+font-size: 15px;
+font-weight: bold;
+color: #555;
+margin-bottom: 6px;
+}
+.overtime-out-field select,
+.overtime-out-field textarea {
+width: 100%;
+padding: 12px;
+font-size: 17px;
+border-radius: 8px;
+border: 1px solid #ccc;
+box-sizing: border-box;
+font-family: inherit;
+background: white;
+}
+.overtime-out-field textarea {
+min-height: 76px;
+resize: vertical;
+}
 
-    /* ====== 進站授權碼遮罩 ====== */
-    #accessGateOverlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: #1b2a5e;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-    #accessGateOverlay.hidden { display: none; }
-    .gate-box {
-        background: white;
-        color: #333;
-        width: 100%;
-        max-width: 320px;
-        border-radius: 14px;
-        padding: 30px 24px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-    .gate-box h2 { margin: 0 0 16px; font-size: 22px; color: #1b2a5e; }
-    .gate-box input {
-        width: 100%; padding: 14px; font-size: 20px; margin-bottom: 12px;
-        border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
-        text-align: center; letter-spacing: 2px;
-    }
-    .gate-box button {
-        width: 100%; padding: 14px 0; font-size: 19px; font-weight: bold;
-        background: #e0752c; color: white; border: none; border-radius: 8px;
-        cursor: pointer;
-    }
-    .gate-box .gate-error {
-        color: #c62828; font-size: 16px; margin-top: 10px; min-height: 18px;
-    }
+/* ====== 進站授權碼遮罩 ====== */
+#accessGateOverlay {
+position: fixed;
+top: 0; left: 0; width: 100%; height: 100%;
+background: #1b2a5e;
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 2000;
+padding: 20px;
+box-sizing: border-box;
+}
+#accessGateOverlay.hidden { display: none; }
+.gate-box {
+background: white;
+color: #333;
+width: 100%;
+max-width: 320px;
+border-radius: 14px;
+padding: 30px 24px;
+text-align: center;
+box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.gate-box h2 { margin: 0 0 16px; font-size: 20px; color: #1b2a5e; }
+.gate-box input {
+width: 100%; padding: 14px; font-size: 18px; margin-bottom: 12px;
+border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;
+text-align: center; letter-spacing: 2px;
+}
+.gate-box button {
+width: 100%; padding: 14px 0; font-size: 17px; font-weight: bold;
+background: #e0752c; color: white; border: none; border-radius: 8px;
+cursor: pointer;
+}
+.gate-box .gate-error {
+color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
+}
 </style>
+</head>
+<body>
+
+<div id="accessGateOverlay">
+<div class="gate-box">
+<h2>🔒 請輸入授權碼</h2>
+<input type="password" id="gateInput" placeholder="授權碼" inputmode="numeric">
+<button type="button" onclick="checkGateCode()">確認</button>
+<div class="gate-error" id="gateError"></div>
+</div>
+</div>
+
+<h1>宏升工業社 - 打卡掃描</h1>
+
+<div id="clock">正在讀取時間...</div>
+<div class="camera-control">
+<label for="cameraSelect">📷 使用鏡頭</label>
+<select id="cameraSelect" onchange="changeCamera()">
+<option value="">正在讀取鏡頭...</option>
+</select>
+</div>
+<div id="reader"></div>
+<div class="status" id="status-text">正在啟動相機...</div>
+<button id="retryBtn" onclick="startScanner();">重新啟動相機</button>
+
+<a id="leaveRequestBtn" href="https://hs2026work-ai.github.io/punch-card/check-leave-form.html">📝 請假申請 Xin nghi phep</a>
+
+<div class="overlay" id="resultOverlay">
+<div class="card" id="resultCard"></div>
+</div>
+
+<div class="overlay" id="reasonOverlay">
+<div class="card">
+<h2 style="color:#c62828;">⚠️ 非正常打卡時間</h2>
+<p class="line" id="reasonInfo"></p>
+<div class="makeup-section">
+<div class="makeup-label">補登</div>
+<select id="makeupSelect"></select>
+<button type="button" class="makeup-btn" onclick="openMakeupModal()">送出補登</button>
+</div>
+<div class="divider">或選擇其他原因</div>
+<select id="reasonSelect"></select>
+<div style="display:flex;gap:10px;margin-top:12px;">
+
+<button
+type="button"
+class="modal-btn cancel"
+style="flex:1;"
+onclick="closeAllOverlaysAndResume()">
+
+← 返回
+
+</button>
+
+<button
+type="button"
+class="submit-btn"
+id="reasonSubmitBtn"
+style="flex:1;"
+onclick="submitReason()">
+
+送出
+
+</button>
+
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="reasonConfirmOverlay">
+
+<div class="modal-box">
+
+<div class="modal-icon">⚠️</div>
+
+<div class="modal-title">
+
+確認送出
+
+</div>
+
+<div class="modal-text">
+
+原因：
+
+<br>
+
+<b id="reasonConfirmLabel"></b>
+
+</div>
+
+<div class="modal-actions">
+
+<button
+class="modal-btn cancel"
+onclick="closeReasonConfirm()">
+
+← 返回
+
+</button>
+
+<button
+class="modal-btn confirm"
+id="reasonConfirmBtn"
+onclick="confirmSubmitReason()">
+
+確定送出
+
+</button>
+
+</div>
+
+</div>
+
+</div>    
+<div class="modal-overlay" id="makeupModalOverlay">
+<div class="modal-box">
+<div class="modal-icon" id="makeupModalIcon">🍡</div>
+<div class="modal-title">確認回報</div>
+<div class="modal-text">你選的是：<b id="makeupModalLabel">中午未休息</b></div>
+<div class="modal-text small-note">確定送出嗎？</div>
+<div class="modal-actions">
+<button type="button" class="modal-btn cancel" onclick="closeMakeupModal()">取消</button>
+<button type="button" class="modal-btn confirm" id="makeupConfirmBtn" onclick="submitMakeup()">確定送出</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="earlyModalOverlay">
+<div class="modal-box">
+<div class="modal-icon">⏰</div>
+<div class="modal-title">提前上班</div>
+<div class="modal-text">請選擇你實際到班的時間</div>
+<div class="early-time-row">
+<select id="earlyHourSelect" aria-label="小時" onchange="refreshEarlyMinuteOptions()"></select>
+<span class="early-time-colon">:</span>
+<select id="earlyMinuteSelect" aria-label="分鐘"></select>
+</div>
+<div class="modal-actions">
+<button type="button" class="modal-btn cancel" onclick="closeEarlyModal()">取消</button>
+<button type="button" class="modal-btn confirm" id="earlyConfirmBtn" onclick="submitEarly()">確定送出</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="overtimeOutModalOverlay">
+<div class="modal-box">
+<div class="modal-icon">🚚</div>
+<div class="modal-title">加班（外出）</div>
+
+<div class="overtime-out-field">
+<label for="overtimeOutModeSelect">補登項目</label>
+<select id="overtimeOutModeSelect">
+<option value="提前上班">提前上班</option>
+<option value="晚回來">晚回來</option>
+</select>
+</div>
+
+<div class="overtime-out-field">
+<label>時間</label>
+<div class="early-time-row" style="margin-top:0;">
+<select id="overtimeOutHourSelect" aria-label="小時"></select>
+<span class="early-time-colon">:</span>
+<select id="overtimeOutMinuteSelect" aria-label="分鐘"></select>
+</div>
+</div>
+
+<div class="overtime-out-field">
+<label for="overtimeOutMemo">事由</label>
+<textarea id="overtimeOutMemo" maxlength="200" placeholder="例如：至客戶現場安裝、送貨"></textarea>
+</div>
+
+<div class="modal-actions">
+<button type="button" class="modal-btn cancel" onclick="closeOvertimeOutModal()">取消</button>
+<button type="button" class="modal-btn confirm" id="overtimeOutConfirmBtn" onclick="submitOvertimeOut()">確定送出</button>
+</div>
+</div>
+</div>
+
+<script>
+var ACCESS_CODE = '162103';
+var GATE_STORAGE_KEY = 'punchCardAccessGranted_v1';
+
+function checkGateCode() {
+var input = document.getElementById('gateInput').value.trim();
+var errorEl = document.getElementById('gateError');
+if (input === ACCESS_CODE) {
+
+successAudio.currentTime = 0;
+
+successAudio.play()
+.then(function () {
+successAudio.pause();
+successAudio.currentTime = 0;
+})
+.catch(function (e) {
+console.log("unlock failed", e);
+});
+
+localStorage.setItem(GATE_STORAGE_KEY, '1');
+
+unlockAudio();
+
+localStorage.setItem(GATE_STORAGE_KEY, '1');
+document.getElementById('accessGateOverlay').classList.add('hidden');
+errorEl.innerText = '';
+startScanner();
+} else {
+errorEl.innerText = '授權碼錯誤，請重新輸入';
+document.getElementById('gateInput').value = '';
+}
+}
+
+document.getElementById('gateInput').addEventListener('keydown', function (e) {
+if (e.key === 'Enter') checkGateCode();
+});
+
+var FALLBACK_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
+
+function updateClock() {
+const now = new Date();
+const timeString = now.toLocaleString('zh-TW', {
+year: 'numeric', month: '2-digit', day: '2-digit',
+hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+});
+document.getElementById('clock').innerText = '📅 ' + timeString;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+const statusEl = document.getElementById('status-text');
+const retryBtn = document.getElementById('retryBtn');
+const cameraSelect = document.getElementById('cameraSelect');
+const CAMERA_STORAGE_KEY = 'punchCardCameraId_v1';
+let html5Qrcode = null;
+let busy = false;
+let lastScanAt = 0;
+let availableCameras = [];
+let scannerStarting = false;
+let barcodeDetector = ('BarcodeDetector' in window) ? new BarcodeDetector({formats:['qr_code']}) : null;
+let detectorRunning = false;
+
+function onScanSuccess(decodedText) {
+
+var now = Date.now();
+
+if (busy || now - lastScanAt < 500) return;
+
+lastScanAt = now;
+busy = true;
+
+// 掃到立即播放成功音
+playSuccessSound();
+
+statusEl.innerText = "✅ 已掃描，資料處理中...";
+
+handleScan(decodedText);
+
+}
+
+function onScanFailure() {}
+
+function cameraLabel(camera, index) {
+var label = String(camera.label || '').trim();
+if (label) return label;
+return '鏡頭 ' + (index + 1);
+}
+
+function isFrontCameraLabel(label) {
+var text = String(label || '').toLowerCase();
+return text.includes('front') || text.includes('user') || text.includes('facetime') ||
+text.includes('前') || text.includes('正面');
+}
+
+function isBackCameraLabel(label) {
+var text = String(label || '').toLowerCase();
+return text.includes('back') || text.includes('rear') || text.includes('environment') ||
+text.includes('後') || text.includes('背面');
+}
+
+function populateCameraSelect(cameras) {
+cameraSelect.innerHTML = '';
+cameras.forEach(function (camera, index) {
+var opt = document.createElement('option');
+opt.value = camera.id;
+var label = cameraLabel(camera, index);
+if (isFrontCameraLabel(label)) label = '前鏡頭｜' + label;
+else if (isBackCameraLabel(label)) label = '後鏡頭｜' + label;
+opt.textContent = label;
+cameraSelect.appendChild(opt);
+});
+}
+
+function chooseInitialCamera(cameras) {
+var savedId = localStorage.getItem(CAMERA_STORAGE_KEY);
+if (savedId && cameras.some(function (c) { return c.id === savedId; })) {
+return savedId;
+}
+
+// iPad 第10代優先找 FaceTime／Front／前鏡頭；找不到才使用第一顆。
+var front = cameras.find(function (c) { return isFrontCameraLabel(c.label); });
+return front ? front.id : cameras[0].id;
+}
+
+function scannerConfig() {
+var usingFront = false;
+var selected = cameraSelect ? cameraSelect.selectedOptions[0] : null;
+if (selected) {
+usingFront = selected.text.toLowerCase().includes("前") ||
+selected.text.toLowerCase().includes("front") ||
+selected.text.toLowerCase().includes("facetime");
+}
+
+return {
+fps: 35,
+qrbox: {
+width: 150,
+height: 150
+},
+aspectRatio: 1.0,
+disableFlip: !usingFront,
+experimentalFeatures: {
+useBarCodeDetectorIfSupported: true
+}
+};
+}
+
+
+async function startBarcodeLoop(){
+if(!barcodeDetector || detectorRunning || !html5Qrcode) return;
+detectorRunning=true;
+const video=document.querySelector('#reader video');
+async function loop(){
+if(!detectorRunning||!video){requestAnimationFrame(loop);return;}
+try{
+const codes=await barcodeDetector.detect(video);
+if(codes&&codes.length&&codes[0].rawValue){
+onScanSuccess(codes[0].rawValue);
+}
+}catch(e){}
+requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+}
+
+async function stopScannerSafely() {
+if (!html5Qrcode) return;
+try {
+if (html5Qrcode.isScanning) await html5Qrcode.stop();
+} catch (e) {}
+try { await html5Qrcode.clear(); } catch (e) {}
+html5Qrcode = null;
+}
+
+async function loadCameras() {
+availableCameras = await Html5Qrcode.getCameras();
+if (!availableCameras || !availableCameras.length) {
+throw new Error('找不到可使用的鏡頭');
+}
+populateCameraSelect(availableCameras);
+return availableCameras;
+}
+
+async function startScanner(cameraId) {
+if (scannerStarting) return;
+scannerStarting = true;
+retryBtn.style.display = 'none';
+statusEl.innerText = '正在啟動相機...';
+
+try {
+await stopScannerSafely();
+var cameras = availableCameras.length ? availableCameras : await loadCameras();
+var selectedId = cameraId || chooseInitialCamera(cameras);
+cameraSelect.value = selectedId;
+localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
+
+html5Qrcode = new Html5Qrcode('reader', { verbose: false });
+await html5Qrcode.start(
+selectedId,
+scannerConfig(),
+onScanSuccess,
+onScanFailure
+);
+statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+busy = false;
+startBarcodeLoop();
+} catch (err) {
+console.error(err);
+statusEl.innerText = '⚠️ 無法啟動相機，請重新選擇鏡頭或確認相機權限';
+retryBtn.style.display = 'inline-block';
+} finally {
+scannerStarting = false;
+}
+}
+
+async function changeCamera() {
+var selectedId = cameraSelect.value;
+if (!selectedId) return;
+localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
+busy = true;
+await startScanner(selectedId);
+}
+
+function parseScan(rawText) {
+var text = rawText.trim();
+if (text.indexOf('http') === 0) {
+try {
+var u = new URL(text);
+var id = u.searchParams.get('id');
+var base = u.origin + u.pathname;
+return { base: base, id: id };
+} catch (e) {
+return { base: FALLBACK_SCRIPT_URL, id: text };
+}
+}
+return { base: FALLBACK_SCRIPT_URL, id: text };
+}
+
+var currentBase = FALLBACK_SCRIPT_URL;
+var currentId = null;
+var currentTs = null;
+
+function handleScan(rawText) {
+var parsed = parseScan(rawText);
+if (!parsed.id) {
+showResultCard({ status: 'error', message: '無法辨識這組 QR Code' });
+return;
+}
+currentBase = parsed.base;
+currentId = parsed.id;
+currentTs = Date.now();
+callApi({ id: currentId, ts: currentTs });
+}
+
+function callApi(params) {
+            var url = currentBase + '?mode=api'
+                + '&id=' + encodeURIComponent(params.id)
+                + '&ts=' + encodeURIComponent(params.ts)
+    var safeTs = Number(params.ts);
+
+    if (!Number.isFinite(safeTs) || safeTs <= 0) {
+        safeTs = Date.now();
+    }
+
+    var url = currentBase + '?mode=api'
+        + '&id=' + encodeURIComponent(params.id)
+        + '&ts=' + encodeURIComponent(safeTs)
++ (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '')
++ (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '')
++ (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
++ (params.overtimeOutTime ? '&overtimeOutTime=' + encodeURIComponent(params.overtimeOutTime) : '')
++ (params.overtimeOutMemo ? '&overtimeOutMemo=' + encodeURIComponent(params.overtimeOutMemo) : '');
+
+fetch(url)
+.then(function (r) { return r.json(); })
+.then(function (data) {
+if (data.status === 'need_reason') {
+showReasonCard(data);
+} else {
+showResultCard(data);
+}
+})
+.catch(function (err) {
+showResultCard({ status: 'error', message: '連線失敗，請確認網路後重新掃描' });
+});
+}
+
+var successAudio = new Audio('sounds/soundssuccess.wav');
+var errorAudio = new Audio('sounds/soundserror.wav');
+
+successAudio.preload = "auto";
+errorAudio.preload = "auto";
+
+successAudio.load();
+errorAudio.load();
+
+function playSuccessSound() {
+try { successAudio.currentTime = 0; successAudio.play(); } catch (e) {}
+}
+
+function unlockAudio() {
+
+Promise.all([
+successAudio.play().catch(function () {}),
+errorAudio.play().catch(function () {})
+]).finally(function () {
+
+successAudio.pause();
+errorAudio.pause();
+
+successAudio.currentTime = 0;
+errorAudio.currentTime = 0;
+
+});
+
+}
+
+var currentEarlyReason = '';
+var currentEarlyMinTime = '05:00';
+var currentEarlyMaxTime = '07:59';
+var currentEarlyDefaultTime = '07:00';
+var currentNormalCheckInTime = '08:00';
+var currentOvertimeOutReason = '';
+
+function formatHours(value) {
+var n = Number(value || 0);
+return Number.isInteger(n) ? String(n) : String(n);
+}
+
+function showResultCard(data) {
+document.getElementById('reasonOverlay').classList.remove('show');
+document.getElementById('makeupModalOverlay').classList.remove('show');
+document.getElementById('earlyModalOverlay').classList.remove('show');
+document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+
+var success = data.status === 'success';
+var isMakeup = success && data.isMakeup === true;
+
+if (success) { playSuccessSound(); } else { playErrorSound(); }
+
+var card = document.getElementById('resultCard');
+var icon = success ? '✅' : '⚠️';
+var titleColor = success ? '#1b2a5e' : '#c62828';
+var successTitle = isMakeup ? '補登成功' : '打卡成功';
+var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' +
+(success ? successTitle : '無法打卡') + '</h2>';
+
+var showAfternoonBtn = false;
+var showEarlyBtn = false;
+
+if (success) {
+var detailHtml = '員工編號：' + data.id + '<br>姓名：' + data.name;
+// 補登成功時不再顯示「狀態：下班／加班開始／上班」，避免員工誤以為又打了一次卡
+if (!isMakeup && data.type) {
+detailHtml += '<br>狀態：' + data.type;
+}
+html += '<p class="line">' + detailHtml + '</p>';
+
+if (data.reason) {
+html += '<p class="line">原因：' + data.reason + '</p>';
+}
+
+html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
+if (data.message) {
+html += '<div class="cheer">' + data.message;
+// 提前上班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
+if (data.isEarlyCheckInMakeup && data.earlyTime) {
+html += '<div style="margin-top:8px;font-size:16px;line-height:1.5;">' +
+data.earlyTime + ' ～ ' + (data.normalCheckInTime || currentNormalCheckInTime) +
+'，共 ' + formatHours(data.overtimeHours) + ' 小時</div>';
+}
+if (data.isOvertimeOutMakeup) {
+html += '<div style="margin-top:8px;font-size:16px;line-height:1.6;">' +
+'項目：' + (data.overtimeOutMode || '') + '<br>' +
+'時間：' + (data.overtimeOutTime || '') + '<br>' +
+'事由：' + escapeText(data.memo || '') + '</div>';
+}
+html += '</div>';
+}
+
+if (data.canMarkAfternoonNoBreak) {
+showAfternoonBtn = true;
+html += '<button type="button" class="mark-afternoon-btn" onclick="markAfternoonNoBreak(\'' +
+data.afternoonReason + '\')">☕ 下午（17:00-17:30）沒有休息</button>';
+}
+
+if (data.canMarkEarlyCheckIn) {
+showEarlyBtn = true;
+currentEarlyReason = data.earlyCheckInReason;
+currentEarlyMinTime = data.earlyCheckInMinTime || '05:00';
+currentEarlyMaxTime = data.earlyCheckInMaxTime || '07:59';
+currentEarlyDefaultTime = data.earlyCheckInDefaultTime || '07:00';
+currentNormalCheckInTime = data.normalCheckInTime || '08:00';
+html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()">⏰ 我今天比較早到，回報實際到班時間</button>';
+}
+} else {
+html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
+}
+
+var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 1;
+html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
+card.innerHTML = html;
+
+document.getElementById('resultOverlay').classList.add('show');
+statusEl.innerText = success
+? "請將員工 QR Code 對準鏡頭"
+: "請重新掃描";
+
+var n = countdownSeconds;
+setTimeout(function(){
+
+closeAllOverlaysAndResume();
+
+},countdownSeconds * 1000);
+}
+
+function markAfternoonNoBreak(reasonVal) {
+callApi({ id: currentId, ts: currentTs, reason: reasonVal });
+}
+
+function parseHHMM(value, fallback) {
+var text = /^\d{2}:\d{2}$/.test(value || '') ? value : fallback;
+var parts = text.split(':');
+return { hour: Number(parts[0]), minute: Number(parts[1]) };
+}
+
+function pad2(value) {
+return String(value).padStart(2, '0');
+}
+
+function refreshEarlyMinuteOptions(preferredMinute) {
+var hourSelect = document.getElementById('earlyHourSelect');
+var minuteSelect = document.getElementById('earlyMinuteSelect');
+var minTime = parseHHMM(currentEarlyMinTime, '05:00');
+var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+var selectedHour = Number(hourSelect.value);
+var wanted = preferredMinute === undefined ? Number(minuteSelect.value) : Number(preferredMinute);
+
+minuteSelect.innerHTML = '';
+
+[0, 30].forEach(function (minute) {
+var total = selectedHour * 60 + minute;
+var minTotal = minTime.hour * 60 + minTime.minute;
+var maxTotal = maxTime.hour * 60 + maxTime.minute;
+
+if (total >= minTotal && total <= maxTotal) {
+var opt = document.createElement('option');
+opt.value = pad2(minute);
+opt.textContent = pad2(minute) + ' 分';
+minuteSelect.appendChild(opt);
+}
+});
+
+if (!minuteSelect.options.length) return;
+
+var preferredValue = wanted >= 30 ? '30' : '00';
+var hasPreferred = Array.from(minuteSelect.options).some(function (opt) {
+return opt.value === preferredValue;
+});
+
+minuteSelect.value = hasPreferred
+? preferredValue
+: minuteSelect.options[0].value;
+}
+
+function prepareEarlyTimeSelects() {
+var hourSelect = document.getElementById('earlyHourSelect');
+var minTime = parseHHMM(currentEarlyMinTime, '05:00');
+var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+var defaultTime = parseHHMM(currentEarlyDefaultTime, '07:00');
+
+hourSelect.innerHTML = '';
+for (var hour = minTime.hour; hour <= maxTime.hour; hour++) {
+var opt = document.createElement('option');
+opt.value = pad2(hour);
+opt.textContent = pad2(hour) + ' 點';
+hourSelect.appendChild(opt);
+}
+
+var defaultHour = Math.min(Math.max(defaultTime.hour, minTime.hour), maxTime.hour);
+hourSelect.value = pad2(defaultHour);
+refreshEarlyMinuteOptions(defaultTime.minute);
+}
+
+function openEarlyModal() {
+prepareEarlyTimeSelects();
+document.getElementById('earlyModalOverlay').classList.add('show');
+}
+
+function closeEarlyModal() {
+document.getElementById('earlyModalOverlay').classList.remove('show');
+}
+
+function submitEarly() {
+var btn = document.getElementById('earlyConfirmBtn');
+btn.disabled = true;
+btn.innerText = '送出中...';
+var hour = document.getElementById('earlyHourSelect').value;
+var minute = document.getElementById('earlyMinuteSelect').value;
+var val = hour && minute ? hour + ':' + minute : '';
+if (!val) {
+alert('請選擇實際到班時間');
+btn.disabled = false;
+btn.innerText = '確定送出';
+return;
+}
+callApi({ id: currentId, ts: currentTs, reason: currentEarlyReason, earlyTime: val });
+setTimeout(function () {
+closeEarlyModal();
+btn.disabled = false;
+btn.innerText = '確定送出';
+}, 1500);
+}
+
+
+function escapeText(value) {
+return String(value || '')
+.replace(/&/g, '&amp;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&#39;');
+}
+
+function prepareOvertimeOutTimeSelects() {
+var hourSelect = document.getElementById('overtimeOutHourSelect');
+var minuteSelect = document.getElementById('overtimeOutMinuteSelect');
+var now = new Date();
+
+hourSelect.innerHTML = '';
+minuteSelect.innerHTML = '';
+
+for (var hour = 0; hour <= 23; hour++) {
+var hourOpt = document.createElement('option');
+hourOpt.value = pad2(hour);
+hourOpt.textContent = pad2(hour) + ' 點';
+hourSelect.appendChild(hourOpt);
+}
+
+[0, 30].forEach(function (minute) {
+var minuteOpt = document.createElement('option');
+minuteOpt.value = pad2(minute);
+minuteOpt.textContent = pad2(minute) + ' 分';
+minuteSelect.appendChild(minuteOpt);
+});
+
+hourSelect.value = pad2(now.getHours());
+minuteSelect.value = now.getMinutes() >= 30 ? '30' : '00';
+}
+
+function openOvertimeOutModal() {
+prepareOvertimeOutTimeSelects();
+document.getElementById('overtimeOutModeSelect').value = '提前上班';
+document.getElementById('overtimeOutMemo').value = '';
+document.getElementById('overtimeOutModalOverlay').classList.add('show');
+}
+
+function closeOvertimeOutModal() {
+document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+}
+
+function submitOvertimeOut() {
+var btn = document.getElementById('overtimeOutConfirmBtn');
+var mode = document.getElementById('overtimeOutModeSelect').value;
+var hour = document.getElementById('overtimeOutHourSelect').value;
+var minute = document.getElementById('overtimeOutMinuteSelect').value;
+var memo = document.getElementById('overtimeOutMemo').value.trim();
+var selectedTime = hour && minute ? hour + ':' + minute : '';
+
+if (!mode) {
+alert('請選擇提前上班或晚回來');
+return;
+}
+if (!selectedTime) {
+alert('請選擇時間');
+return;
+}
+if (!memo) {
+alert('請填寫事由');
+return;
+}
+
+btn.disabled = true;
+btn.innerText = '送出中...';
+
+callApi({
+id: currentId,
+ts: currentTs,
+reason: currentOvertimeOutReason,
+overtimeOutMode: mode,
+overtimeOutTime: selectedTime,
+overtimeOutMemo: memo
+});
+
+setTimeout(function () {
+closeOvertimeOutModal();
+btn.disabled = false;
+btn.innerText = '確定送出';
+}, 1500);
+}
+
+var makeupLabels = {};
+
+function showReasonCard(data) {
+            currentId = data.id;
+            currentTs = data.ts;
+    currentId = data.id || currentId;
+
+    // 後端有回傳有效時間才更新，避免空值覆蓋原本掃描時間
+    var returnedTs = Number(data.ts);
+
+    if (Number.isFinite(returnedTs) && returnedTs > 0) {
+        currentTs = returnedTs;
+    }
+
+    // 最後防呆
+    if (!Number.isFinite(Number(currentTs)) || Number(currentTs) <= 0) {
+        currentTs = Date.now();
+    }
+
+document.getElementById('reasonInfo').innerHTML =
+'員工編號：' + data.id + '<br>姓名：' + data.name;
+
+var select = document.getElementById('reasonSelect');
+select.innerHTML = '';
+(data.reasons || []).forEach(function (r) {
+var opt = document.createElement('option');
+opt.value = r;
+opt.textContent = r;
+select.appendChild(opt);
+});
+
+var makeupSelect = document.getElementById('makeupSelect');
+makeupSelect.innerHTML = '';
+makeupLabels = {};
+
+var lunchOpt = document.createElement('option');
+lunchOpt.value = data.lunchReason;
+lunchOpt.textContent = data.lunchReason;
+makeupSelect.appendChild(lunchOpt);
+makeupLabels[data.lunchReason] = { text: data.lunchReason, icon: '🍡' };
+
+var afternoonOpt = document.createElement('option');
+afternoonOpt.value = data.afternoonReason;
+afternoonOpt.textContent = data.afternoonReason;
+makeupSelect.appendChild(afternoonOpt);
+makeupLabels[data.afternoonReason] = { text: data.afternoonReason, icon: '☕' };
+
+// 加入「提前上班」補登；選取後會再跳出實際到班時間選單
+currentEarlyReason = data.earlyReason || '';
+currentEarlyMinTime = data.earlyCheckInMinTime || '05:00';
+currentEarlyMaxTime = data.earlyCheckInMaxTime || '07:59';
+currentEarlyDefaultTime = data.earlyCheckInDefaultTime || '07:00';
+currentNormalCheckInTime = data.normalCheckInTime || '08:00';
+
+if (currentEarlyReason) {
+var earlyOpt = document.createElement('option');
+earlyOpt.value = currentEarlyReason;
+earlyOpt.textContent = currentEarlyReason;
+makeupSelect.appendChild(earlyOpt);
+makeupLabels[currentEarlyReason] = { text: currentEarlyReason, icon: '⏰' };
+}
+
+currentOvertimeOutReason = data.overtimeOutReason || '';
+if (currentOvertimeOutReason) {
+var overtimeOutOpt = document.createElement('option');
+overtimeOutOpt.value = currentOvertimeOutReason;
+overtimeOutOpt.textContent = currentOvertimeOutReason;
+makeupSelect.appendChild(overtimeOutOpt);
+makeupLabels[currentOvertimeOutReason] = { text: currentOvertimeOutReason, icon: '🚚' };
+}
+
+document.getElementById('reasonOverlay').classList.add('show');
+statusEl.innerText = '請選擇打卡異常原因';
+}
+
+function submitReason() {
+
+var reason = document.getElementById('reasonSelect').value;
+
+if (!reason) {
+alert("請先選擇異常原因");
+return;
+}
+
+document.getElementById("reasonConfirmLabel").innerText = reason;
+
+document
+.getElementById("reasonConfirmOverlay")
+.classList
+.add("show");
+
+}
+function closeReasonConfirm(){
+
+document
+.getElementById("reasonConfirmOverlay")
+.classList
+.remove("show");
+
+}
+
+function confirmSubmitReason(){
+
+var reason = document.getElementById("reasonSelect").value;
+
+var btn = document.getElementById("reasonConfirmBtn");
+
+btn.disabled = true;
+btn.innerText = "送出中...";
+
+callApi({
+id: currentId,
+ts: currentTs,
+reason: reason
+});
+
+setTimeout(function(){
+
+btn.disabled = false;
+btn.innerText = "確定送出";
+
+closeReasonConfirm();
+
+},1500);
+
+}
+function openMakeupModal() {
+var val = document.getElementById('makeupSelect').value;
+
+// 「提前上班」需要先選實際到班時間，不走一般的確認視窗
+if (val === currentEarlyReason) {
+openEarlyModal();
+return;
+}
+
+// 「加班（外出）」需選擇提前上班／晚回來、時間及填寫事由
+if (val === currentOvertimeOutReason) {
+openOvertimeOutModal();
+return;
+}
+
+var info = makeupLabels[val] || { text: val, icon: '📝' };
+document.getElementById('makeupModalLabel').innerText = info.text;
+document.getElementById('makeupModalIcon').innerText = info.icon;
+document.getElementById('makeupModalOverlay').classList.add('show');
+}
+function closeMakeupModal() {
+document.getElementById('makeupModalOverlay').classList.remove('show');
+}
+function submitMakeup() {
+var val = document.getElementById('makeupSelect').value;
+
+// 防呆：提前上班一定要先選時間
+if (val === currentEarlyReason) {
+closeMakeupModal();
+openEarlyModal();
+return;
+}
+
+if (val === currentOvertimeOutReason) {
+closeMakeupModal();
+openOvertimeOutModal();
+return;
+}
+
+var btn = document.getElementById('makeupConfirmBtn');
+btn.disabled = true;
+btn.innerText = '送出中...';
+callApi({ id: currentId, ts: currentTs, reason: val });
+setTimeout(function () {
+closeMakeupModal();
+btn.disabled = false;
+btn.innerText = '確定送出';
+}, 1500);
+}
+
+function closeAllOverlaysAndResume() {
+document.getElementById('resultOverlay').classList.remove('show');
+document.getElementById('reasonOverlay').classList.remove('show');
+
+// 新增這一行
+document.getElementById('reasonConfirmOverlay').classList.remove('show');
+
+document.getElementById('makeupModalOverlay').classList.remove('show');
+document.getElementById('earlyModalOverlay').classList.remove('show');
+document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+
+statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+busy = false;
+}
+
+if (localStorage.getItem(GATE_STORAGE_KEY) === '1') {
+document.getElementById('accessGateOverlay').classList.add('hidden');
+startScanner();
+}
+</script>
+</body>
+</html>
