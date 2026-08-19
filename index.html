@@ -295,6 +295,10 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <h1>宏升工業社 - 打卡掃描</h1>
 
 <div id="clock">正在讀取時間...</div>
+
+<div style="font-size:13px;color:#ffd700;text-align:center;margin-bottom:8px;max-width:450px;">
+  💡 使用 XB-R60 掃描器前，請先確認電腦輸入法為英文模式
+</div>
 <div class="camera-control">
 <label for="cameraSelect">📷 使用鏡頭</label>
 <select id="cameraSelect" onchange="changeCamera()">
@@ -703,17 +707,24 @@ var currentId = null;
 var currentTs = null;
 
 function handleScan(rawText) {
-var parsed = parseScan(rawText);
-if (!parsed.id) {
-showResultCard({ status: 'error', message: '無法辨識這組 QR Code' });
-return;
-}
-currentBase = parsed.base;
-currentId = parsed.id;
-currentTs = Date.now();
-callApi({ id: currentId, ts: currentTs });
-}
+  var parsed = parseScan(rawText);
 
+  // 檢查是否為有效的員工編號格式：HS + 三碼數字（HS001 ~ HS999）
+  var validIdPattern = /^HS\d{3}$/;
+
+  if (!parsed.id || !validIdPattern.test(parsed.id)) {
+    showResultCard({
+      status: 'error',
+      message: '掃描內容異常，請確認電腦輸入法為英文模式後重新掃描'
+    });
+    return;
+  }
+
+  currentBase = parsed.base;
+  currentId = parsed.id;
+  currentTs = Date.now();
+  callApi({ id: currentId, ts: currentTs });
+}
 function callApi(params) {
             var url = currentBase + '?mode=api'
                 + '&id=' + encodeURIComponent(params.id)
