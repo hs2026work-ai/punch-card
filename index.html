@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>宏升工業社 - 打卡專用掃描機</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 body {
 font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -30,60 +29,14 @@ border-radius: 20px;
 margin: 10px 0 15px 0;
 letter-spacing: 1px;
 }
-#reader {
-width: 100%;
-max-width: 450px;
-background: white;
-padding: 10px;
-border-radius: 12px;
-box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-}
-.camera-control {
-width: 100%;
-max-width: 450px;
-display: flex;
-align-items: center;
-gap: 10px;
-margin: 0 0 12px;
-padding: 10px 12px;
-background: rgba(255,255,255,0.12);
-border-radius: 10px;
-box-sizing: border-box;
-}
-.camera-control label {
-white-space: nowrap;
-font-size: 16px;
-font-weight: bold;
-}
-.camera-control select {
-flex: 1;
-min-width: 0;
-padding: 10px;
-font-size: 16px;
-border-radius: 8px;
-border: 1px solid #ccc;
-background: white;
-color: #333;
-box-sizing: border-box;
-}
 .status {
 margin-top: 15px;
-font-size: 16px;
+font-size: 20px;
+font-weight: bold;
 color: #00ffcc;
 text-align: center;
 min-height: 22px;
-padding: 0 10px;
-}
-#retryBtn {
-display: none;
-margin-top: 12px;
-padding: 10px 20px;
-font-size: 15px;
-background: transparent;
-color: #ffcc80;
-border: 1px solid #ffcc80;
-border-radius: 8px;
-cursor: pointer;
+padding: 20px 10px;
 }
 
 #leaveRequestBtn {
@@ -299,15 +252,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div style="font-size:13px;color:#ffd700;text-align:center;margin-bottom:8px;max-width:450px;">
   💡 使用 XB-R60 掃描器前，請先確認電腦輸入法為英文模式
 </div>
-<div class="camera-control">
-<label for="cameraSelect">📷 使用鏡頭</label>
-<select id="cameraSelect" onchange="changeCamera()">
-<option value="">正在讀取鏡頭...</option>
-</select>
-</div>
-<div id="reader"></div>
-<div class="status" id="status-text">正在啟動相機...</div>
-<button id="retryBtn" onclick="startScanner();">重新啟動相機</button>
+<div class="status" id="status-text">📷 請感應員工 QR Code</div>
 
 <a id="leaveRequestBtn" href="https://hs2026work-ai.github.io/punch-card/check-leave-form.html">📝 請假申請 Xin nghi phep</a>
 
@@ -490,7 +435,6 @@ unlockAudio();
 localStorage.setItem(GATE_STORAGE_KEY, '1');
 document.getElementById('accessGateOverlay').classList.add('hidden');
 errorEl.innerText = '';
-startScanner();
 } else {
 errorEl.innerText = '授權碼錯誤，請重新輸入';
 document.getElementById('gateInput').value = '';
@@ -515,177 +459,7 @@ setInterval(updateClock, 1000);
 updateClock();
 
 const statusEl = document.getElementById('status-text');
-const retryBtn = document.getElementById('retryBtn');
-const cameraSelect = document.getElementById('cameraSelect');
-const CAMERA_STORAGE_KEY = 'punchCardCameraId_v1';
-let html5Qrcode = null;
 let busy = false;
-let lastScanAt = 0;
-let availableCameras = [];
-let scannerStarting = false;
-let barcodeDetector = ('BarcodeDetector' in window) ? new BarcodeDetector({formats:['qr_code']}) : null;
-let detectorRunning = false;
-
-function onScanSuccess(decodedText) {
-
-var now = Date.now();
-
-if (busy || now - lastScanAt < 500) return;
-
-lastScanAt = now;
-busy = true;
-
-// 掃到立即播放成功音
-playSuccessSound();
-
-statusEl.innerText = "✅ 已掃描，資料處理中...";
-
-handleScan(decodedText);
-
-}
-
-function onScanFailure() {}
-
-function cameraLabel(camera, index) {
-var label = String(camera.label || '').trim();
-if (label) return label;
-return '鏡頭 ' + (index + 1);
-}
-
-function isFrontCameraLabel(label) {
-var text = String(label || '').toLowerCase();
-return text.includes('front') || text.includes('user') || text.includes('facetime') ||
-text.includes('前') || text.includes('正面');
-}
-
-function isBackCameraLabel(label) {
-var text = String(label || '').toLowerCase();
-return text.includes('back') || text.includes('rear') || text.includes('environment') ||
-text.includes('後') || text.includes('背面');
-}
-
-function populateCameraSelect(cameras) {
-cameraSelect.innerHTML = '';
-cameras.forEach(function (camera, index) {
-var opt = document.createElement('option');
-opt.value = camera.id;
-var label = cameraLabel(camera, index);
-if (isFrontCameraLabel(label)) label = '前鏡頭｜' + label;
-else if (isBackCameraLabel(label)) label = '後鏡頭｜' + label;
-opt.textContent = label;
-cameraSelect.appendChild(opt);
-});
-}
-
-function chooseInitialCamera(cameras) {
-var savedId = localStorage.getItem(CAMERA_STORAGE_KEY);
-if (savedId && cameras.some(function (c) { return c.id === savedId; })) {
-return savedId;
-}
-
-// iPad 第10代優先找 FaceTime／Front／前鏡頭；找不到才使用第一顆。
-var front = cameras.find(function (c) { return isFrontCameraLabel(c.label); });
-return front ? front.id : cameras[0].id;
-}
-
-function scannerConfig() {
-var usingFront = false;
-var selected = cameraSelect ? cameraSelect.selectedOptions[0] : null;
-if (selected) {
-usingFront = selected.text.toLowerCase().includes("前") ||
-selected.text.toLowerCase().includes("front") ||
-selected.text.toLowerCase().includes("facetime");
-}
-
-return {
-fps: 35,
-qrbox: {
-width: 150,
-height: 150
-},
-aspectRatio: 1.0,
-disableFlip: !usingFront,
-experimentalFeatures: {
-useBarCodeDetectorIfSupported: true
-}
-};
-}
-
-
-async function startBarcodeLoop(){
-if(!barcodeDetector || detectorRunning || !html5Qrcode) return;
-detectorRunning=true;
-const video=document.querySelector('#reader video');
-async function loop(){
-if(!detectorRunning||!video){requestAnimationFrame(loop);return;}
-try{
-const codes=await barcodeDetector.detect(video);
-if(codes&&codes.length&&codes[0].rawValue){
-onScanSuccess(codes[0].rawValue);
-}
-}catch(e){}
-requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-}
-
-async function stopScannerSafely() {
-if (!html5Qrcode) return;
-try {
-if (html5Qrcode.isScanning) await html5Qrcode.stop();
-} catch (e) {}
-try { await html5Qrcode.clear(); } catch (e) {}
-html5Qrcode = null;
-}
-
-async function loadCameras() {
-availableCameras = await Html5Qrcode.getCameras();
-if (!availableCameras || !availableCameras.length) {
-throw new Error('找不到可使用的鏡頭');
-}
-populateCameraSelect(availableCameras);
-return availableCameras;
-}
-
-async function startScanner(cameraId) {
-if (scannerStarting) return;
-scannerStarting = true;
-retryBtn.style.display = 'none';
-statusEl.innerText = '正在啟動相機...';
-
-try {
-await stopScannerSafely();
-var cameras = availableCameras.length ? availableCameras : await loadCameras();
-var selectedId = cameraId || chooseInitialCamera(cameras);
-cameraSelect.value = selectedId;
-localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
-
-html5Qrcode = new Html5Qrcode('reader', { verbose: false });
-await html5Qrcode.start(
-selectedId,
-scannerConfig(),
-onScanSuccess,
-onScanFailure
-);
-statusEl.innerText = '請將員工 QR Code 對準鏡頭';
-busy = false;
-startBarcodeLoop();
-} catch (err) {
-console.error(err);
-statusEl.innerText = '⚠️ 無法啟動相機，請重新選擇鏡頭或確認相機權限';
-retryBtn.style.display = 'inline-block';
-} finally {
-scannerStarting = false;
-}
-}
-
-async function changeCamera() {
-var selectedId = cameraSelect.value;
-if (!selectedId) return;
-localStorage.setItem(CAMERA_STORAGE_KEY, selectedId);
-busy = true;
-await startScanner(selectedId);
-}
 
 function parseScan(rawText) {
 var text = rawText.trim();
@@ -707,6 +481,10 @@ var currentId = null;
 var currentTs = null;
 
 function handleScan(rawText) {
+  var now = Date.now();
+  if (busy) return;
+  busy = true;
+
   var parsed = parseScan(rawText);
 
   // 檢查是否為有效的員工編號格式：HS + 三碼數字（HS001 ~ HS999）
@@ -720,9 +498,12 @@ function handleScan(rawText) {
     return;
   }
 
+  playSuccessSound();
+  statusEl.innerText = "✅ 已掃描，資料處理中...";
+
   currentBase = parsed.base;
   currentId = parsed.id;
-  currentTs = Date.now();
+  currentTs = now;
   callApi({ id: currentId, ts: currentTs });
 }
 function callApi(params) {
@@ -876,7 +657,7 @@ card.innerHTML = html;
 
 document.getElementById('resultOverlay').classList.add('show');
 statusEl.innerText = success
-? "請將員工 QR Code 對準鏡頭"
+? "📷 請感應員工 QR Code"
 : "請重新掃描";
 
 var n = countdownSeconds;
@@ -1259,14 +1040,55 @@ document.getElementById('makeupModalOverlay').classList.remove('show');
 document.getElementById('earlyModalOverlay').classList.remove('show');
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
 
-statusEl.innerText = '請將員工 QR Code 對準鏡頭';
+statusEl.innerText = '📷 請感應員工 QR Code';
 busy = false;
 }
 
 if (localStorage.getItem(GATE_STORAGE_KEY) === '1') {
 document.getElementById('accessGateOverlay').classList.add('hidden');
-startScanner();
 }
+</script>
+
+<script>
+(function () {
+  var scannerInput = document.createElement('input');
+  scannerInput.type = 'text';
+  scannerInput.id = 'xbr60Input';
+  scannerInput.style.position = 'absolute';
+  scannerInput.style.opacity = '0';
+  scannerInput.style.pointerEvents = 'none';
+  document.body.appendChild(scannerInput);
+
+  var buffer = '';
+
+  function refocusScanner() {
+    var gateVisible = !document.getElementById('accessGateOverlay').classList.contains('hidden');
+    var anyOverlayShown = document.querySelector('.overlay.show, .modal-overlay.show');
+    if (!gateVisible && !anyOverlayShown) {
+      scannerInput.focus();
+    }
+  }
+
+  window.addEventListener('load', refocusScanner);
+  document.body.addEventListener('click', refocusScanner);
+
+  scannerInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      var scanned = buffer.trim();
+      buffer = '';
+      scannerInput.value = '';
+      if (scanned) {
+        handleScan(scanned);
+      }
+    }
+  });
+
+  scannerInput.addEventListener('input', function () {
+    buffer = scannerInput.value;
+  });
+
+  setInterval(refocusScanner, 1500);
+})();
 </script>
 </body>
 </html>
