@@ -89,6 +89,19 @@ font-size: 24px;
 .card .cheer { margin-top: 14px; font-size: 20px; font-weight: bold; color: #e0752c; }
 .card .countdown { margin-top: 16px; font-size: 14px; color: #999; }
 
+/* ====== 【新增】07:30前打卡提醒補登「提前上班」的通知框 ====== */
+.early-reminder-box {
+margin-top: 14px;
+padding: 12px 14px;
+background: #fff3e0;
+border: 1px solid #e0752c;
+border-radius: 8px;
+color: #7a4400;
+font-size: 15px;
+line-height: 1.6;
+text-align: left;
+}
+
 .makeup-section {
 text-align: left;
 background: #f5f5f5;
@@ -601,6 +614,7 @@ var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' +
 
 var showAfternoonBtn = false;
 var showEarlyBtn = false;
+var showEarlyReminder = false;
 
 if (success) {
 var detailHtml = '員工編號：' + data.id + '<br>姓名：' + data.name;
@@ -632,6 +646,12 @@ html += '<div style="margin-top:8px;font-size:16px;line-height:1.6;">' +
 html += '</div>';
 }
 
+// ====== 【新增】07:30 前的正常「上班」打卡，顯示提醒補登「提前上班」的通知框 ======
+if (data.showEarlyReminder && data.earlyReminderMessage) {
+showEarlyReminder = true;
+html += '<div class="early-reminder-box">⏰ ' + escapeText(data.earlyReminderMessage) + '</div>';
+}
+
 if (data.canMarkAfternoonNoBreak) {
 showAfternoonBtn = true;
 html += '<button type="button" class="mark-afternoon-btn" onclick="markAfternoonNoBreak(\'' +
@@ -651,7 +671,7 @@ html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()"
 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
 }
 
-var countdownSeconds = (showAfternoonBtn || showEarlyBtn) ? 8 : 1;
+var countdownSeconds = (showAfternoonBtn || showEarlyBtn || showEarlyReminder) ? 8 : 1;
 html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
 card.innerHTML = html;
 
