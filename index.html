@@ -208,6 +208,24 @@ min-height: 76px;
 resize: vertical;
 }
 
+/* ====== 【新增】獨立補登入口按鈕（不觸發正式打卡） ====== */
+#standaloneMakeupBtn {
+width: 100%;
+max-width: 450px;
+margin-top: 12px;
+padding: 13px 0;
+font-size: 15px;
+font-weight: bold;
+background: #3a5a9c;
+color: white;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+box-sizing: border-box;
+display: block;
+}
+#standaloneMakeupBtn:active { background: #24406f; }
+
 /* ====== 進站授權碼遮罩 ====== */
 #accessGateOverlay {
 position: fixed;
@@ -268,6 +286,9 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div class="status" id="status-text">📷 請感應員工 QR Code</div>
 
 <a id="leaveRequestBtn" href="https://hs2026work-ai.github.io/punch-card/check-leave-form.html">📝 請假申請 Xin nghi phep</a>
+
+<!-- ====== 【新增】獨立補登入口：不會觸發正式打卡，適合「還要繼續加班但想先標記下午未休息」的情況 ====== -->
+<button id="standaloneMakeupBtn" type="button" onclick="openStandaloneMakeup()">🛠️ 補登（中午/下午未休息、提前上班...）不影響今天打卡</button>
 
 <div class="overlay" id="resultOverlay">
 <div class="card" id="resultCard"></div>
@@ -387,6 +408,48 @@ onclick="confirmSubmitReason()">
 </div>
 </div>
 
+<!-- ====== 【新增】獨立補登彈窗：先輸入員工編號，再選補登項目，過程不會產生正式打卡紀錄 ====== -->
+<!-- ====== 【新增】掃描時間落在加班結束區間(17:25-20:50)時，先跳出選擇，避免誤判為下班 ====== -->
+<div class="modal-overlay" id="overtimeEndChoiceOverlay">
+<div class="modal-box">
+<div class="modal-icon">⏱️</div>
+<div class="modal-title">現在是加班時段</div>
+<div class="modal-text">請選擇：</div>
+<div class="modal-actions" style="flex-direction:column;gap:10px;">
+<button type="button" class="modal-btn confirm" style="background:#8d6e63;" onclick="chooseContinueOvertime()">☕ 還要繼續加班，先標記下午未休息</button>
+<button type="button" class="modal-btn confirm" onclick="chooseEndOvertime()">🚪 我要下班了，結束今天加班</button>
+<button type="button" class="modal-btn cancel" onclick="cancelOvertimeEndChoice()">取消</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="standaloneMakeupOverlay">
+<div class="modal-box">
+<div class="modal-icon">🛠️</div>
+<div class="modal-title">補登（不影響今天打卡）</div>
+
+<div class="overtime-out-field">
+<label for="standaloneMakeupId">員工編號</label>
+<input type="text" id="standaloneMakeupId" placeholder="例如 HS001" style="width:100%;padding:12px;font-size:17px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;text-align:center;">
+</div>
+
+<div class="overtime-out-field">
+<label for="standaloneMakeupSelect">補登項目</label>
+<select id="standaloneMakeupSelect">
+<option value="中午未休息">中午未休息</option>
+<option value="下午未休息">下午未休息</option>
+<option value="提前上班">提前上班</option>
+<option value="加班(外出)">加班(外出)</option>
+</select>
+</div>
+
+<div class="modal-actions">
+<button type="button" class="modal-btn cancel" onclick="closeStandaloneMakeup()">取消</button>
+<button type="button" class="modal-btn confirm" id="standaloneMakeupConfirmBtn" onclick="submitStandaloneMakeup()">下一步</button>
+</div>
+</div>
+</div>
+
 <div class="modal-overlay" id="overtimeOutModalOverlay">
 <div class="modal-box">
 <div class="modal-icon">🚚</div>
@@ -493,6 +556,47 @@ var currentBase = FALLBACK_SCRIPT_URL;
 var currentId = null;
 var currentTs = null;
 
+// ====== 【新增】加班結束判定區間（要跟 Code.gs 的 TIME_WINDOWS 保持一致）======
+var OVERTIME_END_WINDOW_START = '17:25';
+var OVERTIME_END_WINDOW_END = '20:50';
+
+function toMinutesJS(hhmm) {
+var parts = hhmm.split(':');
+return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+function isInOvertimeEndWindow(dateObj) {
+var minutes = dateObj.getHours() * 60 + dateObj.getMinutes();
+return minutes >= toMinutesJS(OVERTIME_END_WINDOW_START) && minutes <= toMinutesJS(OVERTIME_END_WINDOW_END);
+}
+
+function showOvertimeEndChoice() {
+document.getElementById('overtimeEndChoiceOverlay').classList.add('show');
+statusEl.innerText = '請選擇：繼續加班或結束加班';
+}
+
+function closeOvertimeEndChoice() {
+document.getElementById('overtimeEndChoiceOverlay').classList.remove('show');
+}
+
+function chooseContinueOvertime() {
+closeOvertimeEndChoice();
+// 只標記下午未休息，不會產生下班/加班結束的正式紀錄，員工可以繼續加班
+callApi({ id: currentId, ts: currentTs, reason: '下午未休息' });
+}
+
+function chooseEndOvertime() {
+closeOvertimeEndChoice();
+// 維持原本的正常流程，讓後端依時間區間判定為「加班結束」
+callApi({ id: currentId, ts: currentTs });
+}
+
+function cancelOvertimeEndChoice() {
+closeOvertimeEndChoice();
+statusEl.innerText = '📷 請感應員工 QR Code';
+busy = false;
+}
+
 function handleScan(rawText) {
   var now = Date.now();
   if (busy) return;
@@ -517,6 +621,13 @@ function handleScan(rawText) {
   currentBase = parsed.base;
   currentId = parsed.id;
   currentTs = now;
+
+  // ====== 【新增】落在加班結束區間，先讓員工選擇要繼續加班還是真的下班 ======
+  if (isInOvertimeEndWindow(new Date(now))) {
+    showOvertimeEndChoice();
+    return;
+  }
+
   callApi({ id: currentId, ts: currentTs });
 }
 function callApi(params) {
@@ -873,6 +984,56 @@ btn.innerText = '確定送出';
 }, 1500);
 }
 
+// ====== 【新增】獨立補登：不透過掃描/打卡流程，直接呼叫API帶reason，後端會優先處理reason，不會動到正式上下班/加班紀錄 ======
+var STANDALONE_EARLY_REASON = '提前上班';
+var STANDALONE_OVERTIME_OUT_REASON = '加班(外出)';
+
+function openStandaloneMakeup() {
+document.getElementById('standaloneMakeupId').value = '';
+document.getElementById('standaloneMakeupSelect').value = '下午未休息';
+document.getElementById('standaloneMakeupOverlay').classList.add('show');
+}
+
+function closeStandaloneMakeup() {
+document.getElementById('standaloneMakeupOverlay').classList.remove('show');
+}
+
+function submitStandaloneMakeup() {
+var idInput = document.getElementById('standaloneMakeupId').value.trim().toUpperCase();
+var validIdPattern = /^HS\d{3}$/;
+
+if (!validIdPattern.test(idInput)) {
+alert('請輸入正確的員工編號，例如 HS001');
+return;
+}
+
+var reason = document.getElementById('standaloneMakeupSelect').value;
+
+currentId = idInput;
+currentTs = Date.now();
+
+closeStandaloneMakeup();
+
+// 「提前上班」需要先選實際到班時間
+if (reason === STANDALONE_EARLY_REASON) {
+currentEarlyReason = STANDALONE_EARLY_REASON;
+openEarlyModal();
+return;
+}
+
+// 「加班（外出）」需選擇提前上班／晚回來、時間及事由
+if (reason === STANDALONE_OVERTIME_OUT_REASON) {
+currentOvertimeOutReason = STANDALONE_OVERTIME_OUT_REASON;
+openOvertimeOutModal();
+return;
+}
+
+// 中午未休息／下午未休息：直接確認送出，不會產生正式打卡
+if (confirm('確定要補登「' + reason + '」嗎？（不會影響今天的打卡紀錄）')) {
+callApi({ id: currentId, ts: currentTs, reason: reason });
+}
+}
+
 var makeupLabels = {};
 
 function showReasonCard(data) {
@@ -1059,6 +1220,8 @@ document.getElementById('reasonConfirmOverlay').classList.remove('show');
 document.getElementById('makeupModalOverlay').classList.remove('show');
 document.getElementById('earlyModalOverlay').classList.remove('show');
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+document.getElementById('overtimeEndChoiceOverlay').classList.remove('show');
+document.getElementById('standaloneMakeupOverlay').classList.remove('show');
 
 statusEl.innerText = '📷 請感應員工 QR Code';
 busy = false;
