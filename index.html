@@ -456,6 +456,13 @@ onclick="confirmSubmitReason()">
 </select>
 </div>
 
+<div class="overtime-out-field" id="standaloneMakeupDateField">
+<label for="standaloneMakeupDate">補登日期</label>
+<input type="date" id="standaloneMakeupDate"
+  style="width:100%;padding:12px;font-size:17px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;background:white;">
+<div style="font-size:13px;color:#888;margin-top:6px;">可選今天或過去日期，不可選未來日期</div>
+</div>
+
 <div class="overtime-out-field">
 <label for="standaloneMakeupSelect">補登項目</label>
 <select id="standaloneMakeupSelect">
@@ -476,7 +483,7 @@ onclick="confirmSubmitReason()">
 <div class="modal-overlay" id="overtimeOutModalOverlay">
 <div class="modal-box">
 <div class="modal-icon">🚚</div>
-<div class="modal-title">晚回來</div>
+<div class="modal-title">加班（外出）晚回來</div>
 
 <div class="overtime-out-field">
 <label>時間</label>
@@ -610,12 +617,14 @@ function cancelOvertimeEndChoice() {
 closeOvertimeEndChoice();
 statusEl.innerText = '📷 請感應員工 QR Code';
 busy = false;
+currentMakeupReportTs = null;
 }
 
 function handleScan(rawText) {
   var now = Date.now();
   if (busy) return;
   busy = true;
+  currentMakeupReportTs = null;
 
   var parsed = parseScan(rawText);
 
@@ -662,7 +671,8 @@ function callApi(params) {
 + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '')
 + (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
 + (params.overtimeOutTime ? '&overtimeOutTime=' + encodeURIComponent(params.overtimeOutTime) : '')
-+ (params.overtimeOutMemo ? '&overtimeOutMemo=' + encodeURIComponent(params.overtimeOutMemo) : '');
++ (params.overtimeOutMemo ? '&overtimeOutMemo=' + encodeURIComponent(params.overtimeOutMemo) : '')
++ (params.reportTs ? '&reportTs=' + encodeURIComponent(params.reportTs) : '');
 
 fetch(url)
 .then(function (r) { return r.json(); })
@@ -776,7 +786,12 @@ if (data.reason) {
 html += '<p class="line">原因：' + data.reason + '</p>';
 }
 
+if (isMakeup && data.workDate) {
+html += '<p class="line" style="color:#888;font-size:14px;">補登日期：' +
+data.workDate + '<br>實際回報：' + (data.reportTime || data.time || '') + '</p>';
+} else {
 html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
+}
 if (data.message) {
 html += '<div class="cheer">' + data.message;
 // 提前上班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
@@ -926,7 +941,13 @@ btn.disabled = false;
 btn.innerText = '確定送出';
 return;
 }
-callApi({ id: currentId, ts: currentTs, reason: currentEarlyReason, earlyTime: val });
+callApi({
+id: currentId,
+ts: currentTs,
+reason: currentEarlyReason,
+earlyTime: val,
+reportTs: currentMakeupReportTs
+});
 setTimeout(function () {
 closeEarlyModal();
 btn.disabled = false;
@@ -1006,7 +1027,8 @@ ts: currentTs,
 reason: currentOvertimeOutReason,
 overtimeOutMode: mode,
 overtimeOutTime: selectedTime,
-overtimeOutMemo: memo
+overtimeOutMemo: memo,
+reportTs: currentMakeupReportTs
 });
 
 setTimeout(function () {
@@ -1019,6 +1041,47 @@ btn.innerText = '確定送出';
 // ====== 【新增】獨立補登：不透過掃描/打卡流程，直接呼叫API帶reason，後端會優先處理reason，不會動到正式上下班/加班紀錄 ======
 var STANDALONE_EARLY_REASON = '提前上班';
 var STANDALONE_OVERTIME_OUT_REASON = '加班(外出)';
+var currentMakeupReportTs = null;
+
+function formatDateInputValue(dateObj) {
+return dateObj.getFullYear() + '-' +
+pad2(dateObj.getMonth() + 1) + '-' +
+pad2(dateObj.getDate());
+}
+
+function setStandaloneMakeupDateToday() {
+var dateInput = document.getElementById('standaloneMakeupDate');
+var todayText = formatDateInputValue(new Date());
+dateInput.max = todayText;
+dateInput.value = todayText;
+}
+
+function buildMakeupWorkTimestamp(dateText) {
+if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText || '')) return NaN;
+
+var parts = dateText.split('-');
+var year = Number(parts[0]);
+var month = Number(parts[1]);
+var day = Number(parts[2]);
+var now = new Date();
+
+// 保留「補登日期」的年月日，時間使用目前時間。
+// .gs 會另外用 reportTs 保存實際送出時間。
+var workDate = new Date(
+year, month - 1, day,
+now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()
+);
+
+if (
+workDate.getFullYear() !== year ||
+workDate.getMonth() !== month - 1 ||
+workDate.getDate() !== day
+) {
+return NaN;
+}
+
+return workDate.getTime();
+}
 
 // ====== 【新增】標記：是否從「加班結束區間 → 還要繼續加班」流程進入補登視窗 ======
 // 為 true 時代表 currentId / currentTs 已經由掃描設定好，補登視窗不需要再輸入員工編號
@@ -1026,8 +1089,11 @@ var skipMakeupIdInput = false;
 
 function openStandaloneMakeup() {
 skipMakeupIdInput = false;
+currentMakeupReportTs = null;
 document.getElementById('standaloneMakeupIdField').style.display = '';
+document.getElementById('standaloneMakeupDateField').style.display = '';
 document.getElementById('standaloneMakeupId').value = '';
+setStandaloneMakeupDateToday();
 document.getElementById('standaloneMakeupSelect').value = '下午未休息';
 document.getElementById('standaloneMakeupOverlay').classList.add('show');
 }
@@ -1035,7 +1101,10 @@ document.getElementById('standaloneMakeupOverlay').classList.add('show');
 // ====== 【新增】從「還要繼續加班」進入補登視窗：沿用掃描時已取得的員工編號，隱藏編號輸入欄 ======
 function openContinueOvertimeMakeup() {
 skipMakeupIdInput = true;
+currentMakeupReportTs = Date.now();
 document.getElementById('standaloneMakeupIdField').style.display = 'none';
+document.getElementById('standaloneMakeupDateField').style.display = 'none';
+setStandaloneMakeupDateToday();
 document.getElementById('standaloneMakeupSelect').value = '下午未休息';
 document.getElementById('standaloneMakeupOverlay').classList.add('show');
 }
@@ -1043,6 +1112,7 @@ document.getElementById('standaloneMakeupOverlay').classList.add('show');
 function closeStandaloneMakeup() {
 document.getElementById('standaloneMakeupOverlay').classList.remove('show');
 document.getElementById('standaloneMakeupIdField').style.display = '';
+document.getElementById('standaloneMakeupDateField').style.display = '';
 skipMakeupIdInput = false;
 }
 
@@ -1052,14 +1122,34 @@ var reason = document.getElementById('standaloneMakeupSelect').value;
 if (!skipMakeupIdInput) {
 var idInput = document.getElementById('standaloneMakeupId').value.trim().toUpperCase();
 var validIdPattern = /^HS\d{3}$/;
+var dateInput = document.getElementById('standaloneMakeupDate');
+var selectedDate = dateInput.value;
+var todayText = formatDateInputValue(new Date());
 
 if (!idInput || !validIdPattern.test(idInput)) {
 alert('請先選擇員工');
 return;
 }
 
+if (!selectedDate) {
+alert('請選擇補登日期');
+return;
+}
+
+if (selectedDate > todayText) {
+alert('補登日期不可選擇未來日期');
+return;
+}
+
+var workTs = buildMakeupWorkTimestamp(selectedDate);
+if (!Number.isFinite(workTs)) {
+alert('補登日期格式錯誤，請重新選擇');
+return;
+}
+
 currentId = idInput;
-currentTs = Date.now();
+currentTs = workTs;
+currentMakeupReportTs = Date.now();
 }
 // skipMakeupIdInput 為 true 時，沿用掃描時已設定好的 currentId / currentTs
 
@@ -1081,7 +1171,12 @@ return;
 
 // 中午未休息／下午未休息：直接確認送出，不會產生正式打卡/下班紀錄
 if (confirm('確定要補登「' + reason + '」嗎？（不會影響今天的打卡紀錄）')) {
-callApi({ id: currentId, ts: currentTs, reason: reason });
+callApi({
+id: currentId,
+ts: currentTs,
+reason: reason,
+reportTs: currentMakeupReportTs
+});
 }
 }
 
