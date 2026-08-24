@@ -1222,13 +1222,40 @@ updateSoundToggleBtn();
   function refocusScanner() {
     var gateVisible = !document.getElementById('accessGateOverlay').classList.contains('hidden');
     var anyOverlayShown = document.querySelector('.overlay.show, .modal-overlay.show');
+
     if (!gateVisible && !anyOverlayShown) {
-      scannerInput.focus();
+      try {
+        scannerInput.focus({ preventScroll: true });
+      } catch (e) {
+        scannerInput.focus();
+      }
     }
   }
 
-  window.addEventListener('load', refocusScanner);
-  document.body.addEventListener('click', refocusScanner);
+  // 頁面重整／首次載入時，主動多次抓回掃描器焦點。
+  // 避免 XB-R60 在頁面剛載入完成的瞬間掃描，第一筆被瀏覽器吃掉或輸入不完整。
+  function primeScannerFocus() {
+    refocusScanner();
+
+    [100, 300, 800, 1500].forEach(function (delay) {
+      setTimeout(function () {
+        refocusScanner();
+      }, delay);
+    });
+  }
+
+  window.addEventListener('load', primeScannerFocus);
+  window.addEventListener('pageshow', primeScannerFocus);
+  window.addEventListener('focus', function () {
+    setTimeout(refocusScanner, 50);
+  });
+
+  document.body.addEventListener('click', function () {
+    setTimeout(refocusScanner, 0);
+  });
+
+  // DOM 建好後先立刻嘗試一次，不只等 window.load
+  setTimeout(primeScannerFocus, 0);
 
   scannerInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
@@ -1245,7 +1272,7 @@ updateSoundToggleBtn();
     buffer = scannerInput.value;
   });
 
-  setInterval(refocusScanner, 1500);
+  setInterval(refocusScanner, 800);
 })();
 </script>
 </body>
