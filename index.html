@@ -414,9 +414,8 @@ onclick="confirmSubmitReason()">
 <div class="modal-box">
 <div class="modal-icon">⏱️</div>
 <div class="modal-title">現在是加班時段</div>
-<div class="modal-text">請選擇：</div>
+<div class="modal-text">是否要結束今天加班？</div>
 <div class="modal-actions" style="flex-direction:column;gap:10px;">
-<button type="button" class="modal-btn confirm" style="background:#8d6e63;" onclick="chooseContinueOvertime()">☕ 還要繼續加班，點此補登</button>
 <button type="button" class="modal-btn confirm" onclick="chooseEndOvertime()">🚪 我要下班了，結束今天加班</button>
 <button type="button" class="modal-btn cancel" onclick="cancelOvertimeEndChoice()">取消</button>
 </div>
@@ -599,18 +598,13 @@ return minutes >= toMinutesJS(OVERTIME_END_WINDOW_START) && minutes <= toMinutes
 
 function showOvertimeEndChoice() {
 document.getElementById('overtimeEndChoiceOverlay').classList.add('show');
-statusEl.innerText = '請選擇：繼續加班或結束加班';
+statusEl.innerText = '請確認是否結束今天加班';
 }
 
 function closeOvertimeEndChoice() {
 document.getElementById('overtimeEndChoiceOverlay').classList.remove('show');
 }
 
-// ====== 【修改】「還要繼續加班」改為打開補登選單，讓員工自己選要補登哪一項 ======
-function chooseContinueOvertime() {
-closeOvertimeEndChoice();
-openContinueOvertimeMakeup();
-}
 
 function chooseEndOvertime() {
 closeOvertimeEndChoice();
@@ -1129,16 +1123,6 @@ document.getElementById('standaloneMakeupSelect').value = '下午未休息';
 document.getElementById('standaloneMakeupOverlay').classList.add('show');
 }
 
-// ====== 【新增】從「還要繼續加班」進入補登視窗：沿用掃描時已取得的員工編號，隱藏編號輸入欄 ======
-function openContinueOvertimeMakeup() {
-skipMakeupIdInput = true;
-currentMakeupReportTs = Date.now();
-document.getElementById('standaloneMakeupIdField').style.display = 'none';
-document.getElementById('standaloneMakeupDateField').style.display = 'none';
-setStandaloneMakeupDateToday();
-document.getElementById('standaloneMakeupSelect').value = '下午未休息';
-document.getElementById('standaloneMakeupOverlay').classList.add('show');
-}
 
 function closeStandaloneMakeup() {
 document.getElementById('standaloneMakeupOverlay').classList.remove('show');
