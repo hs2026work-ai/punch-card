@@ -226,6 +226,19 @@ display: block;
 }
 #standaloneMakeupBtn:active { background: #24406f; }
 
+/* ====== 【新增】音效靜音切換按鈕（測試/放音樂時可關閉打卡音效） ====== */
+#soundToggleBtn {
+margin-top: 4px;
+padding: 4px 12px;
+font-size: 13px;
+background: rgba(255,255,255,0.12);
+color: #ffd700;
+border: 1px solid rgba(255,215,0,0.4);
+border-radius: 14px;
+cursor: pointer;
+}
+#soundToggleBtn:active { background: rgba(255,255,255,0.22); }
+
 /* ====== 進站授權碼遮罩 ====== */
 #accessGateOverlay {
 position: fixed;
@@ -279,6 +292,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <h1>宏升工業社 - 打卡掃描</h1>
 
 <div id="clock">正在讀取時間...</div>
+<button type="button" id="soundToggleBtn" onclick="toggleSoundMute()">🔊 音效開啟（點此靜音）</button>
 
 <div style="font-size:13px;color:#ffd700;text-align:center;margin-bottom:8px;max-width:450px;">
   💡 使用 XB-R60 掃描器前，請先確認電腦輸入法為英文模式
@@ -672,8 +686,31 @@ errorAudio.preload = "auto";
 successAudio.load();
 errorAudio.load();
 
+// ====== 【新增】音效靜音切換（測試/放音樂時可關閉打卡音效，設定會記住） ======
+var SOUND_MUTE_KEY = 'punchCardSoundMuted_v1';
+var soundMuted = localStorage.getItem(SOUND_MUTE_KEY) === '1';
+
+function updateSoundToggleBtn() {
+var btn = document.getElementById('soundToggleBtn');
+if (!btn) return;
+btn.innerText = soundMuted ? '🔇 音效已靜音（點此開啟）' : '🔊 音效開啟（點此靜音）';
+}
+
+function toggleSoundMute() {
+soundMuted = !soundMuted;
+localStorage.setItem(SOUND_MUTE_KEY, soundMuted ? '1' : '0');
+updateSoundToggleBtn();
+}
+
 function playSuccessSound() {
+if (soundMuted) return;
 try { successAudio.currentTime = 0; successAudio.play(); } catch (e) {}
+}
+
+// ====== 【新增】補上原本缺少的錯誤音效函式（打卡失敗時使用），同樣受靜音開關控制 ======
+function playErrorSound() {
+if (soundMuted) return;
+try { errorAudio.currentTime = 0; errorAudio.play(); } catch (e) {}
 }
 
 function unlockAudio() {
@@ -1249,6 +1286,8 @@ busy = false;
 if (localStorage.getItem(GATE_STORAGE_KEY) === '1') {
 document.getElementById('accessGateOverlay').classList.add('hidden');
 }
+
+updateSoundToggleBtn();
 </script>
 
 <script>
