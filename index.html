@@ -363,6 +363,10 @@ onclick="submitReason()">
 
 </div>
 
+<div id="leaveReminderBox"
+style="display:none;margin-top:14px;padding:12px 14px;background:#fff3e0;border:1px solid #e0752c;border-radius:8px;color:#7a4400;font-size:15px;line-height:1.6;text-align:left;">
+</div>
+
 <div class="modal-actions">
 
 <button
@@ -1241,6 +1245,161 @@ document.getElementById('reasonOverlay').classList.add('show');
 statusEl.innerText = '請選擇打卡異常原因';
 }
 
+var leaveCheckPending = false;
+var leaveCheckResult = null;
+
+function isLeaveAbnormalReason(reason) {
+return ['請事假', '請病假', '請特別假'].indexOf(reason) !== -1;
+}
+
+function setReasonConfirmEnabled(enabled) {
+var btn = document.getElementById('reasonConfirmBtn');
+if (!btn) return;
+btn.disabled = !enabled;
+btn.innerText = enabled ? '確定送出' : '核對中...';
+}
+
+function getLeaveReminderBox() {
+return document.getElementById('leaveReminderBox');
+}
+
+function setLeaveCheckMessage(kind, htmlText) {
+var box = getLeaveReminderBox();
+if (!box) return;
+
+box.style.display = 'block';
+box.innerHTML = htmlText;
+
+if (kind === 'ok') {
+box.style.background = '#e8f5e9';
+box.style.borderColor = '#2e7d32';
+box.style.color = '#1b5e20';
+} else if (kind === 'pending') {
+box.style.background = '#e3f2fd';
+box.style.borderColor = '#3a5a9c';
+box.style.color = '#24406f';
+} else {
+box.style.background = '#fff3e0';
+box.style.borderColor = '#e0752c';
+box.style.color = '#7a4400';
+}
+}
+
+function formatLeaveCheckTime(value) {
+var text = String(value || '');
+if (/^\d{2}:\d{2}$/.test(text)) return text;
+if (/^\d{4}$/.test(text)) return text.slice(0,2) + ':' + text.slice(2);
+return text;
+}
+
+function renderLeaveCheckResult(data, selectedReason) {
+leaveCheckResult = data || {};
+var leaveType = (data && data.leaveType) ? data.leaveType : selectedReason.replace(/^請/, '');
+var startTime = formatLeaveCheckTime(data && data.startTime);
+var endTime = formatLeaveCheckTime(data && data.endTime);
+var timeText = startTime && endTime ? (startTime + '～' + endTime) : '';
+var leaveNoText = data && data.leaveNo ? '<br>假單：' + escapeText(data.leaveNo) : '';
+
+if (!data || data.status === 'error') {
+setLeaveCheckMessage(
+'warn',
+'⚠️ 暫時無法核對請假資料。<br>仍可送出此次異常打卡；若尚未請假，請記得補送假單。'
+);
+return;
+}
+
+if (data.matchStatus === 'approved') {
+setLeaveCheckMessage(
+'ok',
+'✅ 已查到請假紀錄<br>' +
+'假別：' + escapeText(leaveType) +
+(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
+'<br>狀態：已核准' + leaveNoText
+);
+return;
+}
+
+if (data.matchStatus === 'pending') {
+setLeaveCheckMessage(
+'pending',
+'🕒 已查到請假申請<br>' +
+'假別：' + escapeText(leaveType) +
+(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
+'<br>狀態：尚待完成核准' + leaveNoText
+);
+return;
+}
+
+if (data.matchStatus === 'rejected') {
+setLeaveCheckMessage(
+'warn',
+'⚠️ 已查到請假申請，但目前顯示為退回／未核准。<br>' +
+'假別：' + escapeText(leaveType) +
+(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
+'<br>請確認假單狀態，必要時重新補送。' + leaveNoText
+);
+return;
+}
+
+if (data.matchStatus === 'time_mismatch') {
+setLeaveCheckMessage(
+'warn',
+'⚠️ 已查到同日「' + escapeText(leaveType) + '」假單' +
+(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
+'<br>但與本次打卡時間 ' + escapeText(data.punchTime || '') + ' 可能不一致，請確認後再送出。' +
+leaveNoText
+);
+return;
+}
+
+if (data.matchStatus === 'different_type') {
+var types = Array.isArray(data.sameDayLeaveTypes) ? data.sameDayLeaveTypes.join('、') : '';
+setLeaveCheckMessage(
+'warn',
+'⚠️ 已查到同日請假紀錄，但假別為「' + escapeText(types || '其他假別') + '」。' +
+'<br>目前選擇的是「' + escapeText(selectedReason) + '」，請確認是否選錯。'
+);
+return;
+}
+
+setLeaveCheckMessage(
+'warn',
+'⚠️ 尚未查到今日「' + escapeText(leaveType) + '」請假紀錄。' +
+'<br>若尚未提出請假申請，請記得補送假單。'
+);
+}
+
+function checkLeaveBeforeConfirm(reason) {
+leaveCheckPending = true;
+leaveCheckResult = null;
+setReasonConfirmEnabled(false);
+setLeaveCheckMessage('pending', '🔎 正在核對請假紀錄...');
+
+var safeTs = Number(currentTs);
+if (!Number.isFinite(safeTs) || safeTs <= 0) safeTs = Date.now();
+
+var url = currentBase + '?mode=leave_check'
++ '&id=' + encodeURIComponent(currentId || '')
++ '&reason=' + encodeURIComponent(reason)
++ '&ts=' + encodeURIComponent(safeTs);
+
+fetch(url)
+.then(function (r) { return r.json(); })
+.then(function (data) {
+renderLeaveCheckResult(data, reason);
+})
+.catch(function () {
+renderLeaveCheckResult({
+status: 'error',
+matchStatus: 'check_failed'
+}, reason);
+})
+.finally(function () {
+leaveCheckPending = false;
+setReasonConfirmEnabled(true);
+});
+}
+
 function submitReason() {
 
 var reason = document.getElementById('reasonSelect').value;
@@ -1252,10 +1411,21 @@ return;
 
 document.getElementById("reasonConfirmLabel").innerText = reason;
 
+var reminderBox = document.getElementById('leaveReminderBox');
+if (reminderBox) reminderBox.style.display = 'none';
+
 document
 .getElementById("reasonConfirmOverlay")
 .classList
 .add("show");
+
+if (isLeaveAbnormalReason(reason)) {
+checkLeaveBeforeConfirm(reason);
+} else {
+leaveCheckPending = false;
+leaveCheckResult = null;
+setReasonConfirmEnabled(true);
+}
 
 }
 function closeReasonConfirm(){
@@ -1265,9 +1435,21 @@ document
 .classList
 .remove("show");
 
+var reminderBox = document.getElementById('leaveReminderBox');
+if (reminderBox) reminderBox.style.display = 'none';
+
+leaveCheckPending = false;
+leaveCheckResult = null;
+setReasonConfirmEnabled(true);
+
 }
 
 function confirmSubmitReason(){
+
+if (leaveCheckPending) {
+alert('請稍候，系統正在核對請假紀錄');
+return;
+}
 
 var reason = document.getElementById("reasonSelect").value;
 
