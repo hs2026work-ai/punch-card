@@ -462,7 +462,7 @@ onclick="confirmSubmitReason()">
 <option value="中午未休息">中午未休息</option>
 <option value="下午未休息">下午未休息</option>
 <option value="提前上班">提前上班</option>
-<option value="加班(外出)">加班(外出)</option>
+<option value="加班(外出)">加班(外出)晚回來</option>
 </select>
 </div>
 
@@ -476,15 +476,7 @@ onclick="confirmSubmitReason()">
 <div class="modal-overlay" id="overtimeOutModalOverlay">
 <div class="modal-box">
 <div class="modal-icon">🚚</div>
-<div class="modal-title">加班（外出）</div>
-
-<div class="overtime-out-field">
-<label for="overtimeOutModeSelect">補登項目</label>
-<select id="overtimeOutModeSelect">
-<option value="提前上班">提前上班</option>
-<option value="晚回來">晚回來</option>
-</select>
-</div>
+<div class="modal-title">晚回來</div>
 
 <div class="overtime-out-field">
 <label>時間</label>
@@ -795,7 +787,7 @@ data.earlyTime + ' ～ ' + (data.normalCheckInTime || currentNormalCheckInTime) 
 }
 if (data.isOvertimeOutMakeup) {
 html += '<div style="margin-top:8px;font-size:16px;line-height:1.6;">' +
-'項目：' + (data.overtimeOutMode || '') + '<br>' +
+'項目：加班（外出）晚回來<br>' +
 '時間：' + (data.overtimeOutTime || '') + '<br>' +
 '事由：' + escapeText(data.memo || '') + '</div>';
 }
@@ -980,7 +972,6 @@ minuteSelect.value = now.getMinutes() >= 30 ? '30' : '00';
 
 function openOvertimeOutModal() {
 prepareOvertimeOutTimeSelects();
-document.getElementById('overtimeOutModeSelect').value = '提前上班';
 document.getElementById('overtimeOutMemo').value = '';
 document.getElementById('overtimeOutModalOverlay').classList.add('show');
 }
@@ -991,16 +982,12 @@ document.getElementById('overtimeOutModalOverlay').classList.remove('show');
 
 function submitOvertimeOut() {
 var btn = document.getElementById('overtimeOutConfirmBtn');
-var mode = document.getElementById('overtimeOutModeSelect').value;
+var mode = '晚回來';
 var hour = document.getElementById('overtimeOutHourSelect').value;
 var minute = document.getElementById('overtimeOutMinuteSelect').value;
 var memo = document.getElementById('overtimeOutMemo').value.trim();
 var selectedTime = hour && minute ? hour + ':' + minute : '';
 
-if (!mode) {
-alert('請選擇提前上班或晚回來');
-return;
-}
 if (!selectedTime) {
 alert('請選擇時間');
 return;
@@ -1085,7 +1072,7 @@ openEarlyModal();
 return;
 }
 
-// 「加班（外出）」需選擇提前上班／晚回來、時間及事由
+// 「加班（外出）晚回來」需選擇時間及事由，模式固定為「晚回來」
 if (reason === STANDALONE_OVERTIME_OUT_REASON) {
 currentOvertimeOutReason = STANDALONE_OVERTIME_OUT_REASON;
 openOvertimeOutModal();
