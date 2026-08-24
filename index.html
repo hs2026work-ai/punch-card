@@ -486,7 +486,8 @@ onclick="confirmSubmitReason()">
 <div class="modal-title">加班（外出）晚回來</div>
 
 <div class="overtime-out-field">
-<label>時間</label>
+<label>晚回來時間</label>
+<div style="font-size:13px;color:#888;margin-bottom:6px;">若補登日期為今天，不可選擇晚於目前時間的時段</div>
 <div class="early-time-row" style="margin-top:0;">
 <select id="overtimeOutHourSelect" aria-label="小時"></select>
 <span class="early-time-colon">:</span>
@@ -965,6 +966,26 @@ return String(value || '')
 .replace(/'/g, '&#39;');
 }
 
+function isFutureOvertimeOutTimeForToday(selectedTime) {
+var dateInput = document.getElementById('standaloneMakeupDate');
+if (!dateInput || !dateInput.value) return false;
+
+var todayText = formatDateInputValue(new Date());
+
+// 只有補登日期是「今天」才需要限制時間不能超過現在
+if (dateInput.value !== todayText) return false;
+
+if (!/^\d{2}:\d{2}$/.test(selectedTime || '')) return false;
+
+var parts = selectedTime.split(':');
+var selectedMinutes = Number(parts[0]) * 60 + Number(parts[1]);
+
+var now = new Date();
+var nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+return selectedMinutes > nowMinutes;
+}
+
 function prepareOvertimeOutTimeSelects() {
 var hourSelect = document.getElementById('overtimeOutHourSelect');
 var minuteSelect = document.getElementById('overtimeOutMinuteSelect');
@@ -1013,6 +1034,12 @@ if (!selectedTime) {
 alert('請選擇時間');
 return;
 }
+
+if (isFutureOvertimeOutTimeForToday(selectedTime)) {
+alert('補登日期是今天，晚回來時間不能晚於目前時間。\n\n如果要補昨天或更早的紀錄，請先回上一頁修改「補登日期」。');
+return;
+}
+
 if (!memo) {
 alert('請填寫事由');
 return;
