@@ -295,7 +295,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <button type="button" id="soundToggleBtn" onclick="toggleSoundMute()">🔊 音效開啟（點此靜音）</button>
 
 <div style="font-size:13px;color:#ffd700;text-align:center;margin-bottom:8px;max-width:450px;">
-  💡 使用 XB-R60 掃描器前，請先確認電腦輸入法為英文模式
+  💡 XB-R60 掃描器已啟用輸入法防呆，可直接感應員工 QR Code
 </div>
 <div class="status" id="status-text">📷 請感應員工 QR Code</div>
 
@@ -633,7 +633,7 @@ function handleScan(rawText) {
   if (!parsed.id || !validIdPattern.test(parsed.id)) {
     showResultCard({
       status: 'error',
-      message: '掃描內容異常，請確認電腦輸入法為英文模式後重新掃描'
+      message: '掃描內容異常，請重新感應 QR Code；若持續失敗請洽管理人員'
     });
     return;
   }
@@ -1487,12 +1487,72 @@ updateSoundToggleBtn();
   var scannerInput = document.createElement('input');
   scannerInput.type = 'text';
   scannerInput.id = 'xbr60Input';
+  scannerInput.autocomplete = 'off';
+  scannerInput.autocapitalize = 'off';
+  scannerInput.spellcheck = false;
+  scannerInput.inputMode = 'none';
   scannerInput.style.position = 'absolute';
   scannerInput.style.opacity = '0';
   scannerInput.style.pointerEvents = 'none';
+  scannerInput.style.width = '1px';
+  scannerInput.style.height = '1px';
   document.body.appendChild(scannerInput);
 
-  var buffer = '';
+  // ===== XB-R60 輸入法防呆 =====
+  // 不依賴 e.key / input 文字，而是用 KeyboardEvent.code 還原實體按鍵。
+  // 因此 Windows 即使停在中文／注音輸入法，KeyH、KeyS、Digit0～9
+  // 仍會被組回 H、S、0～9。
+  var physicalBuffer = '';
+  var fallbackBuffer = '';
+
+  function codeToAscii(e) {
+    var code = e.code || '';
+
+    // 英文字母：KeyA ~ KeyZ
+    if (/^Key[A-Z]$/.test(code)) {
+      return code.slice(3); // 固定大寫，員工編號不受 Caps Lock / 中文輸入法影響
+    }
+
+    // 上排數字：Digit0 ~ Digit9
+    if (/^Digit[0-9]$/.test(code)) {
+      if (!e.shiftKey) return code.slice(5);
+      var shiftedDigits = {
+        Digit1: '!', Digit2: '@', Digit3: '#', Digit4: '$', Digit5: '%',
+        Digit6: '^', Digit7: '&', Digit8: '*', Digit9: '(', Digit0: ')'
+      };
+      return shiftedDigits[code] || '';
+    }
+
+    // 數字鍵盤：Numpad0 ~ Numpad9
+    if (/^Numpad[0-9]$/.test(code)) {
+      return code.slice(6);
+    }
+
+    // 常見 QR / 條碼符號，同時保留日後擴充彈性
+    var normalMap = {
+      Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']',
+      Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',',
+      Period: '.', Slash: '/', Backquote: '`',
+      NumpadDecimal: '.', NumpadAdd: '+', NumpadSubtract: '-',
+      NumpadMultiply: '*', NumpadDivide: '/'
+    };
+    var shiftMap = {
+      Minus: '_', Equal: '+', BracketLeft: '{', BracketRight: '}',
+      Backslash: '|', Semicolon: ':', Quote: '"', Comma: '<',
+      Period: '>', Slash: '?', Backquote: '~'
+    };
+
+    if (e.shiftKey && shiftMap[code] !== undefined) return shiftMap[code];
+    if (normalMap[code] !== undefined) return normalMap[code];
+
+    return '';
+  }
+
+  function resetScannerBuffers() {
+    physicalBuffer = '';
+    fallbackBuffer = '';
+    scannerInput.value = '';
+  }
 
   function refocusScanner() {
     var gateVisible = !document.getElementById('accessGateOverlay').classList.contains('hidden');
@@ -1508,14 +1568,10 @@ updateSoundToggleBtn();
   }
 
   // 頁面重整／首次載入時，主動多次抓回掃描器焦點。
-  // 避免 XB-R60 在頁面剛載入完成的瞬間掃描，第一筆被瀏覽器吃掉或輸入不完整。
   function primeScannerFocus() {
     refocusScanner();
-
     [100, 300, 800, 1500].forEach(function (delay) {
-      setTimeout(function () {
-        refocusScanner();
-      }, delay);
+      setTimeout(refocusScanner, delay);
     });
   }
 
@@ -1529,22 +1585,52 @@ updateSoundToggleBtn();
     setTimeout(refocusScanner, 0);
   });
 
-  // DOM 建好後先立刻嘗試一次，不只等 window.load
   setTimeout(primeScannerFocus, 0);
 
+  // 主要掃描路徑：從實體按鍵 code 組字串，完全避開中文輸入法。
   scannerInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      var scanned = buffer.trim();
-      buffer = '';
-      scannerInput.value = '';
+    if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.key === 'Enter') {
+      e.preventDefault();
+
+      var scanned = (physicalBuffer || fallbackBuffer || scannerInput.value || '').trim();
+      resetScannerBuffers();
+
       if (scanned) {
         handleScan(scanned);
       }
+      return;
     }
+
+    // Shift / Ctrl / Alt / Meta 本身不加入 buffer
+    if (['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','MetaRight'].indexOf(e.code) !== -1) {
+      return;
+    }
+
+    var ch = codeToAscii(e);
+    if (ch) {
+      physicalBuffer += ch;
+
+      // 阻止中文輸入法把 H/S 轉成注音或組字；我們已用 code 自己收下字符。
+      e.preventDefault();
+      e.stopPropagation();
+      scannerInput.value = '';
+      fallbackBuffer = '';
+    }
+  }, true);
+
+  // 備援：若某些特殊掃描器沒有正常提供 KeyboardEvent.code，仍保留原 input 路徑。
+  scannerInput.addEventListener('input', function () {
+    fallbackBuffer = scannerInput.value;
   });
 
-  scannerInput.addEventListener('input', function () {
-    buffer = scannerInput.value;
+  // 中文輸入法若嘗試進入 composition，直接清掉組字內容，避免污染 QR。
+  scannerInput.addEventListener('compositionstart', function () {
+    scannerInput.value = '';
+    fallbackBuffer = '';
+  });
+  scannerInput.addEventListener('compositionend', function () {
+    scannerInput.value = '';
+    fallbackBuffer = '';
   });
 
   setInterval(refocusScanner, 800);
