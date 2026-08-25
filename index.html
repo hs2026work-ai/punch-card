@@ -299,7 +299,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 </div>
 <div class="status" id="status-text">📷 請感應員工 QR Code</div>
 
-<a id="leaveRequestBtn" href="https://hs2026work-ai.github.io/punch-card/check-leave-form.html">📝 請假申請 Xin nghi phep</a>
+<a id="leaveRequestBtn" href="check-leave-form-timeout.html">📝 請假申請 Xin nghi phep</a>
 
 <!-- ====== 【新增】獨立補登入口：不會觸發正式打卡，適合「還要繼續加班但想先標記下午未休息」的情況 ====== -->
 <button id="standaloneMakeupBtn" type="button" onclick="openStandaloneMakeup()">🛠️ 補登（不影響今天打卡）</button>
@@ -308,89 +308,6 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div class="card" id="resultCard"></div>
 </div>
 
-<div class="overlay" id="reasonOverlay">
-<div class="card">
-<h2 style="color:#c62828;">⚠️ 非正常打卡時間</h2>
-<p class="line" id="reasonInfo"></p>
-<div class="divider" style="margin-top:18px;">請選擇異常原因</div>
-<select id="reasonSelect"></select>
-<div style="display:flex;gap:10px;margin-top:12px;">
-
-<button
-type="button"
-class="modal-btn cancel"
-style="flex:1;"
-onclick="closeAllOverlaysAndResume()">
-
-← 返回
-
-</button>
-
-<button
-type="button"
-class="submit-btn"
-id="reasonSubmitBtn"
-style="flex:1;"
-onclick="submitReason()">
-
-送出
-
-</button>
-
-</div>
-</div>
-</div>
-
-<div class="modal-overlay" id="reasonConfirmOverlay">
-
-<div class="modal-box">
-
-<div class="modal-icon">⚠️</div>
-
-<div class="modal-title">
-
-確認送出
-
-</div>
-
-<div class="modal-text">
-
-原因：
-
-<br>
-
-<b id="reasonConfirmLabel"></b>
-
-</div>
-
-<div id="leaveReminderBox"
-style="display:none;margin-top:14px;padding:12px 14px;background:#fff3e0;border:1px solid #e0752c;border-radius:8px;color:#7a4400;font-size:15px;line-height:1.6;text-align:left;">
-</div>
-
-<div class="modal-actions">
-
-<button
-class="modal-btn cancel"
-onclick="closeReasonConfirm()">
-
-← 返回
-
-</button>
-
-<button
-class="modal-btn confirm"
-id="reasonConfirmBtn"
-onclick="confirmSubmitReason()">
-
-確定送出
-
-</button>
-
-</div>
-
-</div>
-
-</div>    
 <div class="modal-overlay" id="earlyModalOverlay">
 <div class="modal-box">
 <div class="modal-icon">⏰</div>
@@ -409,19 +326,6 @@ onclick="confirmSubmitReason()">
 </div>
 
 <!-- ====== 【新增】獨立補登彈窗：先輸入員工編號，再選補登項目，過程不會產生正式打卡紀錄 ====== -->
-<!-- ====== 【新增】掃描時間落在加班結束區間(17:25-20:50)時，先跳出選擇，避免誤判為下班 ====== -->
-<div class="modal-overlay" id="overtimeEndChoiceOverlay">
-<div class="modal-box">
-<div class="modal-icon">⏱️</div>
-<div class="modal-title">現在是加班時段</div>
-<div class="modal-text">是否要結束今天加班？</div>
-<div class="modal-actions" style="flex-direction:column;gap:10px;">
-<button type="button" class="modal-btn confirm" onclick="chooseEndOvertime()">🚪 我要下班了，結束今天加班</button>
-<button type="button" class="modal-btn cancel" onclick="cancelOvertimeEndChoice()">取消</button>
-</div>
-</div>
-</div>
-
 <div class="modal-overlay" id="standaloneMakeupOverlay">
 <div class="modal-box">
 <div class="modal-icon">🛠️</div>
@@ -582,43 +486,6 @@ var currentBase = FALLBACK_SCRIPT_URL;
 var currentId = null;
 var currentTs = null;
 
-// ====== 【新增】加班結束判定區間（要跟 Code.gs 的 TIME_WINDOWS 保持一致）======
-var OVERTIME_END_WINDOW_START = '17:25';
-var OVERTIME_END_WINDOW_END = '20:50';
-
-function toMinutesJS(hhmm) {
-var parts = hhmm.split(':');
-return Number(parts[0]) * 60 + Number(parts[1]);
-}
-
-function isInOvertimeEndWindow(dateObj) {
-var minutes = dateObj.getHours() * 60 + dateObj.getMinutes();
-return minutes >= toMinutesJS(OVERTIME_END_WINDOW_START) && minutes <= toMinutesJS(OVERTIME_END_WINDOW_END);
-}
-
-function showOvertimeEndChoice() {
-document.getElementById('overtimeEndChoiceOverlay').classList.add('show');
-statusEl.innerText = '請確認是否結束今天加班';
-}
-
-function closeOvertimeEndChoice() {
-document.getElementById('overtimeEndChoiceOverlay').classList.remove('show');
-}
-
-
-function chooseEndOvertime() {
-closeOvertimeEndChoice();
-// 維持原本的正常流程，讓後端依時間區間判定為「加班結束」
-callApi({ id: currentId, ts: currentTs });
-}
-
-function cancelOvertimeEndChoice() {
-closeOvertimeEndChoice();
-statusEl.innerText = '📷 請感應員工 QR Code';
-busy = false;
-currentMakeupReportTs = null;
-}
-
 function handleScan(rawText) {
   var now = Date.now();
   if (busy) return;
@@ -645,18 +512,11 @@ function handleScan(rawText) {
   currentId = parsed.id;
   currentTs = now;
 
-  // ====== 【新增】落在加班結束區間，先讓員工選擇要繼續加班還是真的下班 ======
-  if (isInOvertimeEndWindow(new Date(now))) {
-    showOvertimeEndChoice();
-    return;
-  }
-
+  // 加班結束時段直接打卡，不再跳出選擇按鈕。
+  // 如需補登「下午未休息」等項目，統一回主畫面使用「補登」。
   callApi({ id: currentId, ts: currentTs });
 }
 function callApi(params) {
-            var url = currentBase + '?mode=api'
-                + '&id=' + encodeURIComponent(params.id)
-                + '&ts=' + encodeURIComponent(params.ts)
     var safeTs = Number(params.ts);
 
     if (!Number.isFinite(safeTs) || safeTs <= 0) {
@@ -677,7 +537,16 @@ fetch(url)
 .then(function (r) { return r.json(); })
 .then(function (data) {
 if (data.status === 'need_reason') {
-showReasonCard(data);
+// 相容舊版後端：不再顯示原因選單，直接以非正常時間打卡提示呈現。
+showResultCard({
+status: 'success',
+id: data.id,
+name: data.name,
+type: '打卡異常',
+time: new Date(Number(data.ts) || Date.now()).toLocaleString('zh-TW', { hour12: false }),
+isAbnormalPunch: true,
+message: '若未請假請記得補請，未請假將視為遲到或曠職'
+});
 } else {
 showResultCard(data);
 }
@@ -753,7 +622,6 @@ return Number.isInteger(n) ? String(n) : String(n);
 }
 
 function showResultCard(data) {
-document.getElementById('reasonOverlay').classList.remove('show');
 document.getElementById('earlyModalOverlay').classList.remove('show');
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
 
@@ -763,25 +631,25 @@ var isMakeup = success && data.isMakeup === true;
 if (success) { playSuccessSound(); } else { playErrorSound(); }
 
 var card = document.getElementById('resultCard');
-var icon = success ? '✅' : '⚠️';
-var titleColor = success ? '#1b2a5e' : '#c62828';
-var successTitle = isMakeup ? '補登成功' : '打卡成功';
+var isAbnormalPunch = success && data.isAbnormalPunch === true;
+var icon = isAbnormalPunch ? '⚠️' : (success ? '✅' : '⚠️');
+var titleColor = isAbnormalPunch ? '#c62828' : (success ? '#1b2a5e' : '#c62828');
+var successTitle = isMakeup ? '補登成功' : (isAbnormalPunch ? '非正常時間打卡' : '打卡成功');
 var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' +
 (success ? successTitle : '無法打卡') + '</h2>';
 
-var showAfternoonBtn = false;
 var showEarlyBtn = false;
 var showEarlyReminder = false;
 
 if (success) {
 var detailHtml = '員工編號：' + data.id + '<br>姓名：' + data.name;
 // 補登成功時不再顯示「狀態：下班／加班開始／上班」，避免員工誤以為又打了一次卡
-if (!isMakeup && data.type) {
+if (!isMakeup && data.type && !isAbnormalPunch) {
 detailHtml += '<br>狀態：' + data.type;
 }
 html += '<p class="line">' + detailHtml + '</p>';
 
-if (data.reason) {
+if (data.reason && !isAbnormalPunch) {
 html += '<p class="line">原因：' + data.reason + '</p>';
 }
 
@@ -791,7 +659,13 @@ data.workDate + '<br>實際回報：' + (data.reportTime || data.time || '') + '
 } else {
 html += '<p class="line" style="color:#888;font-size:14px;">' + data.time + '</p>';
 }
-if (data.message) {
+if (isAbnormalPunch) {
+html += '<div style="margin-top:16px;padding:14px;background:#fff3e0;border:1px solid #e0752c;border-radius:8px;color:#7a4400;font-size:17px;line-height:1.7;font-weight:bold;text-align:left;">' +
+'⚠️ 若未請假請記得補請。<br>未請假將視為遲到或曠職。' +
+'</div>';
+}
+
+if (data.message && !isAbnormalPunch) {
 html += '<div class="cheer">' + data.message;
 // 提前上班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
 if (data.isEarlyCheckInMakeup && data.earlyTime) {
@@ -814,12 +688,6 @@ showEarlyReminder = true;
 html += '<div class="early-reminder-box">⏰ ' + escapeText(data.earlyReminderMessage) + '</div>';
 }
 
-if (data.canMarkAfternoonNoBreak) {
-showAfternoonBtn = true;
-html += '<button type="button" class="mark-afternoon-btn" onclick="markAfternoonNoBreak(\'' +
-data.afternoonReason + '\')">☕ 下午（17:00-17:30）沒有休息</button>';
-}
-
 if (data.canMarkEarlyCheckIn) {
 showEarlyBtn = true;
 currentEarlyReason = data.earlyCheckInReason;
@@ -833,7 +701,7 @@ html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()"
 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
 }
 
-var countdownSeconds = (showAfternoonBtn || showEarlyBtn || showEarlyReminder) ? 8 : 1;
+var countdownSeconds = (isAbnormalPunch || showEarlyBtn || showEarlyReminder) ? 8 : 1;
 html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
 card.innerHTML = html;
 
@@ -850,9 +718,6 @@ closeAllOverlaysAndResume();
 },countdownSeconds * 1000);
 }
 
-function markAfternoonNoBreak(reasonVal) {
-callApi({ id: currentId, ts: currentTs, reason: reasonVal });
-}
 
 function parseHHMM(value, fallback) {
 var text = /^\d{2}:\d{2}$/.test(value || '') ? value : fallback;
@@ -921,10 +786,12 @@ refreshEarlyMinuteOptions(defaultTime.minute);
 function openEarlyModal() {
 prepareEarlyTimeSelects();
 document.getElementById('earlyModalOverlay').classList.add('show');
+resetMakeupIdleTimer();
 }
 
 function closeEarlyModal() {
 document.getElementById('earlyModalOverlay').classList.remove('show');
+setTimeout(function(){ if (!isMakeupFlowOpen()) stopMakeupIdleTimer(); }, 0);
 }
 
 function submitEarly() {
@@ -1014,10 +881,12 @@ function openOvertimeOutModal() {
 prepareOvertimeOutTimeSelects();
 document.getElementById('overtimeOutMemo').value = '';
 document.getElementById('overtimeOutModalOverlay').classList.add('show');
+resetMakeupIdleTimer();
 }
 
 function closeOvertimeOutModal() {
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
+setTimeout(function(){ if (!isMakeupFlowOpen()) stopMakeupIdleTimer(); }, 0);
 }
 
 function submitOvertimeOut() {
@@ -1064,6 +933,39 @@ btn.innerText = '確定送出';
 }
 
 // ====== 【新增】獨立補登：不透過掃描/打卡流程，直接呼叫API帶reason，後端會優先處理reason，不會動到正式上下班/加班紀錄 ======
+// ====== 補登畫面 1 分鐘無操作自動回主畫面 ======
+var MAKEUP_IDLE_TIMEOUT_MS = 60 * 1000;
+var makeupIdleTimer = null;
+
+function isMakeupFlowOpen() {
+  var ids = ['standaloneMakeupOverlay', 'earlyModalOverlay', 'overtimeOutModalOverlay'];
+  return ids.some(function (id) {
+    var el = document.getElementById(id);
+    return el && el.classList.contains('show');
+  });
+}
+
+function stopMakeupIdleTimer() {
+  if (makeupIdleTimer) {
+    clearTimeout(makeupIdleTimer);
+    makeupIdleTimer = null;
+  }
+}
+
+function resetMakeupIdleTimer() {
+  if (!isMakeupFlowOpen()) return;
+  stopMakeupIdleTimer();
+  makeupIdleTimer = setTimeout(function () {
+    closeAllOverlaysAndResume();
+  }, MAKEUP_IDLE_TIMEOUT_MS);
+}
+
+['pointerdown', 'touchstart', 'keydown', 'input', 'change'].forEach(function (evt) {
+  document.addEventListener(evt, function () {
+    if (isMakeupFlowOpen()) resetMakeupIdleTimer();
+  }, true);
+});
+
 var STANDALONE_EARLY_REASON = '提前上班';
 var STANDALONE_OVERTIME_OUT_REASON = '加班(外出)';
 var currentMakeupReportTs = null;
@@ -1121,11 +1023,13 @@ document.getElementById('standaloneMakeupId').value = '';
 setStandaloneMakeupDateToday();
 document.getElementById('standaloneMakeupSelect').value = '下午未休息';
 document.getElementById('standaloneMakeupOverlay').classList.add('show');
+resetMakeupIdleTimer();
 }
 
 
 function closeStandaloneMakeup() {
 document.getElementById('standaloneMakeupOverlay').classList.remove('show');
+setTimeout(function(){ if (!isMakeupFlowOpen()) stopMakeupIdleTimer(); }, 0);
 document.getElementById('standaloneMakeupIdField').style.display = '';
 document.getElementById('standaloneMakeupDateField').style.display = '';
 skipMakeupIdInput = false;
@@ -1196,279 +1100,14 @@ reportTs: currentMakeupReportTs
 }
 
 
-function showReasonCard(data) {
-            currentId = data.id;
-            currentTs = data.ts;
-    currentId = data.id || currentId;
-
-    // 後端有回傳有效時間才更新，避免空值覆蓋原本掃描時間
-    var returnedTs = Number(data.ts);
-
-    if (Number.isFinite(returnedTs) && returnedTs > 0) {
-        currentTs = returnedTs;
-    }
-
-    // 最後防呆
-    if (!Number.isFinite(Number(currentTs)) || Number(currentTs) <= 0) {
-        currentTs = Date.now();
-    }
-
-document.getElementById('reasonInfo').innerHTML =
-'員工編號：' + data.id + '<br>姓名：' + data.name;
-
-var select = document.getElementById('reasonSelect');
-select.innerHTML = '';
-(data.reasons || []).forEach(function (r) {
-var opt = document.createElement('option');
-opt.value = r;
-opt.textContent = r;
-select.appendChild(opt);
-});
-
-document.getElementById('reasonOverlay').classList.add('show');
-statusEl.innerText = '請選擇打卡異常原因';
-}
-
-var leaveCheckPending = false;
-var leaveCheckResult = null;
-
-function isLeaveAbnormalReason(reason) {
-return ['請事假', '請病假', '請特別假'].indexOf(reason) !== -1;
-}
-
-function setReasonConfirmEnabled(enabled) {
-var btn = document.getElementById('reasonConfirmBtn');
-if (!btn) return;
-btn.disabled = !enabled;
-btn.innerText = enabled ? '確定送出' : '核對中...';
-}
-
-function getLeaveReminderBox() {
-return document.getElementById('leaveReminderBox');
-}
-
-function setLeaveCheckMessage(kind, htmlText) {
-var box = getLeaveReminderBox();
-if (!box) return;
-
-box.style.display = 'block';
-box.innerHTML = htmlText;
-
-if (kind === 'ok') {
-box.style.background = '#e8f5e9';
-box.style.borderColor = '#2e7d32';
-box.style.color = '#1b5e20';
-} else if (kind === 'pending') {
-box.style.background = '#e3f2fd';
-box.style.borderColor = '#3a5a9c';
-box.style.color = '#24406f';
-} else {
-box.style.background = '#fff3e0';
-box.style.borderColor = '#e0752c';
-box.style.color = '#7a4400';
-}
-}
-
-function formatLeaveCheckTime(value) {
-var text = String(value || '');
-if (/^\d{2}:\d{2}$/.test(text)) return text;
-if (/^\d{4}$/.test(text)) return text.slice(0,2) + ':' + text.slice(2);
-return text;
-}
-
-function renderLeaveCheckResult(data, selectedReason) {
-leaveCheckResult = data || {};
-var leaveType = (data && data.leaveType) ? data.leaveType : selectedReason.replace(/^請/, '');
-var startTime = formatLeaveCheckTime(data && data.startTime);
-var endTime = formatLeaveCheckTime(data && data.endTime);
-var timeText = startTime && endTime ? (startTime + '～' + endTime) : '';
-var leaveNoText = data && data.leaveNo ? '<br>假單：' + escapeText(data.leaveNo) : '';
-
-if (!data || data.status === 'error') {
-setLeaveCheckMessage(
-'warn',
-'⚠️ 暫時無法核對請假資料。<br>仍可送出此次異常打卡；若尚未請假，請記得補送假單。'
-);
-return;
-}
-
-if (data.matchStatus === 'approved') {
-setLeaveCheckMessage(
-'ok',
-'✅ 已查到請假紀錄<br>' +
-'假別：' + escapeText(leaveType) +
-(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
-'<br>狀態：已核准' + leaveNoText
-);
-return;
-}
-
-if (data.matchStatus === 'pending') {
-setLeaveCheckMessage(
-'pending',
-'🕒 已查到請假申請<br>' +
-'假別：' + escapeText(leaveType) +
-(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
-'<br>狀態：尚待完成核准' + leaveNoText
-);
-return;
-}
-
-if (data.matchStatus === 'rejected') {
-setLeaveCheckMessage(
-'warn',
-'⚠️ 已查到請假申請，但目前顯示為退回／未核准。<br>' +
-'假別：' + escapeText(leaveType) +
-(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
-'<br>請確認假單狀態，必要時重新補送。' + leaveNoText
-);
-return;
-}
-
-if (data.matchStatus === 'time_mismatch') {
-setLeaveCheckMessage(
-'warn',
-'⚠️ 已查到同日「' + escapeText(leaveType) + '」假單' +
-(timeText ? '<br>請假時間：' + escapeText(timeText) : '') +
-'<br>但與本次打卡時間 ' + escapeText(data.punchTime || '') + ' 可能不一致，請確認後再送出。' +
-leaveNoText
-);
-return;
-}
-
-if (data.matchStatus === 'different_type') {
-var types = Array.isArray(data.sameDayLeaveTypes) ? data.sameDayLeaveTypes.join('、') : '';
-setLeaveCheckMessage(
-'warn',
-'⚠️ 已查到同日請假紀錄，但假別為「' + escapeText(types || '其他假別') + '」。' +
-'<br>目前選擇的是「' + escapeText(selectedReason) + '」，請確認是否選錯。'
-);
-return;
-}
-
-setLeaveCheckMessage(
-'warn',
-'⚠️ 尚未查到今日「' + escapeText(leaveType) + '」請假紀錄。' +
-'<br>若尚未提出請假申請，請記得補送假單。'
-);
-}
-
-function checkLeaveBeforeConfirm(reason) {
-leaveCheckPending = true;
-leaveCheckResult = null;
-setReasonConfirmEnabled(false);
-setLeaveCheckMessage('pending', '🔎 正在核對請假紀錄...');
-
-var safeTs = Number(currentTs);
-if (!Number.isFinite(safeTs) || safeTs <= 0) safeTs = Date.now();
-
-var url = currentBase + '?mode=leave_check'
-+ '&id=' + encodeURIComponent(currentId || '')
-+ '&reason=' + encodeURIComponent(reason)
-+ '&ts=' + encodeURIComponent(safeTs);
-
-fetch(url)
-.then(function (r) { return r.json(); })
-.then(function (data) {
-renderLeaveCheckResult(data, reason);
-})
-.catch(function () {
-renderLeaveCheckResult({
-status: 'error',
-matchStatus: 'check_failed'
-}, reason);
-})
-.finally(function () {
-leaveCheckPending = false;
-setReasonConfirmEnabled(true);
-});
-}
-
-function submitReason() {
-
-var reason = document.getElementById('reasonSelect').value;
-
-if (!reason) {
-alert("請先選擇異常原因");
-return;
-}
-
-document.getElementById("reasonConfirmLabel").innerText = reason;
-
-var reminderBox = document.getElementById('leaveReminderBox');
-if (reminderBox) reminderBox.style.display = 'none';
-
-document
-.getElementById("reasonConfirmOverlay")
-.classList
-.add("show");
-
-if (isLeaveAbnormalReason(reason)) {
-checkLeaveBeforeConfirm(reason);
-} else {
-leaveCheckPending = false;
-leaveCheckResult = null;
-setReasonConfirmEnabled(true);
-}
-
-}
-function closeReasonConfirm(){
-
-document
-.getElementById("reasonConfirmOverlay")
-.classList
-.remove("show");
-
-var reminderBox = document.getElementById('leaveReminderBox');
-if (reminderBox) reminderBox.style.display = 'none';
-
-leaveCheckPending = false;
-leaveCheckResult = null;
-setReasonConfirmEnabled(true);
-
-}
-
-function confirmSubmitReason(){
-
-if (leaveCheckPending) {
-alert('請稍候，系統正在核對請假紀錄');
-return;
-}
-
-var reason = document.getElementById("reasonSelect").value;
-
-var btn = document.getElementById("reasonConfirmBtn");
-
-btn.disabled = true;
-btn.innerText = "送出中...";
-
-callApi({
-id: currentId,
-ts: currentTs,
-reason: reason
-});
-
-setTimeout(function(){
-
-btn.disabled = false;
-btn.innerText = "確定送出";
-
-closeReasonConfirm();
-
-},1500);
-
-}
-
 function closeAllOverlaysAndResume() {
+stopMakeupIdleTimer();
 document.getElementById('resultOverlay').classList.remove('show');
-document.getElementById('reasonOverlay').classList.remove('show');
 
 // 新增這一行
-document.getElementById('reasonConfirmOverlay').classList.remove('show');
 
 document.getElementById('earlyModalOverlay').classList.remove('show');
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
-document.getElementById('overtimeEndChoiceOverlay').classList.remove('show');
 document.getElementById('standaloneMakeupOverlay').classList.remove('show');
 
 statusEl.innerText = '📷 請感應員工 QR Code';
