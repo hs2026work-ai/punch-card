@@ -208,6 +208,28 @@ min-height: 76px;
 resize: vertical;
 }
 
+
+/* ====== 補登 60 秒可視倒數 ====== */
+.makeup-countdown {
+  margin: 10px 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #eef3fa;
+  color: #1b2a5e;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.4;
+}
+.makeup-countdown.warning {
+  background: #fff3e0;
+  color: #e0752c;
+}
+.makeup-countdown.danger {
+  background: #fff0f0;
+  color: #c62828;
+}
+
 /* ====== 【新增】獨立補登入口按鈕（不觸發正式打卡） ====== */
 #standaloneMakeupBtn {
 width: 100%;
@@ -312,6 +334,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div class="modal-box">
 <div class="modal-icon">⏰</div>
 <div class="modal-title">提前上班</div>
+<div class="makeup-countdown" aria-live="polite">⏱️ 60 秒內無操作將自動返回主畫面</div>
 <div class="modal-text">請選擇你實際到班的時間</div>
 <div class="early-time-row">
 <select id="earlyHourSelect" aria-label="小時" onchange="refreshEarlyMinuteOptions()"></select>
@@ -330,6 +353,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div class="modal-box">
 <div class="modal-icon">🛠️</div>
 <div class="modal-title">補登（不影響今天打卡）</div>
+<div class="makeup-countdown" aria-live="polite">⏱️ 60 秒內無操作將自動返回主畫面</div>
 
 <div class="overtime-out-field" id="standaloneMakeupIdField">
 <label for="standaloneMakeupId">員工編號</label>
@@ -391,6 +415,7 @@ color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 <div class="modal-box">
 <div class="modal-icon">🚚</div>
 <div class="modal-title">加班（外出）晚回來</div>
+<div class="makeup-countdown" aria-live="polite">⏱️ 60 秒內無操作將自動返回主畫面</div>
 
 <div class="overtime-out-field">
 <label>晚回來時間</label>
@@ -933,8 +958,9 @@ btn.innerText = '確定送出';
 }
 
 // ====== 【新增】獨立補登：不透過掃描/打卡流程，直接呼叫API帶reason，後端會優先處理reason，不會動到正式上下班/加班紀錄 ======
-// ====== 補登畫面 1 分鐘無操作自動回主畫面 ======
-var MAKEUP_IDLE_TIMEOUT_MS = 60 * 1000;
+// ====== 補登畫面 60 秒可視倒數，無操作自動回主畫面 ======
+var MAKEUP_IDLE_SECONDS = 60;
+var makeupIdleSecondsLeft = MAKEUP_IDLE_SECONDS;
 var makeupIdleTimer = null;
 
 function isMakeupFlowOpen() {
@@ -945,21 +971,49 @@ function isMakeupFlowOpen() {
   });
 }
 
+function updateMakeupCountdownDisplay() {
+  document.querySelectorAll('.makeup-countdown').forEach(function (el) {
+    el.textContent = '⏱️ ' + makeupIdleSecondsLeft + ' 秒內無操作將自動返回主畫面';
+    el.classList.remove('warning', 'danger');
+    if (makeupIdleSecondsLeft <= 10) {
+      el.classList.add('danger');
+    } else if (makeupIdleSecondsLeft <= 30) {
+      el.classList.add('warning');
+    }
+  });
+}
+
 function stopMakeupIdleTimer() {
   if (makeupIdleTimer) {
-    clearTimeout(makeupIdleTimer);
+    clearInterval(makeupIdleTimer);
     makeupIdleTimer = null;
   }
 }
 
 function resetMakeupIdleTimer() {
   if (!isMakeupFlowOpen()) return;
+
   stopMakeupIdleTimer();
-  makeupIdleTimer = setTimeout(function () {
-    closeAllOverlaysAndResume();
-  }, MAKEUP_IDLE_TIMEOUT_MS);
+  makeupIdleSecondsLeft = MAKEUP_IDLE_SECONDS;
+  updateMakeupCountdownDisplay();
+
+  makeupIdleTimer = setInterval(function () {
+    if (!isMakeupFlowOpen()) {
+      stopMakeupIdleTimer();
+      return;
+    }
+
+    makeupIdleSecondsLeft -= 1;
+    updateMakeupCountdownDisplay();
+
+    if (makeupIdleSecondsLeft <= 0) {
+      stopMakeupIdleTimer();
+      closeAllOverlaysAndResume();
+    }
+  }, 1000);
 }
 
+// 只有實際操作才重設倒數，避免頁面自己的事件一直把倒數洗回 60 秒
 ['pointerdown', 'touchstart', 'keydown', 'input', 'change'].forEach(function (evt) {
   document.addEventListener(evt, function () {
     if (isMakeupFlowOpen()) resetMakeupIdleTimer();
