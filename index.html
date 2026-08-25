@@ -562,12 +562,12 @@ fetch(url)
 .then(function (r) { return r.json(); })
 .then(function (data) {
 if (data.status === 'need_reason') {
-// 相容舊版後端：不再顯示原因選單，直接以非正常時間打卡提示呈現。
+// 相容舊版後端：不再顯示原因選單，直接以打卡異常提示呈現。
 showResultCard({
 status: 'success',
 id: data.id,
 name: data.name,
-type: '打卡異常',
+type: '上班',
 time: new Date(Number(data.ts) || Date.now()).toLocaleString('zh-TW', { hour12: false }),
 isAbnormalPunch: true,
 message: '若未請假請記得補請，未請假將視為遲到或曠職'
@@ -659,7 +659,7 @@ var card = document.getElementById('resultCard');
 var isAbnormalPunch = success && data.isAbnormalPunch === true;
 var icon = isAbnormalPunch ? '⚠️' : (success ? '✅' : '⚠️');
 var titleColor = isAbnormalPunch ? '#c62828' : (success ? '#1b2a5e' : '#c62828');
-var successTitle = isMakeup ? '補登成功' : (isAbnormalPunch ? '非正常時間打卡' : '打卡成功');
+var successTitle = isMakeup ? '補登成功' : (isAbnormalPunch ? '打卡異常' : '打卡成功');
 var html = '<h2 style="color:' + titleColor + ';">' + icon + ' ' +
 (success ? successTitle : '無法打卡') + '</h2>';
 
