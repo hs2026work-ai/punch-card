@@ -313,6 +313,30 @@ box-sizing: border-box;
 .time-selects { gap: 4px; }
 .time-selects select { padding-left: 4px; padding-right: 4px; }
 }
+
+/* ===== 無操作返回主畫面倒數 ===== */
+#idleCountdown {
+    max-width: 420px;
+    margin: 0 auto 12px;
+    padding: 9px 12px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: #eef3fa;
+    color: #1b2a5e;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.45;
+}
+#idleCountdown.warning {
+    background: #fff3e0;
+    color: #b85c00;
+}
+#idleCountdown.danger {
+    background: #fff0f0;
+    color: #c62828;
+}
+
 </style>
 </head>
 <body>
@@ -323,6 +347,8 @@ box-sizing: border-box;
 <div class="subtitle">請假申請</div>
         <div class="version">一般網頁版・午休扣除 v3</div>
         <div class="version">一般網頁版・午休扣除 v4</div>
+
+<div id="idleCountdown">⏱️ 60 秒內無操作將自動返回打卡主畫面</div>
 
 <div class="card">
 <label for="empId">員工姓名 Họ tên nhân viên</label>
@@ -380,28 +406,47 @@ Nghỉ thai sản／khám thai／nghỉ khi vợ sinh và khám thai cùng vợ�
 var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 var currentLeaveHours = null;
 
-// ===== 1 分鐘無操作，自動返回打卡主畫面 =====
-var INACTIVITY_TIMEOUT_MS = 60 * 1000;
-var inactivityTimer = null;
+// ===== 1 分鐘無操作倒數，自動返回打卡主畫面 =====
+var INACTIVITY_SECONDS = 60;
+var idleSecondsLeft = INACTIVITY_SECONDS;
+var idleInterval = null;
 var inactivityPaused = false;
 var PUNCH_HOME_URL = "https://hs2026work-ai.github.io/punch-card/";
 
 function returnToPunchHome() {
-    window.location.href = PUNCH_HOME_URL;
+    try {
+        // 若未來此頁被包在其他頁面中，也直接讓最上層回主畫面。
+        if (window.top && window.top !== window) {
+            window.top.location.replace(PUNCH_HOME_URL);
+            return;
+        }
+    } catch (e) {}
+    window.location.replace(PUNCH_HOME_URL);
+}
+
+function updateIdleCountdownDisplay() {
+    var el = document.getElementById('idleCountdown');
+    if (!el) return;
+
+    if (inactivityPaused) {
+        el.className = '';
+        el.textContent = '⏳ 資料處理中，倒數已暫停';
+        return;
+    }
+
+    el.className = idleSecondsLeft <= 10 ? 'danger' : (idleSecondsLeft <= 30 ? 'warning' : '');
+    el.textContent = '⏱️ ' + idleSecondsLeft + ' 秒內無操作將自動返回打卡主畫面';
 }
 
 function resetInactivityTimer() {
     if (inactivityPaused) return;
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(returnToPunchHome, INACTIVITY_TIMEOUT_MS);
+    idleSecondsLeft = INACTIVITY_SECONDS;
+    updateIdleCountdownDisplay();
 }
 
 function pauseInactivityTimer() {
     inactivityPaused = true;
-    if (inactivityTimer) {
-        clearTimeout(inactivityTimer);
-        inactivityTimer = null;
-    }
+    updateIdleCountdownDisplay();
 }
 
 function resumeInactivityTimer() {
@@ -410,13 +455,28 @@ function resumeInactivityTimer() {
 }
 
 function setupInactivityTimeout() {
-    // 有任何操作就重新計算 1 分鐘。
-    ['pointerdown', 'touchstart', 'keydown', 'input', 'change', 'scroll'].forEach(function (eventName) {
+    // 只把真正的人為操作算成活動，避免 scroll / focus / pageshow 自己觸發造成倒數一直重置。
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'input', 'change'].forEach(function (eventName) {
         document.addEventListener(eventName, resetInactivityTimer, { passive: true });
     });
-    window.addEventListener('focus', resetInactivityTimer);
-    window.addEventListener('pageshow', resetInactivityTimer);
+
     resetInactivityTimer();
+
+    if (idleInterval) clearInterval(idleInterval);
+    idleInterval = setInterval(function () {
+        if (inactivityPaused) return;
+
+        idleSecondsLeft -= 1;
+        if (idleSecondsLeft <= 0) {
+            idleSecondsLeft = 0;
+            updateIdleCountdownDisplay();
+            clearInterval(idleInterval);
+            idleInterval = null;
+            returnToPunchHome();
+            return;
+        }
+        updateIdleCountdownDisplay();
+    }, 1000);
 }
 
 
