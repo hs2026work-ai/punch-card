@@ -646,6 +646,47 @@ var n = Number(value || 0);
 return Number.isInteger(n) ? String(n) : String(n);
 }
 
+var resultCountdownInterval = null;
+var resultCountdownTimeout = null;
+
+function stopResultCountdown() {
+  if (resultCountdownInterval) {
+    clearInterval(resultCountdownInterval);
+    resultCountdownInterval = null;
+  }
+  if (resultCountdownTimeout) {
+    clearTimeout(resultCountdownTimeout);
+    resultCountdownTimeout = null;
+  }
+}
+
+function startResultCountdown(seconds) {
+  stopResultCountdown();
+
+  var remaining = Number(seconds) || 1;
+  var el = document.getElementById('resultCountdown');
+  if (el) el.textContent = remaining + ' 秒後恢復掃描';
+
+  resultCountdownInterval = setInterval(function () {
+    remaining -= 1;
+    var currentEl = document.getElementById('resultCountdown');
+    if (currentEl) {
+      currentEl.textContent = Math.max(remaining, 0) + ' 秒後恢復掃描';
+    }
+
+    if (remaining <= 0) {
+      stopResultCountdown();
+      closeAllOverlaysAndResume();
+    }
+  }, 1000);
+
+  // 備援：避免瀏覽器背景節流造成 interval 未準時觸發
+  resultCountdownTimeout = setTimeout(function () {
+    stopResultCountdown();
+    closeAllOverlaysAndResume();
+  }, (remaining + 0.25) * 1000);
+}
+
 function showResultCard(data) {
 document.getElementById('earlyModalOverlay').classList.remove('show');
 document.getElementById('overtimeOutModalOverlay').classList.remove('show');
@@ -735,12 +776,7 @@ statusEl.innerText = success
 ? "📷 請感應員工 QR Code"
 : "請重新掃描";
 
-var n = countdownSeconds;
-setTimeout(function(){
-
-closeAllOverlaysAndResume();
-
-},countdownSeconds * 1000);
+startResultCountdown(countdownSeconds);
 }
 
 
@@ -1155,6 +1191,7 @@ reportTs: currentMakeupReportTs
 
 
 function closeAllOverlaysAndResume() {
+stopResultCountdown();
 stopMakeupIdleTimer();
 document.getElementById('resultOverlay').classList.remove('show');
 
