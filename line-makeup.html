@@ -1,303 +1,724 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <title>宏升工業社 - 補登</title>
+    <meta
+        http-equiv="Cache-Control"
+        content="no-cache, no-store, must-revalidate"
+    >
+
+    <meta
+        http-equiv="Pragma"
+        content="no-cache"
+    >
+
+    <meta
+        http-equiv="Expires"
+        content="0"
+    >
+
+    <title>
+        宏升工業社 - 補登
+    </title>
+
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
+
     <style>
+
         * {
             box-sizing: border-box;
         }
 
+
         body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            margin: 0;
-            padding: 20px 16px 60px;
+
+            font-family:
+                "Microsoft JhengHei",
+                Arial,
+                sans-serif;
+
+            background:
+                #f5f5f5;
+
+            color:
+                #333;
+
+            margin:
+                0;
+
+            padding:
+                20px 16px 60px;
+
         }
+
 
         h1 {
-            font-size: 22px;
-            color: #1b2a5e;
-            text-align: center;
-            margin: 10px 0 4px;
+
+            font-size:
+                22px;
+
+            color:
+                #1b2a5e;
+
+            text-align:
+                center;
+
+            margin:
+                10px 0 4px;
+
         }
+
 
         .subtitle {
-            text-align: center;
-            font-size: 15px;
-            color: #888;
-            margin-bottom: 10px;
+
+            text-align:
+                center;
+
+            font-size:
+                15px;
+
+            color:
+                #888;
+
+            margin-bottom:
+                10px;
+
         }
+
 
         .version {
-            text-align: center;
-            font-size: 11px;
-            color: #aaa;
-            margin-bottom: 14px;
+
+            text-align:
+                center;
+
+            font-size:
+                11px;
+
+            color:
+                #aaa;
+
+            margin-bottom:
+                14px;
+
         }
+
 
         .card {
-            background: #fff;
-            border-radius: 12px;
-            border-top: 4px solid #e0752c;
-            padding: 24px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            max-width: 420px;
-            margin: 0 auto;
+
+            background:
+                #fff;
+
+            border-radius:
+                12px;
+
+            border-top:
+                4px solid #e0752c;
+
+            padding:
+                24px 20px;
+
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.08);
+
+            max-width:
+                420px;
+
+            margin:
+                0 auto;
+
         }
+
 
         #countdown {
-            max-width: 420px;
-            margin: 0 auto 14px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: #eef3fa;
-            color: #1b2a5e;
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
+
+            max-width:
+                420px;
+
+            margin:
+                0 auto 14px;
+
+            padding:
+                10px 12px;
+
+            border-radius:
+                8px;
+
+            background:
+                #eef3fa;
+
+            color:
+                #1b2a5e;
+
+            text-align:
+                center;
+
+            font-size:
+                14px;
+
+            font-weight:
+                bold;
+
         }
+
 
         #countdown.warning {
-            background: #fff3e0;
-            color: #e0752c;
+
+            background:
+                #fff3e0;
+
+            color:
+                #e0752c;
+
         }
+
 
         #countdown.danger {
-            background: #ffebee;
-            color: #c62828;
+
+            background:
+                #ffebee;
+
+            color:
+                #c62828;
+
         }
+
 
         #empInfo {
-            padding: 13px 14px;
-            margin-bottom: 18px;
-            background: #eef3fa;
-            border-radius: 8px;
-            color: #1b2a5e;
-            line-height: 1.6;
+
+            padding:
+                13px 14px;
+
+            margin-bottom:
+                18px;
+
+            background:
+                #eef3fa;
+
+            border-radius:
+                8px;
+
+            color:
+                #1b2a5e;
+
+            line-height:
+                1.6;
+
         }
+
 
         #empName {
-            font-size: 19px;
-            font-weight: bold;
+
+            font-size:
+                19px;
+
+            font-weight:
+                bold;
+
         }
+
 
         #empId {
-            font-size: 14px;
-            color: #666;
-            margin-top: 3px;
+
+            font-size:
+                14px;
+
+            color:
+                #666;
+
+            margin-top:
+                3px;
+
         }
 
+
         label {
-            display: block;
-            font-size: 15px;
-            color: #666;
-            margin: 18px 0 6px;
-            font-weight: bold;
+
+            display:
+                block;
+
+            font-size:
+                15px;
+
+            color:
+                #666;
+
+            margin:
+                18px 0 6px;
+
+            font-weight:
+                bold;
+
         }
+
 
         select,
         input,
         textarea {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-family: inherit;
-            background: #fff;
-            color: #333;
+
+            width:
+                100%;
+
+            padding:
+                12px;
+
+            font-size:
+                16px;
+
+            border-radius:
+                8px;
+
+            border:
+                1px solid #ccc;
+
+            font-family:
+                inherit;
+
+            background:
+                #fff;
+
+            color:
+                #333;
+
         }
+
 
         textarea {
-            min-height: 78px;
-            resize: vertical;
+
+            min-height:
+                78px;
+
+            resize:
+                vertical;
+
         }
+
 
         .time-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
+
+            display:
+                flex;
+
+            gap:
+                8px;
+
+            align-items:
+                center;
+
         }
+
 
         .time-row select {
-            flex: 1;
-            text-align: center;
+
+            flex:
+                1;
+
+            text-align:
+                center;
+
         }
+
 
         .colon {
-            font-size: 20px;
-            font-weight: bold;
+
+            font-size:
+                20px;
+
+            font-weight:
+                bold;
+
         }
+
 
         .hint {
-            margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: #fff4e8;
-            color: #a95416;
-            line-height: 1.6;
-            font-size: 14px;
+
+            margin-top:
+                12px;
+
+            padding:
+                10px 12px;
+
+            border-radius:
+                8px;
+
+            background:
+                #fff4e8;
+
+            color:
+                #a95416;
+
+            line-height:
+                1.6;
+
+            font-size:
+                14px;
+
         }
+
 
         .green-hint {
-            background: #edf7ee;
-            color: #1b5e20;
+
+            background:
+                #edf7ee;
+
+            color:
+                #1b5e20;
+
         }
+
 
         .hidden {
-            display: none !important;
+
+            display:
+                none !important;
+
         }
+
 
         button {
-            width: 100%;
-            padding: 15px 0;
-            font-size: 18px;
-            font-weight: bold;
-            background: #e0752c;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            margin-top: 22px;
-            cursor: pointer;
+
+            width:
+                100%;
+
+            padding:
+                15px 0;
+
+            font-size:
+                18px;
+
+            font-weight:
+                bold;
+
+            background:
+                #e0752c;
+
+            color:
+                #fff;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            margin-top:
+                22px;
+
+            cursor:
+                pointer;
+
         }
+
 
         button:disabled {
-            background: #ccc;
-            color: #666;
+
+            background:
+                #ccc;
+
+            color:
+                #666;
+
         }
+
 
         #statusMsg {
-            text-align: center;
-            font-size: 15px;
-            line-height: 1.7;
-            margin-top: 14px;
-            min-height: 22px;
-            white-space: pre-line;
+
+            text-align:
+                center;
+
+            font-size:
+                15px;
+
+            line-height:
+                1.7;
+
+            margin-top:
+                14px;
+
+            min-height:
+                22px;
+
+            white-space:
+                pre-line;
+
         }
+
 
         #statusMsg.error {
-            color: #c62828;
+
+            color:
+                #c62828;
+
         }
+
 
         #statusMsg.success {
-            color: #1b5e20;
+
+            color:
+                #1b5e20;
+
         }
+
 
         #loading {
-            text-align: center;
-            padding: 60px 10px;
-            color: #888;
-            font-size: 16px;
+
+            text-align:
+                center;
+
+            padding:
+                60px 10px;
+
+            color:
+                #888;
+
+            font-size:
+                16px;
+
+            line-height:
+                1.8;
+
         }
+
     </style>
+
 </head>
 
+
 <body>
+
 
 <div id="loading">
     載入中，請稍候...
 </div>
 
-<div id="formWrap" style="display:none;">
 
-    <h1>宏升工業社</h1>
-    <div class="subtitle">出勤補登</div>
-    <div class="version">LINE 員工綁定版</div>
+<div
+    id="formWrap"
+    style="display:none;"
+>
+
+    <h1>
+        宏升工業社
+    </h1>
+
+
+    <div class="subtitle">
+        出勤補登
+    </div>
+
+
+    <div class="version">
+        LINE 員工綁定版
+    </div>
+
 
     <div id="countdown">
         ⏱️ 60 秒內無操作將自動離開
     </div>
 
+
     <div class="card">
 
+
         <div id="empInfo">
-            <div id="empName">員工資料載入中...</div>
-            <div id="empId"></div>
+
+            <div id="empName">
+                員工資料載入中...
+            </div>
+
+            <div id="empId">
+            </div>
+
         </div>
 
-        <label for="makeupDate">補登日期</label>
 
-        <input type="date" id="makeupDate">
+        <label for="makeupDate">
+            補登日期
+        </label>
+
+
+        <input
+            type="date"
+            id="makeupDate"
+        >
+
 
         <div class="hint green-hint">
             僅可選擇今天或過去日期，不可選未來日期。
         </div>
 
-        <label for="makeupType">補登項目</label>
+
+        <label for="makeupType">
+            補登項目
+        </label>
+
 
         <select id="makeupType">
-            <option value="">請選擇...</option>
-            <option value="中午未休息">中午未休息（12:00～13:00）</option>
-            <option value="下午未休息">下午未休息（17:00～17:30）</option>
-            <option value="提前上班">提前上班</option>
-            <option value="加班(外出)">加班（外出）晚回來</option>
+
+            <option value="">
+                請選擇...
+            </option>
+
+            <option value="中午未休息">
+                中午未休息（12:00～13:00）
+            </option>
+
+            <option value="下午未休息">
+                下午未休息（17:00～17:30）
+            </option>
+
+            <option value="提前上班">
+                提前上班
+            </option>
+
+            <option value="加班(外出)">
+                加班（外出）晚回來
+            </option>
+
         </select>
 
-        <div id="lunchBlock" class="hidden">
+
+        <div
+            id="lunchBlock"
+            class="hidden"
+        >
+
             <div class="hint">
-                中午休息時間為 <b>12:00～13:00</b>。<br>
-                若此時段實際有工作，請使用此項補登。
+
+                中午休息時間為
+                <b>12:00～13:00</b>。
+
+                <br>
+
+                若此時段實際有工作，
+                請使用此項補登。
+
             </div>
+
         </div>
 
-        <div id="afternoonBlock" class="hidden">
+
+        <div
+            id="afternoonBlock"
+            class="hidden"
+        >
+
             <div class="hint">
-                下午休息時間為 <b>17:00～17:30</b>。<br>
-                若此時段實際有工作，請使用此項補登。
+
+                下午休息時間為
+                <b>17:00～17:30</b>。
+
+                <br>
+
+                若此時段實際有工作，
+                請使用此項補登。
+
             </div>
+
         </div>
 
-        <div id="earlyBlock" class="hidden">
 
-            <label>實際到班時間</label>
+        <div
+            id="earlyBlock"
+            class="hidden"
+        >
+
+            <label>
+                實際到班時間
+            </label>
+
 
             <div class="time-row">
-                <select id="earlyHour"></select>
 
-                <span class="colon">:</span>
+                <select id="earlyHour">
+                </select>
+
+
+                <span class="colon">
+                    :
+                </span>
+
 
                 <select id="earlyMinute">
-                    <option value="00">00 分</option>
-                    <option value="30">30 分</option>
+
+                    <option value="00">
+                        00 分
+                    </option>
+
+                    <option value="30">
+                        30 分
+                    </option>
+
                 </select>
+
             </div>
 
+
             <div class="hint">
-                提前上班可補登 05:00～07:30。<br>
-                系統以 <b>0.5 小時</b> 為單位計算。
+
+                提前上班可補登
+                05:00～07:30。
+
+                <br>
+
+                系統以
+                <b>0.5 小時</b>
+                為單位計算。
+
             </div>
 
         </div>
 
-        <div id="overtimeBlock" class="hidden">
 
-            <label>晚回來時間</label>
+        <div
+            id="overtimeBlock"
+            class="hidden"
+        >
+
+            <label>
+                晚回來時間
+            </label>
+
 
             <div class="time-row">
 
-                <select id="overtimeHour"></select>
+                <select id="overtimeHour">
+                </select>
 
-                <span class="colon">:</span>
+
+                <span class="colon">
+                    :
+                </span>
+
 
                 <select id="overtimeMinute">
-                    <option value="00">00 分</option>
-                    <option value="30">30 分</option>
+
+                    <option value="00">
+                        00 分
+                    </option>
+
+                    <option value="30">
+                        30 分
+                    </option>
+
                 </select>
 
             </div>
 
-            <label for="reason">事由</label>
+
+            <label for="reason">
+                事由
+            </label>
+
 
             <textarea
                 id="reason"
@@ -305,62 +726,138 @@
                 placeholder="例如：送貨、客戶現場處理、外出工作"
             ></textarea>
 
+
             <div class="hint">
-                若補登日期為今天，晚回來時間不得晚於目前時間。<br>
+
+                若補登日期為今天，
+                晚回來時間不得晚於目前時間。
+
+                <br>
+
                 事由請填寫清楚。
+
             </div>
 
         </div>
 
-        <button id="submitBtn" onclick="submitMakeup()">
+
+        <button
+            id="submitBtn"
+            onclick="submitMakeup()"
+        >
             送出補登
         </button>
 
-        <div id="statusMsg"></div>
+
+        <div id="statusMsg">
+        </div>
+
 
     </div>
 
 </div>
 
+
+
 <script>
 
-    var PUNCH_APPS_SCRIPT_URL =
-        "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
-    var LIFF_ID =
-        "2010875519-nrqXot3W";
+// ==================================================
+// 系統設定
+// ==================================================
+//
+// 請假／LINE 綁定
+// 打卡／補登
+//
+// 目前使用同一個 Apps Script Web App。
+// ==================================================
 
-
-    var currentUserId = null;
-    var currentEmpId = '';
-    var currentEmpName = '';
-
-    var countdownSeconds = 60;
-    var countdownTimer = null;
-    var isSubmitting = false;
-
-
-    function pad2(value) {
-        return String(value).padStart(2, '0');
-    }
+var APPS_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
 
-    function getLocalDateString(date) {
-        return (
-            date.getFullYear()
-            + '-'
-            + pad2(date.getMonth() + 1)
-            + '-'
-            + pad2(date.getDate())
+var LIFF_ID =
+    "2010875519-nrqXot3W";
+
+
+
+// ==================================================
+// 全域資料
+// ==================================================
+
+var currentUserId =
+    null;
+
+
+var currentEmpId =
+    '';
+
+
+var currentEmpName =
+    '';
+
+
+var countdownSeconds =
+    60;
+
+
+var countdownTimer =
+    null;
+
+
+var isSubmitting =
+    false;
+
+
+
+// ==================================================
+// 共用
+// ==================================================
+
+function pad2(value) {
+
+    return String(value)
+        .padStart(
+            2,
+            '0'
         );
-    }
+
+}
 
 
-    function buildWorkTimestamp(dateString) {
 
-        var parts = dateString.split('-');
+function getLocalDateString(date) {
 
-        var d = new Date(
+    return (
+        date.getFullYear()
+        +
+        '-'
+        +
+        pad2(
+            date.getMonth() + 1
+        )
+        +
+        '-'
+        +
+        pad2(
+            date.getDate()
+        )
+    );
+
+}
+
+
+
+function buildWorkTimestamp(
+    dateString
+) {
+
+    var parts =
+        dateString.split('-');
+
+
+    var date =
+        new Date(
             Number(parts[0]),
             Number(parts[1]) - 1,
             Number(parts[2]),
@@ -370,697 +867,1270 @@
             0
         );
 
-        return d.getTime();
+
+    return date.getTime();
+
+}
+
+
+
+function showStatus(
+    message,
+    isError
+) {
+
+    var el =
+        document
+            .getElementById(
+                'statusMsg'
+            );
+
+
+    el.textContent =
+        message;
+
+
+    el.className =
+        isError
+            ? 'error'
+            : 'success';
+
+}
+
+
+
+// ==================================================
+// 初始化日期
+// ==================================================
+
+function initializeDate() {
+
+    var today =
+        getLocalDateString(
+            new Date()
+        );
+
+
+    var input =
+        document
+            .getElementById(
+                'makeupDate'
+            );
+
+
+    input.value =
+        today;
+
+
+    input.max =
+        today;
+
+}
+
+
+
+// ==================================================
+// 初始化時間
+// ==================================================
+
+function initializeTimeSelects() {
+
+    var earlyHour =
+        document
+            .getElementById(
+                'earlyHour'
+            );
+
+
+    var overtimeHour =
+        document
+            .getElementById(
+                'overtimeHour'
+            );
+
+
+    earlyHour.innerHTML =
+        '';
+
+
+    overtimeHour.innerHTML =
+        '';
+
+
+    for (
+        var hour = 5;
+        hour <= 7;
+        hour++
+    ) {
+
+        var value =
+            pad2(hour);
+
+
+        earlyHour.innerHTML +=
+            '<option value="' +
+            value +
+            '">' +
+            value +
+            ' 時</option>';
+
     }
 
 
-    function showStatus(message, isError) {
+    for (
+        var otHour = 0;
+        otHour <= 23;
+        otHour++
+    ) {
 
-        var el =
-            document.getElementById('statusMsg');
+        var otValue =
+            pad2(otHour);
 
-        el.textContent = message;
 
-        el.className =
-            isError
-                ? 'error'
-                : 'success';
+        overtimeHour.innerHTML +=
+            '<option value="' +
+            otValue +
+            '">' +
+            otValue +
+            ' 時</option>';
+
     }
 
 
-    function initializeDate() {
-
-        var today =
-            getLocalDateString(new Date());
-
-        var dateInput =
-            document.getElementById('makeupDate');
-
-        dateInput.value = today;
-        dateInput.max = today;
-    }
+    earlyHour.value =
+        '07';
 
 
-    function initializeTimeSelects() {
+    overtimeHour.value =
+        '17';
 
-        var earlyHour =
-            document.getElementById('earlyHour');
-
-        var overtimeHour =
-            document.getElementById('overtimeHour');
-
-        earlyHour.innerHTML = '';
-        overtimeHour.innerHTML = '';
+}
 
 
-        for (var h = 5; h <= 7; h++) {
 
-            var hh = pad2(h);
+// ==================================================
+// 補登項目切換
+// ==================================================
 
-            earlyHour.innerHTML +=
-                '<option value="' + hh + '">' + hh + ' 時</option>';
-        }
+function handleMakeupTypeChange() {
 
-
-        for (var ot = 0; ot <= 23; ot++) {
-
-            var oth = pad2(ot);
-
-            overtimeHour.innerHTML +=
-                '<option value="' + oth + '">' + oth + ' 時</option>';
-        }
+    resetCountdown();
 
 
-        earlyHour.value = '07';
-        overtimeHour.value = '17';
-    }
+    var type =
+        document
+            .getElementById(
+                'makeupType'
+            )
+            .value;
 
 
-    function handleMakeupTypeChange() {
+    [
+        'lunchBlock',
+        'afternoonBlock',
+        'earlyBlock',
+        'overtimeBlock'
 
-        resetCountdown();
-
-        var type =
-            document.getElementById('makeupType').value;
-
-        [
-            'lunchBlock',
-            'afternoonBlock',
-            'earlyBlock',
-            'overtimeBlock'
-        ].forEach(function (id) {
+    ].forEach(
+        function(id) {
 
             document
                 .getElementById(id)
                 .classList
-                .add('hidden');
+                .add(
+                    'hidden'
+                );
 
-        });
-
-
-        if (type === '中午未休息') {
-
-            document
-                .getElementById('lunchBlock')
-                .classList
-                .remove('hidden');
-
-        } else if (type === '下午未休息') {
-
-            document
-                .getElementById('afternoonBlock')
-                .classList
-                .remove('hidden');
-
-        } else if (type === '提前上班') {
-
-            document
-                .getElementById('earlyBlock')
-                .classList
-                .remove('hidden');
-
-        } else if (type === '加班(外出)') {
-
-            document
-                .getElementById('overtimeBlock')
-                .classList
-                .remove('hidden');
         }
+    );
+
+
+    if (
+        type ===
+        '中午未休息'
+    ) {
+
+        document
+            .getElementById(
+                'lunchBlock'
+            )
+            .classList
+            .remove(
+                'hidden'
+            );
+
     }
 
 
-    function fetchBoundEmployee() {
+    else if (
+        type ===
+        '下午未休息'
+    ) {
 
-        var url =
-            PUNCH_APPS_SCRIPT_URL
-            + '?mode=line_identity'
-            + '&userId='
-            + encodeURIComponent(currentUserId)
-            + '&_='
-            + Date.now();
+        document
+            .getElementById(
+                'afternoonBlock'
+            )
+            .classList
+            .remove(
+                'hidden'
+            );
+
+    }
 
 
-        return fetch(url, {
-            method: 'GET',
-            cache: 'no-store'
-        })
+    else if (
+        type ===
+        '提前上班'
+    ) {
 
-        .then(function (response) {
-            return response.json();
-        })
+        document
+            .getElementById(
+                'earlyBlock'
+            )
+            .classList
+            .remove(
+                'hidden'
+            );
 
-        .then(function (data) {
+    }
 
-            if (!data || !data.success) {
+
+    else if (
+        type ===
+        '加班(外出)'
+    ) {
+
+        document
+            .getElementById(
+                'overtimeBlock'
+            )
+            .classList
+            .remove(
+                'hidden'
+            );
+
+    }
+
+}
+
+
+
+// ==================================================
+// LINE 綁定
+//
+// 使用請假 .gs 裡既有的「員工綁定」資料。
+// ==================================================
+
+function fetchBoundEmployee() {
+
+    return fetch(
+        APPS_SCRIPT_URL,
+        {
+
+            method:
+                'POST',
+
+            headers: {
+
+                'Content-Type':
+                    'text/plain;charset=utf-8'
+
+            },
+
+            body:
+                JSON.stringify({
+
+                    action:
+                        'getBoundEmployee',
+
+                    userId:
+                        currentUserId
+
+                })
+
+        }
+    )
+
+
+    .then(
+        function(response) {
+
+            if (!response.ok) {
 
                 throw new Error(
-                    data && data.message
-                        ? data.message
-                        : '找不到員工綁定資料'
+                    '員工資料連線失敗'
                 );
+
             }
 
 
-            currentEmpId = data.empId;
-            currentEmpName = data.name;
+            return response.json();
+
+        }
+    )
+
+
+    .then(
+        function(data) {
+
+            if (
+                !data ||
+                !data.success
+            ) {
+
+                throw new Error(
+                    data &&
+                    data.message
+                        ?
+                    data.message
+                        :
+                    '找不到員工綁定資料'
+                );
+
+            }
+
+
+            currentEmpId =
+                String(
+                    data.empId || ''
+                ).trim();
+
+
+            currentEmpName =
+                String(
+                    data.name || ''
+                ).trim();
+
+
+            if (
+                !currentEmpId ||
+                !currentEmpName
+            ) {
+
+                throw new Error(
+                    '員工綁定資料不完整'
+                );
+
+            }
 
 
             document
-                .getElementById('empName')
+                .getElementById(
+                    'empName'
+                )
                 .textContent =
                     currentEmpName;
 
 
             document
-                .getElementById('empId')
+                .getElementById(
+                    'empId'
+                )
                 .textContent =
-                    '員工編號：' + currentEmpId;
-        });
-    }
+                    '員工編號：' +
+                    currentEmpId;
+
+        }
+    );
+
+}
 
 
-    function callPunchApi(params) {
 
-        var query =
-            new URLSearchParams();
+// ==================================================
+// 呼叫打卡原本 API
+// ==================================================
 
-        query.set('mode', 'api');
+function callPunchApi(
+    params
+) {
+
+    var query =
+        new URLSearchParams();
 
 
-        Object.keys(params).forEach(function (key) {
+    query.set(
+        'mode',
+        'api'
+    );
 
-            if (
-                params[key] !== undefined
-                &&
-                params[key] !== null
-                &&
-                params[key] !== ''
-            ) {
 
-                query.set(
-                    key,
-                    params[key]
+    Object
+        .keys(params)
+        .forEach(
+            function(key) {
+
+                if (
+                    params[key] !==
+                        undefined &&
+                    params[key] !==
+                        null &&
+                    params[key] !==
+                        ''
+                ) {
+
+                    query.set(
+                        key,
+                        params[key]
+                    );
+
+                }
+
+            }
+        );
+
+
+    query.set(
+        '_',
+        Date.now()
+    );
+
+
+    return fetch(
+        APPS_SCRIPT_URL +
+        '?' +
+        query.toString(),
+        {
+
+            method:
+                'GET',
+
+            cache:
+                'no-store'
+
+        }
+    )
+
+
+    .then(
+        function(response) {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    '補登系統連線失敗'
                 );
+
             }
-        });
 
 
-        return fetch(
-            PUNCH_APPS_SCRIPT_URL
-            + '?'
-            + query.toString()
-            + '&_='
-            + Date.now(),
-            {
-                method: 'GET',
-                cache: 'no-store'
-            }
-        )
-
-        .then(function (response) {
             return response.json();
-        });
-    }
 
-
-    function validateOvertimeTime() {
-
-        var selectedDate =
-            document.getElementById('makeupDate').value;
-
-        var hour =
-            document.getElementById('overtimeHour').value;
-
-        var minute =
-            document.getElementById('overtimeMinute').value;
-
-        var now = new Date();
-
-        var today =
-            getLocalDateString(now);
-
-
-        if (selectedDate !== today) {
-
-            return {
-                valid: true
-            };
         }
+    );
+
+}
 
 
-        var selected =
-            new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-                Number(hour),
-                Number(minute),
-                0,
-                0
-            );
+
+// ==================================================
+// 晚回來時間防呆
+// ==================================================
+
+function validateOvertimeTime() {
+
+    var selectedDate =
+        document
+            .getElementById(
+                'makeupDate'
+            )
+            .value;
 
 
-        if (selected.getTime() > now.getTime()) {
+    var hour =
+        document
+            .getElementById(
+                'overtimeHour'
+            )
+            .value;
 
-            return {
-                valid: false,
-                message: '今天的晚回來時間不可晚於目前時間'
-            };
-        }
 
+    var minute =
+        document
+            .getElementById(
+                'overtimeMinute'
+            )
+            .value;
+
+
+    var now =
+        new Date();
+
+
+    var today =
+        getLocalDateString(
+            now
+        );
+
+
+    if (
+        selectedDate !==
+        today
+    ) {
 
         return {
             valid: true
         };
+
     }
 
 
-    function submitMakeup() {
-
-        if (isSubmitting) {
-            return;
-        }
-
-
-        resetCountdown();
-
-
-        var makeupDate =
-            document.getElementById('makeupDate').value;
-
-        var makeupType =
-            document.getElementById('makeupType').value;
+    var selectedTime =
+        new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            Number(hour),
+            Number(minute),
+            0,
+            0
+        );
 
 
-        if (!makeupDate) {
+    if (
+        selectedTime.getTime() >
+        now.getTime()
+    ) {
 
-            showStatus(
-                '請選擇補登日期',
-                true
-            );
+        return {
 
-            return;
-        }
+            valid:
+                false,
 
+            message:
+                '今天的晚回來時間不可晚於目前時間'
 
-        if (!makeupType) {
-
-            showStatus(
-                '請選擇補登項目',
-                true
-            );
-
-            return;
-        }
-
-
-        var today =
-            getLocalDateString(new Date());
-
-
-        if (makeupDate > today) {
-
-            showStatus(
-                '補登日期不可選未來日期',
-                true
-            );
-
-            return;
-        }
-
-
-        if (!currentEmpId) {
-
-            showStatus(
-                '尚未取得員工綁定資料',
-                true
-            );
-
-            return;
-        }
-
-
-        var workTs =
-            buildWorkTimestamp(makeupDate);
-
-        var reportTs =
-            Date.now();
-
-
-        var params = {
-
-            id: currentEmpId,
-
-            ts: workTs,
-
-            reportTs: reportTs,
-
-            reason: makeupType
         };
 
-
-        if (makeupType === '提前上班') {
-
-            var earlyHour =
-                document.getElementById('earlyHour').value;
-
-            var earlyMinute =
-                document.getElementById('earlyMinute').value;
+    }
 
 
-            params.earlyTime =
-                earlyHour
-                + ':'
-                + earlyMinute;
+    return {
+        valid: true
+    };
+
+}
+
+
+
+// ==================================================
+// 送出補登
+// ==================================================
+
+function submitMakeup() {
+
+    if (
+        isSubmitting
+    ) {
+
+        return;
+
+    }
+
+
+    resetCountdown();
+
+
+    var makeupDate =
+        document
+            .getElementById(
+                'makeupDate'
+            )
+            .value;
+
+
+    var makeupType =
+        document
+            .getElementById(
+                'makeupType'
+            )
+            .value;
+
+
+    if (
+        !makeupDate
+    ) {
+
+        showStatus(
+            '請選擇補登日期',
+            true
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !makeupType
+    ) {
+
+        showStatus(
+            '請選擇補登項目',
+            true
+        );
+
+        return;
+
+    }
+
+
+    var today =
+        getLocalDateString(
+            new Date()
+        );
+
+
+    if (
+        makeupDate >
+        today
+    ) {
+
+        showStatus(
+            '補登日期不可選未來日期',
+            true
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !currentEmpId
+    ) {
+
+        showStatus(
+            '尚未取得員工綁定資料',
+            true
+        );
+
+        return;
+
+    }
+
+
+    var workTs =
+        buildWorkTimestamp(
+            makeupDate
+        );
+
+
+    var reportTs =
+        Date.now();
+
+
+    var params = {
+
+        id:
+            currentEmpId,
+
+        ts:
+            workTs,
+
+        reportTs:
+            reportTs,
+
+        reason:
+            makeupType
+
+    };
+
+
+    // ==================================================
+    // 提前上班
+    // ==================================================
+
+    if (
+        makeupType ===
+        '提前上班'
+    ) {
+
+        var earlyHour =
+            document
+                .getElementById(
+                    'earlyHour'
+                )
+                .value;
+
+
+        var earlyMinute =
+            document
+                .getElementById(
+                    'earlyMinute'
+                )
+                .value;
+
+
+        params.earlyTime =
+            earlyHour +
+            ':' +
+            earlyMinute;
+
+    }
+
+
+    // ==================================================
+    // 加班（外出）晚回來
+    // ==================================================
+
+    if (
+        makeupType ===
+        '加班(外出)'
+    ) {
+
+        var timeCheck =
+            validateOvertimeTime();
+
+
+        if (
+            !timeCheck.valid
+        ) {
+
+            showStatus(
+                timeCheck.message,
+                true
+            );
+
+            return;
+
         }
 
 
-        if (makeupType === '加班(外出)') {
-
-            var check =
-                validateOvertimeTime();
-
-
-            if (!check.valid) {
-
-                showStatus(
-                    check.message,
-                    true
-                );
-
-                return;
-            }
+        var memo =
+            document
+                .getElementById(
+                    'reason'
+                )
+                .value
+                .trim();
 
 
-            var memo =
-                document
-                    .getElementById('reason')
-                    .value
-                    .trim();
+        if (!memo) {
 
+            showStatus(
+                '請填寫加班（外出）事由',
+                true
+            );
 
-            if (!memo) {
+            return;
 
-                showStatus(
-                    '請填寫加班（外出）事由',
-                    true
-                );
-
-                return;
-            }
-
-
-            var overtimeTime =
-                document.getElementById('overtimeHour').value
-                + ':'
-                + document.getElementById('overtimeMinute').value;
-
-
-            params.overtimeOutMode =
-                '晚回來';
-
-            params.overtimeOutTime =
-                overtimeTime;
-
-            params.overtimeOutMemo =
-                memo;
         }
 
 
-        var btn =
-            document.getElementById('submitBtn');
+        var overtimeTime =
+            document
+                .getElementById(
+                    'overtimeHour'
+                )
+                .value
+            +
+            ':'
+            +
+            document
+                .getElementById(
+                    'overtimeMinute'
+                )
+                .value;
 
 
-        btn.disabled = true;
-        btn.innerText = '送出中...';
-
-        isSubmitting = true;
-
-        stopCountdown();
-
-        showStatus('', false);
+        params.overtimeOutMode =
+            '晚回來';
 
 
-        callPunchApi(params)
+        params.overtimeOutTime =
+            overtimeTime;
 
-        .then(function (data) {
 
-            if (!data || data.status !== 'success') {
+        params.overtimeOutMemo =
+            memo;
+
+    }
+
+
+    var button =
+        document
+            .getElementById(
+                'submitBtn'
+            );
+
+
+    button.disabled =
+        true;
+
+
+    button.innerText =
+        '送出中...';
+
+
+    isSubmitting =
+        true;
+
+
+    stopCountdown();
+
+
+    showStatus(
+        '',
+        false
+    );
+
+
+    callPunchApi(
+        params
+    )
+
+
+    .then(
+        function(data) {
+
+            if (
+                !data ||
+                data.status !==
+                    'success'
+            ) {
 
                 throw new Error(
-                    data && data.message
-                        ? data.message
-                        : '補登失敗'
+                    data &&
+                    data.message
+                        ?
+                    data.message
+                        :
+                    '補登失敗'
                 );
+
             }
 
 
-            var resultText =
+            var text =
                 '✅ 補登成功'
-                + '\n'
-                + currentEmpName
-                + '（'
-                + currentEmpId
-                + '）'
-                + '\n'
-                + '日期：'
-                + makeupDate
-                + '\n'
-                + '項目：'
-                + getMakeupLabel(makeupType);
+                +
+                '\n'
+                +
+                currentEmpName
+                +
+                '（'
+                +
+                currentEmpId
+                +
+                '）'
+                +
+                '\n日期：'
+                +
+                makeupDate
+                +
+                '\n項目：'
+                +
+                getMakeupLabel(
+                    makeupType
+                );
 
 
-            if (makeupType === '提前上班') {
+            if (
+                makeupType ===
+                '提前上班'
+            ) {
 
-                resultText +=
+                text +=
                     '\n實際到班：'
-                    + params.earlyTime;
+                    +
+                    params.earlyTime;
+
             }
 
 
-            if (makeupType === '加班(外出)') {
+            if (
+                makeupType ===
+                '加班(外出)'
+            ) {
 
-                resultText +=
+                text +=
                     '\n晚回來：'
-                    + params.overtimeOutTime;
+                    +
+                    params.overtimeOutTime;
+
             }
 
 
             showStatus(
-                resultText,
+                text,
                 false
             );
 
 
-            btn.innerText =
+            button.innerText =
                 '補登完成';
 
 
-            setTimeout(function () {
-                closeLiffWindow();
-            }, 2200);
+            setTimeout(
+                function() {
 
-        })
+                    closeLiffWindow();
 
-        .catch(function (error) {
+                },
+                2200
+            );
+
+        }
+    )
+
+
+    .catch(
+        function(error) {
 
             showStatus(
-                '⚠️ ' + error.message,
+                '⚠️ ' +
+                error.message,
                 true
             );
 
 
-            isSubmitting = false;
+            isSubmitting =
+                false;
 
-            btn.disabled = false;
 
-            btn.innerText =
+            button.disabled =
+                false;
+
+
+            button.innerText =
                 '送出補登';
 
+
             startCountdown();
-        });
+
+        }
+    );
+
+}
+
+
+
+// ==================================================
+// 顯示名稱
+// ==================================================
+
+function getMakeupLabel(
+    type
+) {
+
+    if (
+        type ===
+        '中午未休息'
+    ) {
+
+        return (
+            '中午未休息（12:00～13:00）'
+        );
+
     }
 
 
-    function getMakeupLabel(type) {
+    if (
+        type ===
+        '下午未休息'
+    ) {
 
-        if (type === '中午未休息') {
-            return '中午未休息（12:00～13:00）';
-        }
+        return (
+            '下午未休息（17:00～17:30）'
+        );
 
-        if (type === '下午未休息') {
-            return '下午未休息（17:00～17:30）';
-        }
-
-        if (type === '提前上班') {
-            return '提前上班';
-        }
-
-        if (type === '加班(外出)') {
-            return '加班（外出）晚回來';
-        }
-
-        return type;
     }
 
 
-    function startCountdown() {
+    if (
+        type ===
+        '提前上班'
+    ) {
 
-        stopCountdown();
+        return (
+            '提前上班'
+        );
 
-        countdownSeconds = 60;
-
-        renderCountdown();
+    }
 
 
-        countdownTimer =
-            setInterval(function () {
+    if (
+        type ===
+        '加班(外出)'
+    ) {
 
-                if (isSubmitting) {
+        return (
+            '加班（外出）晚回來'
+        );
+
+    }
+
+
+    return type;
+
+}
+
+
+
+// ==================================================
+// 60 秒倒數
+// ==================================================
+
+function startCountdown() {
+
+    stopCountdown();
+
+
+    countdownSeconds =
+        60;
+
+
+    renderCountdown();
+
+
+    countdownTimer =
+        setInterval(
+            function() {
+
+                if (
+                    isSubmitting
+                ) {
+
                     return;
+
                 }
 
 
                 countdownSeconds--;
 
+
                 renderCountdown();
 
 
-                if (countdownSeconds <= 0) {
+                if (
+                    countdownSeconds <=
+                    0
+                ) {
 
                     stopCountdown();
 
                     closeLiffWindow();
+
                 }
 
-            }, 1000);
+            },
+            1000
+        );
+
+}
+
+
+
+function resetCountdown() {
+
+    if (
+        isSubmitting
+    ) {
+
+        return;
+
     }
 
 
-    function resetCountdown() {
+    countdownSeconds =
+        60;
 
-        if (isSubmitting) {
+
+    renderCountdown();
+
+}
+
+
+
+function stopCountdown() {
+
+    if (
+        countdownTimer
+    ) {
+
+        clearInterval(
+            countdownTimer
+        );
+
+
+        countdownTimer =
+            null;
+
+    }
+
+}
+
+
+
+function renderCountdown() {
+
+    var el =
+        document
+            .getElementById(
+                'countdown'
+            );
+
+
+    el.textContent =
+        '⏱️ ' +
+        countdownSeconds +
+        ' 秒內無操作將自動離開';
+
+
+    el.className =
+        '';
+
+
+    if (
+        countdownSeconds <=
+        10
+    ) {
+
+        el.classList.add(
+            'danger'
+        );
+
+    }
+
+
+    else if (
+        countdownSeconds <=
+        30
+    ) {
+
+        el.classList.add(
+            'warning'
+        );
+
+    }
+
+}
+
+
+
+// ==================================================
+// 關閉 LIFF
+// ==================================================
+
+function closeLiffWindow() {
+
+    try {
+
+        if (
+            window.liff &&
+            liff.isInClient()
+        ) {
+
+            liff.closeWindow();
+
             return;
+
         }
 
-        countdownSeconds = 60;
+    }
+    catch(error) {
 
-        renderCountdown();
+        console.log(
+            error
+        );
+
     }
 
-
-    function stopCountdown() {
-
-        if (countdownTimer) {
-
-            clearInterval(countdownTimer);
-
-            countdownTimer = null;
-        }
-    }
+}
 
 
-    function renderCountdown() {
 
-        var el =
-            document.getElementById('countdown');
+// ==================================================
+// 有操作就重設 60 秒
+// ==================================================
 
-        el.textContent =
-            '⏱️ '
-            + countdownSeconds
-            + ' 秒內無操作將自動離開';
+[
+    'click',
+    'change',
+    'input',
+    'keydown',
+    'touchstart'
 
-        el.className = '';
-
-        if (countdownSeconds <= 10) {
-
-            el.classList.add('danger');
-
-        } else if (countdownSeconds <= 30) {
-
-            el.classList.add('warning');
-        }
-    }
-
-
-    function closeLiffWindow() {
-
-        try {
-
-            if (
-                window.liff
-                &&
-                liff.isInClient()
-            ) {
-
-                liff.closeWindow();
-
-                return;
-            }
-
-        } catch (error) {
-
-            console.log(error);
-        }
-    }
-
-
-    [
-        'click',
-        'change',
-        'input',
-        'keydown',
-        'touchstart'
-    ].forEach(function (eventName) {
+].forEach(
+    function(eventName) {
 
         document.addEventListener(
             eventName,
-            function () {
+            function() {
+
                 resetCountdown();
+
             },
             {
                 passive: true
             }
         );
-    });
+
+    }
+);
 
 
-    function initializeLiff() {
 
-        initializeDate();
+// ==================================================
+// LIFF 初始化
+// ==================================================
 
-        initializeTimeSelects();
+function initializeLiff() {
 
+    initializeDate();
 
-        document
-            .getElementById('makeupType')
-            .addEventListener(
-                'change',
-                handleMakeupTypeChange
-            );
+    initializeTimeSelects();
 
 
-        liff.init({
-            liffId: LIFF_ID
-        })
+    document
+        .getElementById(
+            'makeupType'
+        )
+        .addEventListener(
+            'change',
+            handleMakeupTypeChange
+        );
 
-        .then(function () {
 
-            if (!liff.isLoggedIn()) {
+    liff.init({
+
+        liffId:
+            LIFF_ID
+
+    })
+
+
+    .then(
+        function() {
+
+            if (
+                !liff.isLoggedIn()
+            ) {
 
                 liff.login();
 
                 return null;
+
             }
 
 
             return liff.getProfile();
-        })
 
-        .then(function (profile) {
+        }
+    )
 
-            if (!profile) {
-                return;
+
+    .then(
+        function(profile) {
+
+            if (
+                !profile
+            ) {
+
+                return null;
+
             }
 
 
@@ -1069,46 +2139,78 @@
 
 
             return fetchBoundEmployee();
-        })
 
-        .then(function () {
+        }
+    )
 
-            if (!currentEmpId) {
+
+    .then(
+        function() {
+
+            if (
+                !currentEmpId
+            ) {
+
                 return;
+
             }
 
 
             document
-                .getElementById('loading')
+                .getElementById(
+                    'loading'
+                )
                 .style
-                .display = 'none';
+                .display =
+                    'none';
 
 
             document
-                .getElementById('formWrap')
+                .getElementById(
+                    'formWrap'
+                )
                 .style
-                .display = 'block';
+                .display =
+                    'block';
 
 
             startCountdown();
-        })
 
-        .catch(function (error) {
+        }
+    )
+
+
+    .catch(
+        function(error) {
+
+            console.error(
+                error
+            );
+
 
             document
-                .getElementById('loading')
+                .getElementById(
+                    'loading'
+                )
                 .innerHTML =
-                    '⚠️ '
-                    + error.message
-                    + '<br><br>'
-                    + '請確認 LINE 員工綁定及網路狀態';
-        });
-    }
+                    '⚠️ ' +
+                    error.message +
+                    '<br><br>' +
+                    '請確認 LINE 員工綁定及網路狀態';
+
+        }
+    );
+
+}
 
 
-    initializeLiff();
+
+initializeLiff();
+
 
 </script>
 
+
 </body>
+
 </html>
