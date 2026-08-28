@@ -226,9 +226,7 @@
             <div id="empId"></div>
         </div>
 
-        <label for="makeupDate">
-            補登日期
-        </label>
+        <label for="makeupDate">補登日期</label>
 
         <input type="date" id="makeupDate">
 
@@ -236,24 +234,14 @@
             僅可選擇今天或過去日期，不可選未來日期。
         </div>
 
-        <label for="makeupType">
-            補登項目
-        </label>
+        <label for="makeupType">補登項目</label>
 
         <select id="makeupType">
             <option value="">請選擇...</option>
-            <option value="中午未休息">
-                中午未休息（12:00～13:00）
-            </option>
-            <option value="下午未休息">
-                下午未休息（17:00～17:30）
-            </option>
-            <option value="提前上班">
-                提前上班
-            </option>
-            <option value="加班(外出)">
-                加班（外出）晚回來
-            </option>
+            <option value="中午未休息">中午未休息（12:00～13:00）</option>
+            <option value="下午未休息">下午未休息（17:00～17:30）</option>
+            <option value="提前上班">提前上班</option>
+            <option value="加班(外出)">加班（外出）晚回來</option>
         </select>
 
         <div id="lunchBlock" class="hidden">
@@ -272,9 +260,7 @@
 
         <div id="earlyBlock" class="hidden">
 
-            <label>
-                實際到班時間
-            </label>
+            <label>實際到班時間</label>
 
             <div class="time-row">
                 <select id="earlyHour"></select>
@@ -296,9 +282,7 @@
 
         <div id="overtimeBlock" class="hidden">
 
-            <label>
-                晚回來時間
-            </label>
+            <label>晚回來時間</label>
 
             <div class="time-row">
 
@@ -313,9 +297,7 @@
 
             </div>
 
-            <label for="reason">
-                事由
-            </label>
+            <label for="reason">事由</label>
 
             <textarea
                 id="reason"
@@ -342,20 +324,12 @@
 
 <script>
 
-    // ==================================================
-    // 設定
-    // ==================================================
-
     var PUNCH_APPS_SCRIPT_URL =
         "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
     var LIFF_ID =
         "2010875519-nrqXot3W";
 
-
-    // ==================================================
-    // 全域資料
-    // ==================================================
 
     var currentUserId = null;
     var currentEmpId = '';
@@ -366,17 +340,12 @@
     var isSubmitting = false;
 
 
-    // ==================================================
-    // 共用
-    // ==================================================
-
     function pad2(value) {
         return String(value).padStart(2, '0');
     }
 
 
     function getLocalDateString(date) {
-
         return (
             date.getFullYear()
             + '-'
@@ -384,7 +353,6 @@
             + '-'
             + pad2(date.getDate())
         );
-
     }
 
 
@@ -403,7 +371,6 @@
         );
 
         return d.getTime();
-
     }
 
 
@@ -412,394 +379,232 @@
         var el =
             document.getElementById('statusMsg');
 
-        el.textContent =
-            message;
+        el.textContent = message;
 
         el.className =
             isError
                 ? 'error'
                 : 'success';
-
     }
 
-
-    // ==================================================
-    // 日期
-    // ==================================================
 
     function initializeDate() {
 
         var today =
-            getLocalDateString(
-                new Date()
-            );
+            getLocalDateString(new Date());
 
         var dateInput =
-            document.getElementById(
-                'makeupDate'
-            );
+            document.getElementById('makeupDate');
 
-        dateInput.value =
-            today;
-
-        dateInput.max =
-            today;
-
+        dateInput.value = today;
+        dateInput.max = today;
     }
 
-
-    // ==================================================
-    // 時間
-    // ==================================================
 
     function initializeTimeSelects() {
 
         var earlyHour =
-            document.getElementById(
-                'earlyHour'
-            );
+            document.getElementById('earlyHour');
 
         var overtimeHour =
-            document.getElementById(
-                'overtimeHour'
-            );
+            document.getElementById('overtimeHour');
 
         earlyHour.innerHTML = '';
         overtimeHour.innerHTML = '';
 
 
-        for (
-            var h = 5;
-            h <= 7;
-            h++
-        ) {
+        for (var h = 5; h <= 7; h++) {
 
-            var hh =
-                pad2(h);
+            var hh = pad2(h);
 
             earlyHour.innerHTML +=
-                '<option value="' +
-                hh +
-                '">' +
-                hh +
-                ' 時</option>';
-
+                '<option value="' + hh + '">' + hh + ' 時</option>';
         }
 
 
-        for (
-            var ot = 0;
-            ot <= 23;
-            ot++
-        ) {
+        for (var ot = 0; ot <= 23; ot++) {
 
-            var oth =
-                pad2(ot);
+            var oth = pad2(ot);
 
             overtimeHour.innerHTML +=
-                '<option value="' +
-                oth +
-                '">' +
-                oth +
-                ' 時</option>';
-
+                '<option value="' + oth + '">' + oth + ' 時</option>';
         }
 
 
-        earlyHour.value =
-            '07';
-
+        earlyHour.value = '07';
+        overtimeHour.value = '17';
     }
 
-
-    // ==================================================
-    // 補登項目切換
-    // ==================================================
 
     function handleMakeupTypeChange() {
 
         resetCountdown();
 
         var type =
-            document
-                .getElementById(
-                    'makeupType'
-                )
-                .value;
+            document.getElementById('makeupType').value;
 
         [
             'lunchBlock',
             'afternoonBlock',
             'earlyBlock',
             'overtimeBlock'
-        ]
-        .forEach(
-            function (id) {
-
-                document
-                    .getElementById(id)
-                    .classList
-                    .add('hidden');
-
-            }
-        );
-
-
-        if (
-            type ===
-            '中午未休息'
-        ) {
+        ].forEach(function (id) {
 
             document
-                .getElementById(
-                    'lunchBlock'
-                )
+                .getElementById(id)
+                .classList
+                .add('hidden');
+
+        });
+
+
+        if (type === '中午未休息') {
+
+            document
+                .getElementById('lunchBlock')
                 .classList
                 .remove('hidden');
 
-        }
-
-        else if (
-            type ===
-            '下午未休息'
-        ) {
+        } else if (type === '下午未休息') {
 
             document
-                .getElementById(
-                    'afternoonBlock'
-                )
+                .getElementById('afternoonBlock')
                 .classList
                 .remove('hidden');
 
-        }
-
-        else if (
-            type ===
-            '提前上班'
-        ) {
+        } else if (type === '提前上班') {
 
             document
-                .getElementById(
-                    'earlyBlock'
-                )
+                .getElementById('earlyBlock')
                 .classList
                 .remove('hidden');
 
-        }
-
-        else if (
-            type ===
-            '加班(外出)'
-        ) {
+        } else if (type === '加班(外出)') {
 
             document
-                .getElementById(
-                    'overtimeBlock'
-                )
+                .getElementById('overtimeBlock')
                 .classList
                 .remove('hidden');
-
         }
-
     }
 
-
-    // ==================================================
-    // LINE userId → 員工資料
-    // ==================================================
 
     function fetchBoundEmployee() {
 
         var url =
             PUNCH_APPS_SCRIPT_URL
-            +
-            '?mode=line_identity'
-            +
-            '&userId='
-            +
-            encodeURIComponent(
-                currentUserId
-            )
-            +
-            '&_='
-            +
-            Date.now();
+            + '?mode=line_identity'
+            + '&userId='
+            + encodeURIComponent(currentUserId)
+            + '&_='
+            + Date.now();
 
 
-        return fetch(
-            url,
-            {
-                method: 'GET',
-                cache: 'no-store'
+        return fetch(url, {
+            method: 'GET',
+            cache: 'no-store'
+        })
+
+        .then(function (response) {
+            return response.json();
+        })
+
+        .then(function (data) {
+
+            if (!data || !data.success) {
+
+                throw new Error(
+                    data && data.message
+                        ? data.message
+                        : '找不到員工綁定資料'
+                );
             }
-        )
-
-        .then(
-            function (response) {
-                return response.json();
-            }
-        )
-
-        .then(
-            function (data) {
-
-                if (
-                    !data
-                    ||
-                    !data.success
-                ) {
-
-                    throw new Error(
-                        data
-                        &&
-                        data.message
-                            ?
-                        data.message
-                            :
-                        '找不到員工綁定資料'
-                    );
-
-                }
 
 
-                currentEmpId =
-                    data.empId;
-
-                currentEmpName =
-                    data.name;
+            currentEmpId = data.empId;
+            currentEmpName = data.name;
 
 
-                document
-                    .getElementById(
-                        'empName'
-                    )
-                    .textContent =
-                        currentEmpName;
+            document
+                .getElementById('empName')
+                .textContent =
+                    currentEmpName;
 
 
-                document
-                    .getElementById(
-                        'empId'
-                    )
-                    .textContent =
-                        '員工編號：'
-                        +
-                        currentEmpId;
-
-            }
-        );
-
+            document
+                .getElementById('empId')
+                .textContent =
+                    '員工編號：' + currentEmpId;
+        });
     }
 
-
-    // ==================================================
-    // 呼叫原打卡 API
-    // ==================================================
 
     function callPunchApi(params) {
 
         var query =
             new URLSearchParams();
 
-        query.set(
-            'mode',
-            'api'
-        );
+        query.set('mode', 'api');
 
 
-        Object.keys(params)
-            .forEach(
-                function (key) {
+        Object.keys(params).forEach(function (key) {
 
-                    if (
-                        params[key] !== undefined
-                        &&
-                        params[key] !== null
-                        &&
-                        params[key] !== ''
-                    ) {
+            if (
+                params[key] !== undefined
+                &&
+                params[key] !== null
+                &&
+                params[key] !== ''
+            ) {
 
-                        query.set(
-                            key,
-                            params[key]
-                        );
-
-                    }
-
-                }
-            );
+                query.set(
+                    key,
+                    params[key]
+                );
+            }
+        });
 
 
         return fetch(
             PUNCH_APPS_SCRIPT_URL
-            +
-            '?'
-            +
-            query.toString()
-            +
-            '&_='
-            +
-            Date.now(),
+            + '?'
+            + query.toString()
+            + '&_='
+            + Date.now(),
             {
                 method: 'GET',
                 cache: 'no-store'
             }
         )
 
-        .then(
-            function (response) {
-                return response.json();
-            }
-        );
-
+        .then(function (response) {
+            return response.json();
+        });
     }
 
-
-    // ==================================================
-    // 加班外出時間防呆
-    // ==================================================
 
     function validateOvertimeTime() {
 
         var selectedDate =
-            document
-                .getElementById(
-                    'makeupDate'
-                )
-                .value;
+            document.getElementById('makeupDate').value;
 
         var hour =
-            document
-                .getElementById(
-                    'overtimeHour'
-                )
-                .value;
+            document.getElementById('overtimeHour').value;
 
         var minute =
-            document
-                .getElementById(
-                    'overtimeMinute'
-                )
-                .value;
+            document.getElementById('overtimeMinute').value;
 
-        var now =
-            new Date();
+        var now = new Date();
 
         var today =
-            getLocalDateString(
-                now
-            );
+            getLocalDateString(now);
 
 
-        if (
-            selectedDate !==
-            today
-        ) {
+        if (selectedDate !== today) {
 
             return {
                 valid: true
             };
-
         }
 
 
@@ -815,37 +620,24 @@
             );
 
 
-        if (
-            selected.getTime()
-            >
-            now.getTime()
-        ) {
+        if (selected.getTime() > now.getTime()) {
 
             return {
                 valid: false,
-                message:
-                    '今天的晚回來時間不可晚於目前時間'
+                message: '今天的晚回來時間不可晚於目前時間'
             };
-
         }
 
 
         return {
             valid: true
         };
-
     }
 
 
-    // ==================================================
-    // 送出
-    // ==================================================
-
     function submitMakeup() {
 
-        if (
-            isSubmitting
-        ) {
+        if (isSubmitting) {
             return;
         }
 
@@ -854,23 +646,13 @@
 
 
         var makeupDate =
-            document
-                .getElementById(
-                    'makeupDate'
-                )
-                .value;
+            document.getElementById('makeupDate').value;
 
         var makeupType =
-            document
-                .getElementById(
-                    'makeupType'
-                )
-                .value;
+            document.getElementById('makeupType').value;
 
 
-        if (
-            !makeupDate
-        ) {
+        if (!makeupDate) {
 
             showStatus(
                 '請選擇補登日期',
@@ -878,13 +660,10 @@
             );
 
             return;
-
         }
 
 
-        if (
-            !makeupType
-        ) {
+        if (!makeupType) {
 
             showStatus(
                 '請選擇補登項目',
@@ -892,20 +671,14 @@
             );
 
             return;
-
         }
 
 
         var today =
-            getLocalDateString(
-                new Date()
-            );
+            getLocalDateString(new Date());
 
 
-        if (
-            makeupDate >
-            today
-        ) {
+        if (makeupDate > today) {
 
             showStatus(
                 '補登日期不可選未來日期',
@@ -913,13 +686,10 @@
             );
 
             return;
-
         }
 
 
-        if (
-            !currentEmpId
-        ) {
+        if (!currentEmpId) {
 
             showStatus(
                 '尚未取得員工綁定資料',
@@ -927,14 +697,11 @@
             );
 
             return;
-
         }
 
 
         var workTs =
-            buildWorkTimestamp(
-                makeupDate
-            );
+            buildWorkTimestamp(makeupDate);
 
         var reportTs =
             Date.now();
@@ -942,71 +709,39 @@
 
         var params = {
 
-            id:
-                currentEmpId,
+            id: currentEmpId,
 
-            ts:
-                workTs,
+            ts: workTs,
 
-            reportTs:
-                reportTs,
+            reportTs: reportTs,
 
-            reason:
-                makeupType
-
+            reason: makeupType
         };
 
 
-        // ==========================
-        // 提前上班
-        // ==========================
-
-        if (
-            makeupType ===
-            '提前上班'
-        ) {
+        if (makeupType === '提前上班') {
 
             var earlyHour =
-                document
-                    .getElementById(
-                        'earlyHour'
-                    )
-                    .value;
+                document.getElementById('earlyHour').value;
 
             var earlyMinute =
-                document
-                    .getElementById(
-                        'earlyMinute'
-                    )
-                    .value;
+                document.getElementById('earlyMinute').value;
 
 
             params.earlyTime =
                 earlyHour
-                +
-                ':'
-                +
-                earlyMinute;
-
+                + ':'
+                + earlyMinute;
         }
 
 
-        // ==========================
-        // 加班外出晚回來
-        // ==========================
-
-        if (
-            makeupType ===
-            '加班(外出)'
-        ) {
+        if (makeupType === '加班(外出)') {
 
             var check =
                 validateOvertimeTime();
 
 
-            if (
-                !check.valid
-            ) {
+            if (!check.valid) {
 
                 showStatus(
                     check.message,
@@ -1014,22 +749,17 @@
                 );
 
                 return;
-
             }
 
 
             var memo =
                 document
-                    .getElementById(
-                        'reason'
-                    )
+                    .getElementById('reason')
                     .value
                     .trim();
 
 
-            if (
-                !memo
-            ) {
+            if (!memo) {
 
                 showStatus(
                     '請填寫加班（外出）事由',
@@ -1037,24 +767,13 @@
                 );
 
                 return;
-
             }
 
 
             var overtimeTime =
-                document
-                    .getElementById(
-                        'overtimeHour'
-                    )
-                    .value
-                +
-                ':'
-                +
-                document
-                    .getElementById(
-                        'overtimeMinute'
-                    )
-                    .value;
+                document.getElementById('overtimeHour').value
+                + ':'
+                + document.getElementById('overtimeMinute').value;
 
 
             params.overtimeOutMode =
@@ -1065,330 +784,204 @@
 
             params.overtimeOutMemo =
                 memo;
-
         }
 
 
         var btn =
-            document.getElementById(
-                'submitBtn'
-            );
+            document.getElementById('submitBtn');
 
 
-        btn.disabled =
-            true;
+        btn.disabled = true;
+        btn.innerText = '送出中...';
 
-        btn.innerText =
-            '送出中...';
-
-        isSubmitting =
-            true;
+        isSubmitting = true;
 
         stopCountdown();
 
-        showStatus(
-            '',
-            false
-        );
+        showStatus('', false);
 
 
         callPunchApi(params)
 
-        .then(
-            function (data) {
+        .then(function (data) {
 
-                if (
-                    !data
-                    ||
-                    data.status !==
-                    'success'
-                ) {
+            if (!data || data.status !== 'success') {
 
-                    throw new Error(
-                        data
-                        &&
-                        data.message
-                            ?
-                        data.message
-                            :
-                        '補登失敗'
-                    );
-
-                }
-
-
-                var resultText =
-                    '✅ 補登成功'
-                    +
-                    '\n'
-                    +
-                    currentEmpName
-                    +
-                    '（'
-                    +
-                    currentEmpId
-                    +
-                    '）'
-                    +
-                    '\n'
-                    +
-                    '日期：'
-                    +
-                    makeupDate
-                    +
-                    '\n'
-                    +
-                    '項目：'
-                    +
-                    getMakeupLabel(
-                        makeupType
-                    );
-
-
-                if (
-                    makeupType ===
-                    '提前上班'
-                ) {
-
-                    resultText +=
-                        '\n實際到班：'
-                        +
-                        params.earlyTime;
-
-                }
-
-
-                if (
-                    makeupType ===
-                    '加班(外出)'
-                ) {
-
-                    resultText +=
-                        '\n晚回來：'
-                        +
-                        params.overtimeOutTime;
-
-                }
-
-
-                showStatus(
-                    resultText,
-                    false
+                throw new Error(
+                    data && data.message
+                        ? data.message
+                        : '補登失敗'
                 );
-
-
-                btn.innerText =
-                    '補登完成';
-
-
-                setTimeout(
-                    function () {
-                        closeLiffWindow();
-                    },
-                    2200
-                );
-
             }
-        )
-
-        .catch(
-            function (error) {
-
-                showStatus(
-                    '⚠️ '
-                    +
-                    error.message,
-                    true
-                );
 
 
-                isSubmitting =
-                    false;
+            var resultText =
+                '✅ 補登成功'
+                + '\n'
+                + currentEmpName
+                + '（'
+                + currentEmpId
+                + '）'
+                + '\n'
+                + '日期：'
+                + makeupDate
+                + '\n'
+                + '項目：'
+                + getMakeupLabel(makeupType);
 
-                btn.disabled =
-                    false;
 
-                btn.innerText =
-                    '送出補登';
+            if (makeupType === '提前上班') {
 
-                startCountdown();
-
+                resultText +=
+                    '\n實際到班：'
+                    + params.earlyTime;
             }
-        );
 
+
+            if (makeupType === '加班(外出)') {
+
+                resultText +=
+                    '\n晚回來：'
+                    + params.overtimeOutTime;
+            }
+
+
+            showStatus(
+                resultText,
+                false
+            );
+
+
+            btn.innerText =
+                '補登完成';
+
+
+            setTimeout(function () {
+                closeLiffWindow();
+            }, 2200);
+
+        })
+
+        .catch(function (error) {
+
+            showStatus(
+                '⚠️ ' + error.message,
+                true
+            );
+
+
+            isSubmitting = false;
+
+            btn.disabled = false;
+
+            btn.innerText =
+                '送出補登';
+
+            startCountdown();
+        });
     }
 
 
-    // ==================================================
-    // 顯示名稱
-    // ==================================================
-
     function getMakeupLabel(type) {
 
-        if (
-            type ===
-            '中午未休息'
-        ) {
+        if (type === '中午未休息') {
             return '中午未休息（12:00～13:00）';
         }
 
-        if (
-            type ===
-            '下午未休息'
-        ) {
+        if (type === '下午未休息') {
             return '下午未休息（17:00～17:30）';
         }
 
-        if (
-            type ===
-            '提前上班'
-        ) {
+        if (type === '提前上班') {
             return '提前上班';
         }
 
-        if (
-            type ===
-            '加班(外出)'
-        ) {
+        if (type === '加班(外出)') {
             return '加班（外出）晚回來';
         }
 
         return type;
-
     }
 
-
-    // ==================================================
-    // 60 秒倒數
-    // ==================================================
 
     function startCountdown() {
 
         stopCountdown();
 
-        countdownSeconds =
-            60;
+        countdownSeconds = 60;
 
         renderCountdown();
 
 
         countdownTimer =
-            setInterval(
-                function () {
+            setInterval(function () {
 
-                    if (
-                        isSubmitting
-                    ) {
-                        return;
-                    }
+                if (isSubmitting) {
+                    return;
+                }
 
 
-                    countdownSeconds--;
+                countdownSeconds--;
 
-                    renderCountdown();
+                renderCountdown();
 
 
-                    if (
-                        countdownSeconds <=
-                        0
-                    ) {
+                if (countdownSeconds <= 0) {
 
-                        stopCountdown();
+                    stopCountdown();
 
-                        closeLiffWindow();
+                    closeLiffWindow();
+                }
 
-                    }
-
-                },
-                1000
-            );
-
+            }, 1000);
     }
 
 
     function resetCountdown() {
 
-        if (
-            isSubmitting
-        ) {
+        if (isSubmitting) {
             return;
         }
 
-
-        countdownSeconds =
-            60;
+        countdownSeconds = 60;
 
         renderCountdown();
-
     }
 
 
     function stopCountdown() {
 
-        if (
-            countdownTimer
-        ) {
+        if (countdownTimer) {
 
-            clearInterval(
-                countdownTimer
-            );
+            clearInterval(countdownTimer);
 
-            countdownTimer =
-                null;
-
+            countdownTimer = null;
         }
-
     }
 
 
     function renderCountdown() {
 
         var el =
-            document.getElementById(
-                'countdown'
-            );
-
+            document.getElementById('countdown');
 
         el.textContent =
             '⏱️ '
-            +
-            countdownSeconds
-            +
-            ' 秒內無操作將自動離開';
+            + countdownSeconds
+            + ' 秒內無操作將自動離開';
 
+        el.className = '';
 
-        el.className =
-            '';
+        if (countdownSeconds <= 10) {
 
+            el.classList.add('danger');
 
-        if (
-            countdownSeconds <=
-            10
-        ) {
+        } else if (countdownSeconds <= 30) {
 
-            el.classList.add(
-                'danger'
-            );
-
+            el.classList.add('warning');
         }
-
-        else if (
-            countdownSeconds <=
-            30
-        ) {
-
-            el.classList.add(
-                'warning'
-            );
-
-        }
-
     }
 
-
-    // ==================================================
-    // 關閉 LIFF
-    // ==================================================
 
     function closeLiffWindow() {
 
@@ -1403,24 +996,14 @@
                 liff.closeWindow();
 
                 return;
-
             }
 
+        } catch (error) {
+
+            console.log(error);
         }
-        catch (error) {
-
-            console.log(
-                error
-            );
-
-        }
-
     }
 
-
-    // ==================================================
-    // 有操作就重置倒數
-    // ==================================================
 
     [
         'click',
@@ -1428,38 +1011,29 @@
         'input',
         'keydown',
         'touchstart'
-    ]
-    .forEach(
-        function (eventName) {
+    ].forEach(function (eventName) {
 
-            document.addEventListener(
-                eventName,
-                function () {
-                    resetCountdown();
-                },
-                {
-                    passive: true
-                }
-            );
+        document.addEventListener(
+            eventName,
+            function () {
+                resetCountdown();
+            },
+            {
+                passive: true
+            }
+        );
+    });
 
-        }
-    );
-
-
-    // ==================================================
-    // LIFF 初始化
-    // ==================================================
 
     function initializeLiff() {
 
         initializeDate();
+
         initializeTimeSelects();
 
 
         document
-            .getElementById(
-                'makeupType'
-            )
+            .getElementById('makeupType')
             .addEventListener(
                 'change',
                 handleMakeupTypeChange
@@ -1467,100 +1041,68 @@
 
 
         liff.init({
-            liffId:
-                LIFF_ID
+            liffId: LIFF_ID
         })
 
-        .then(
-            function () {
+        .then(function () {
 
-                if (
-                    !liff.isLoggedIn()
-                ) {
+            if (!liff.isLoggedIn()) {
 
-                    liff.login();
+                liff.login();
 
-                    return null;
-
-                }
-
-
-                return liff.getProfile();
-
+                return null;
             }
-        )
-
-        .then(
-            function (profile) {
-
-                if (
-                    !profile
-                ) {
-                    return;
-                }
 
 
-                currentUserId =
-                    profile.userId;
+            return liff.getProfile();
+        })
 
+        .then(function (profile) {
 
-                return fetchBoundEmployee();
-
+            if (!profile) {
+                return;
             }
-        )
-
-        .then(
-            function () {
-
-                if (
-                    !currentEmpId
-                ) {
-                    return;
-                }
 
 
-                document
-                    .getElementById(
-                        'loading'
-                    )
-                    .style
-                    .display =
-                        'none';
+            currentUserId =
+                profile.userId;
 
 
-                document
-                    .getElementById(
-                        'formWrap'
-                    )
-                    .style
-                    .display =
-                        'block';
+            return fetchBoundEmployee();
+        })
 
+        .then(function () {
 
-                startCountdown();
-
+            if (!currentEmpId) {
+                return;
             }
-        )
 
-        .catch(
-            function (error) {
 
-                document
-                    .getElementById(
-                        'loading'
-                    )
-                    .innerHTML =
-                        '⚠️ '
-                        +
-                        error.message
-                        +
-                        '<br><br>'
-                        +
-                        '請確認 LINE 員工綁定及網路狀態';
+            document
+                .getElementById('loading')
+                .style
+                .display = 'none';
 
-            }
-        );
 
+            document
+                .getElementById('formWrap')
+                .style
+                .display = 'block';
+
+
+            startCountdown();
+        })
+
+        .catch(function (error) {
+
+            document
+                .getElementById('loading')
+                .innerHTML =
+                    '⚠️ '
+                    + error.message
+                    + '<br><br>'
+                    + '請確認 LINE 員工綁定及網路狀態';
+        });
     }
 
 
