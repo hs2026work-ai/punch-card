@@ -556,10 +556,6 @@ let busy = false;
 var PERF_DEBUG_MODE =
 new URLSearchParams(window.location.search).get('debug') === '1';
 
-// ====== 效能診斷顯示開關 ======
-// false：保留所有測速程式，但畫面完全隱藏；之後要再看時改成 true 即可。
-var PERF_DEBUG_VISIBLE = false;
-
 var currentPerfTrace = null;
 window.__lastQrInputMs = null;
 
@@ -569,7 +565,7 @@ return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
 function buildPerfDebugHtml(data) {
-if (!PERF_DEBUG_MODE || !PERF_DEBUG_VISIBLE) return '';
+if (!PERF_DEBUG_MODE) return '';
 
 var c = data && data._clientPerf ? data._clientPerf : {};
 var s = data && data.perf ? data.perf : {};
@@ -1298,13 +1294,13 @@ html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()"
 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
 }
 
-if (PERF_DEBUG_MODE && PERF_DEBUG_VISIBLE) {
+if (PERF_DEBUG_MODE) {
 html += buildPerfDebugHtml(data);
 }
 
 var countdownSeconds = (isAbnormalPunch || showEarlyBtn || showEarlyReminder) ? 8 : 1;
 // debug 模式延長顯示，方便截圖；一般員工使用仍維持原本 1 秒／8 秒。
-if (PERF_DEBUG_MODE && PERF_DEBUG_VISIBLE) countdownSeconds = Math.max(countdownSeconds, 15);
+if (PERF_DEBUG_MODE) countdownSeconds = Math.max(countdownSeconds, 15);
 html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
 card.innerHTML = html;
 
