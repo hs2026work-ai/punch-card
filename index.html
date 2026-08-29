@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宏升工業社 - 打卡專用掃描機</title>
+<title>宏升工業社 - 打卡專用掃描機 V8</title>
 <style>
 body {
 font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -318,6 +318,43 @@ font-size: 14px;
 margin-bottom: 4px;
 }
 
+
+
+/* ====== V8 尖峰快速打卡佇列 ====== */
+.queue-status-panel {
+  display: none;
+  width: 100%;
+  max-width: 450px;
+  box-sizing: border-box;
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.12);
+  color: #e8f5e9;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+.queue-status-panel.show { display: block; }
+.queue-status-panel.warning {
+  background: rgba(255,193,7,0.18);
+  color: #ffe082;
+}
+.queue-status-panel.error {
+  background: rgba(198,40,40,0.28);
+  color: #ffcdd2;
+}
+.queue-status-panel button {
+  margin-left: 8px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 7px;
+  background: rgba(255,255,255,0.12);
+  color: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 </style>
 </head>
 <body>
@@ -340,6 +377,7 @@ margin-bottom: 4px;
   💡 XB-R60 掃描器已啟用輸入法防呆，可直接感應員工 QR Code
 </div>
 <div class="status" id="status-text">📷 請感應員工 QR Code</div>
+<div id="queueStatusPanel" class="queue-status-panel" aria-live="polite"></div>
 
 <a id="leaveRequestBtn" href="check-leave-form.html">📝 請假申請 Xin nghi phep</a>
 
@@ -549,6 +587,8 @@ var rows = [
 ['鎖內重新讀快取', s.reloadStateCacheMs, 'ms'],
 ['建立今日打卡狀態', s.buildContextMs, 'ms'],
 ['規則判斷', s.validationMs, 'ms'],
+['requestId 防重送檢查', s.requestIdCheckMs, 'ms'],
+['requestId 完成標記', s.requestIdSaveMs, 'ms'],
 ['正式寫入試算表', s.sheetWriteMs, 'ms'],
 ['加班自動補登', s.backfillEveningMs, 'ms'],
 ['中午未休息處理', s.pendingLunchMs, 'ms'],
@@ -576,6 +616,344 @@ html += '今日狀態快取：<b>' +
 html += '</div>';
 return html;
 }
+
+
+// ====== V8 尖峰快速打卡佇列 ======
+// 正常且不需要「提前上班提醒」的打卡，掃到後立即放行下一位。
+// 真正寫入仍由 Apps Script 背景完成；未同步項目保存在 localStorage，斷線後可重送。
+var V8_QUEUE_KEY = 'punchCardPendingQueue_v8';
+var V8_FAILED_KEY = 'punchCardFailedQueue_v8';
+var V8_QUEUE_MAX = 200;
+var v8QueueProcessing = false;
+var v8QueueRetryTimer = null;
+var v8StatusSerial = 0;
+var v8RecentAcceptedById = {};
+
+function v8ReadJsonStorage(key, fallback) {
+  try {
+    var raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function v8WriteJsonStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (e) {
+    console.error('V8 queue storage failed', e);
+    return false;
+  }
+}
+
+function v8GetPendingQueue() {
+  return v8ReadJsonStorage(V8_QUEUE_KEY, []);
+}
+
+function v8SetPendingQueue(queue) {
+  return v8WriteJsonStorage(V8_QUEUE_KEY, queue || []);
+}
+
+function v8GetFailedQueue() {
+  return v8ReadJsonStorage(V8_FAILED_KEY, []);
+}
+
+function v8SetFailedQueue(queue) {
+  return v8WriteJsonStorage(V8_FAILED_KEY, queue || []);
+}
+
+function v8MakeRequestId() {
+  var nowPart = Date.now().toString(36);
+  var randomPart = Math.random().toString(36).slice(2, 10);
+  return 'p_' + nowPart + '_' + randomPart;
+}
+
+function v8GetLocalEmployeeName(id) {
+  var select = document.getElementById('standaloneMakeupId');
+  if (!select) return '';
+  for (var i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === id) {
+      var text = String(select.options[i].textContent || '');
+      var parts = text.split('｜');
+      return parts.length > 1 ? parts.slice(1).join('｜').trim() : '';
+    }
+  }
+  return '';
+}
+
+function v8MinutesFromDate(dateObj) {
+  return dateObj.getHours() * 60 + dateObj.getMinutes();
+}
+
+function v8ToMinutes(hhmm) {
+  var parts = String(hhmm || '').split(':');
+  return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+function v8IsNormalPunchWindow(dateObj) {
+  var minutes = v8MinutesFromDate(dateObj);
+  return (
+    (minutes >= v8ToMinutes('05:00') && minutes <= v8ToMinutes('08:00')) ||
+    (minutes >= v8ToMinutes('17:00') && minutes <= v8ToMinutes('17:25')) ||
+    (minutes >= v8ToMinutes('17:25') && minutes <= v8ToMinutes('20:50'))
+  );
+}
+
+function v8IsQueueEligibleLivePunch(ts) {
+  var d = new Date(Number(ts));
+  if (isNaN(d.getTime())) return false;
+  if (!v8IsNormalPunchWindow(d)) return false;
+
+  // 07:30 前原本成功畫面會提醒員工補登「提前上班」。
+  // 為保留這個互動，早於 07:30 的上班打卡仍走原本同步流程。
+  var minutes = v8MinutesFromDate(d);
+  if (minutes < v8ToMinutes('07:30')) return false;
+
+  return true;
+}
+
+function v8UpdateQueuePanel(message, level) {
+  var panel = document.getElementById('queueStatusPanel');
+  if (!panel) return;
+
+  var pending = v8GetPendingQueue().length;
+  var failed = v8GetFailedQueue().length;
+
+  panel.classList.remove('show', 'warning', 'error');
+
+  if (!message && pending === 0 && failed === 0) {
+    panel.innerHTML = '';
+    return;
+  }
+
+  panel.classList.add('show');
+  if (level === 'error' || failed > 0) panel.classList.add('error');
+  else if (level === 'warning' || pending > 0) panel.classList.add('warning');
+
+  var text = message || '背景同步中';
+  text += '<br>待同步：<b>' + pending + '</b> 筆';
+  if (failed > 0) {
+    text += '｜需處理：<b>' + failed + '</b> 筆' +
+      '<button type="button" onclick="retryFailedPunches()">重新排隊</button>';
+  }
+
+  panel.innerHTML = text;
+}
+
+function v8ShowAccepted(item) {
+  var serial = ++v8StatusSerial;
+  var name = item.name ? '｜' + item.name : '';
+  statusEl.innerText = '✅ 已接收 ' + item.id + name + '，請下一位直接掃描';
+  v8UpdateQueuePanel('⚡ 正在背景寫入出勤紀錄', 'warning');
+
+  setTimeout(function () {
+    if (serial !== v8StatusSerial) return;
+    if (!busy) statusEl.innerText = '📷 請感應員工 QR Code';
+  }, 900);
+}
+
+function v8ShowSynced(item, data) {
+  var name = item.name ? '｜' + item.name : '';
+  v8UpdateQueuePanel('✅ ' + item.id + name + ' 已寫入打卡紀錄', '');
+  if (PERF_DEBUG_MODE && data) {
+    console.log('V8 背景打卡同步完成', item, data);
+  }
+}
+
+function v8IsRetryableServerError(data) {
+  if (!data || data.status === 'success') return false;
+  var msg = String(data.message || '');
+  return /系統忙碌|多人同時打卡|稍等|逾時|timeout|temporar/i.test(msg);
+}
+
+function v8MoveToFailed(item, message, data) {
+  var failed = v8GetFailedQueue();
+  item.failedAt = Date.now();
+  item.lastError = String(message || '背景同步失敗');
+  if (data && data.message) item.serverMessage = String(data.message);
+  failed.push(item);
+  v8SetFailedQueue(failed.slice(-100));
+  v8UpdateQueuePanel('⚠️ 有打卡紀錄需要管理員確認：' + item.id, 'error');
+}
+
+function retryFailedPunches() {
+  var failed = v8GetFailedQueue();
+  if (!failed.length) {
+    v8UpdateQueuePanel('', '');
+    return;
+  }
+
+  var pending = v8GetPendingQueue();
+  failed.forEach(function (item) {
+    item.retryCount = Number(item.retryCount || 0);
+    delete item.failedAt;
+    delete item.lastError;
+    delete item.serverMessage;
+    pending.push(item);
+  });
+
+  if (pending.length > V8_QUEUE_MAX) pending = pending.slice(-V8_QUEUE_MAX);
+  v8SetPendingQueue(pending);
+  v8SetFailedQueue([]);
+  v8UpdateQueuePanel('🔄 已重新排入背景同步', 'warning');
+  processPunchQueue();
+}
+
+function v8EnqueueLivePunch(id, ts, base) {
+  var queue = v8GetPendingQueue();
+  if (queue.length >= V8_QUEUE_MAX) return false;
+
+  var safeTs = Number(ts) || Date.now();
+  var previousAcceptedTs = Number(v8RecentAcceptedById[id] || 0);
+  var alreadyPending = queue.some(function (queuedItem) {
+    return queuedItem.id === id && Math.abs(safeTs - Number(queuedItem.ts || 0)) < 8000;
+  });
+
+  if ((previousAcceptedTs && Math.abs(safeTs - previousAcceptedTs) < 8000) || alreadyPending) {
+    statusEl.innerText = '⚠️ ' + id + ' 剛剛已接收，請勿重複掃描';
+    v8UpdateQueuePanel('✅ 前一筆仍在背景同步／已完成，不會重複寫入', 'warning');
+    return true;
+  }
+
+  var item = {
+    requestId: v8MakeRequestId(),
+    id: id,
+    name: v8GetLocalEmployeeName(id),
+    ts: safeTs,
+    base: base || FALLBACK_SCRIPT_URL,
+    createdAt: Date.now(),
+    retryCount: 0
+  };
+
+  queue.push(item);
+  if (!v8SetPendingQueue(queue)) return false;
+
+  v8RecentAcceptedById[id] = safeTs;
+  v8ShowAccepted(item);
+  processPunchQueue();
+  return true;
+}
+
+function v8BuildQueuedPunchUrl(item) {
+  return (item.base || FALLBACK_SCRIPT_URL) + '?mode=api'
+    + '&id=' + encodeURIComponent(item.id)
+    + '&ts=' + encodeURIComponent(item.ts)
+    + '&requestId=' + encodeURIComponent(item.requestId)
+    + (PERF_DEBUG_MODE ? '&debug=1' : '');
+}
+
+function v8ScheduleQueueRetry(delayMs) {
+  if (v8QueueRetryTimer) clearTimeout(v8QueueRetryTimer);
+  v8QueueRetryTimer = setTimeout(function () {
+    v8QueueRetryTimer = null;
+    processPunchQueue();
+  }, Number(delayMs) || 3000);
+}
+
+function processPunchQueue() {
+  if (v8QueueProcessing) return;
+
+  var queue = v8GetPendingQueue();
+  if (!queue.length) {
+    v8UpdateQueuePanel('', '');
+    return;
+  }
+
+  if (navigator.onLine === false) {
+    v8UpdateQueuePanel('🌐 網路暫時中斷，打卡已保存在本機，恢復後自動重送', 'warning');
+    v8ScheduleQueueRetry(4000);
+    return;
+  }
+
+  var item = queue[0];
+  v8QueueProcessing = true;
+  var requestStarted = performance.now();
+
+  fetch(v8BuildQueuedPunchUrl(item), { cache: 'no-store' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      var latest = v8GetPendingQueue();
+      if (!latest.length || latest[0].requestId !== item.requestId) {
+        // 佇列被其他流程更新時，不自行刪錯資料；下一輪重新讀。
+        return;
+      }
+
+      if (data && data.status === 'success') {
+        latest.shift();
+        v8SetPendingQueue(latest);
+        v8ShowSynced(item, data);
+
+        if (PERF_DEBUG_MODE) {
+          console.log('V8 queue perf', {
+            requestId: item.requestId,
+            totalMs: performance.now() - requestStarted,
+            server: data.perf || {},
+            duplicateRequest: data.duplicateRequest === true
+          });
+        }
+        return;
+      }
+
+      if (v8IsRetryableServerError(data)) {
+        item.retryCount = Number(item.retryCount || 0) + 1;
+        latest[0] = item;
+        v8SetPendingQueue(latest);
+        v8UpdateQueuePanel('⏳ Google 暫時忙碌，這筆會自動重送：' + item.id, 'warning');
+        v8ScheduleQueueRetry(Math.min(10000, 2000 + item.retryCount * 1000));
+        return;
+      }
+
+      // 非暫時性錯誤，例如短時間重複掃描／已打過下班／查無員工。
+      // 從待同步移出，另存「需處理」，避免永遠卡住後面其他人的打卡。
+      latest.shift();
+      v8SetPendingQueue(latest);
+      v8MoveToFailed(item, data && data.message ? data.message : '無法寫入', data);
+    })
+    .catch(function (err) {
+      var latest = v8GetPendingQueue();
+      if (latest.length && latest[0].requestId === item.requestId) {
+        item.retryCount = Number(item.retryCount || 0) + 1;
+        item.lastNetworkError = String(err && err.message ? err.message : err);
+        latest[0] = item;
+        v8SetPendingQueue(latest);
+      }
+      v8UpdateQueuePanel('🌐 尚未同步，已保存在本機並會自動重送：' + item.id, 'warning');
+      v8ScheduleQueueRetry(Math.min(12000, 2500 + item.retryCount * 1200));
+    })
+    .finally(function () {
+      v8QueueProcessing = false;
+      // 若前一筆已完成，立刻處理下一筆；若剛安排重試，process 會看到同一筆並再次送出，
+      // 因此只有在沒有 retry timer 時才立即續跑。
+      if (!v8QueueRetryTimer) {
+        setTimeout(processPunchQueue, 20);
+      }
+    });
+}
+
+window.addEventListener('online', function () {
+  v8UpdateQueuePanel('🌐 網路已恢復，正在重新同步', 'warning');
+  processPunchQueue();
+});
+
+setInterval(function () {
+  if (v8GetPendingQueue().length && !v8QueueProcessing) processPunchQueue();
+}, 5000);
+
+setTimeout(function () {
+  var pending = v8GetPendingQueue().length;
+  var failed = v8GetFailedQueue().length;
+  if (pending || failed) {
+    v8UpdateQueuePanel(pending ? '🔄 發現尚未同步的打卡，正在處理' : '⚠️ 有先前失敗紀錄需要確認', pending ? 'warning' : 'error');
+  }
+  processPunchQueue();
+}, 500);
 
 function parseScan(rawText) {
 var text = rawText.trim();
@@ -620,17 +998,30 @@ function handleScan(rawText) {
     return;
   }
 
-  playSuccessSound();
-  statusEl.innerText = "✅ 已掃描，資料處理中...";
-
   currentBase = parsed.base;
   currentId = parsed.id;
   currentTs = now;
 
-  // 加班結束時段直接打卡，不再跳出選擇按鈕。
-  // 如需補登「下午未休息」等項目，統一回主畫面使用「補登」。
+  // V8 尖峰快速模式：正常打卡先進本機佇列，立刻讓下一位掃描。
+  // 異常時段、07:30 前需要提前上班提醒的情境，維持原本同步流程與結果畫面。
+  if (v8IsQueueEligibleLivePunch(now)) {
+    playSuccessSound();
+    var queued = v8EnqueueLivePunch(currentId, currentTs, currentBase);
+    if (queued) {
+      busy = false;
+      return;
+    }
+
+    // localStorage 無法使用或佇列已滿時，不冒資料遺失風險，退回原本同步打卡。
+    statusEl.innerText = '⏳ 快速佇列暫時無法使用，改用一般打卡處理...';
+  } else {
+    playSuccessSound();
+    statusEl.innerText = '✅ 已掃描，資料處理中...';
+  }
+
   callApi({ id: currentId, ts: currentTs });
 }
+
 function callApi(params) {
     var safeTs = Number(params.ts);
 
