@@ -698,33 +698,71 @@ function v8ToMinutes(hhmm) {
   return Number(parts[0]) * 60 + Number(parts[1]);
 }
 
-// V8.2 全尖峰：08:00 上班、17:00 下班、20:30 左右加班結束都走快速佇列。
-// 實際仍沿用既有正常時間窗：05:00–08:00、17:00–17:25、17:25–20:50。
-function v8IsNormalPunchWindow(dateObj) {
-  var minutes = v8MinutesFromDate(dateObj);
-  return (
-    (minutes >= v8ToMinutes('05:00') && minutes <= v8ToMinutes('08:00')) ||
-    (minutes >= v8ToMinutes('17:00') && minutes <= v8ToMinutes('17:25')) ||
-    (minutes >= v8ToMinutes('17:25') && minutes <= v8ToMinutes('20:50'))
-  );
+// ====== V8.3：最終尖峰快速時段 ======
+// 平日：07:30–08:00 上班、17:00–17:25 下班、20:30–20:50 加班結束。
+// 假日：07:30–08:00 加班開始、17:00–17:25 加班結束。
+// 07:30–08:00 與 17:00–17:25 不論平日/假日都可直接快速；真正類型由後端依日別判定。
+// 20:30–20:50 只有正常工作日可快速，因此頁面會預先向後端取得今天是否為假日。
+var V83_DAY_INFO = { dateKey: '', isNonWorkingDay: null };
+
+function v83DateKeyLocal(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+function v83RefreshDayInfo() {
+  var now = new Date();
+  var todayKey = v83DateKeyLocal(now);
+  var day = now.getDay();
+
+  if (day === 0 || day === 6) {
+    V83_DAY_INFO = { dateKey: todayKey, isNonWorkingDay: true };
+    return;
+  }
+
+  fetch(FALLBACK_SCRIPT_URL + '?mode=day_info&ts=' + encodeURIComponent(Date.now()), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data && data.status === 'success') {
+        V83_DAY_INFO = {
+          dateKey: String(data.dateKey || todayKey),
+          isNonWorkingDay: data.isNonWorkingDay === true
+        };
+      }
+    })
+    .catch(function () {
+      // 查詢失敗時維持 unknown；20:30 將保守走一般同步流程。
+    });
 }
 
 function v8IsQueueEligibleLivePunch(ts) {
   var d = new Date(Number(ts));
   if (isNaN(d.getTime())) return false;
-  if (!v8IsNormalPunchWindow(d)) return false;
-
-  // V8.2：週六／週日沒有「提前上班」提醒，因此即使 07:30 前也可直接進快速佇列。
-  var day = d.getDay();
-  if (day === 0 || day === 6) return true;
-
-  // 平日 07:30 前仍保留原本「提前上班」互動。
-  // 若該平日剛好是國定假日，後端仍會正確判成加班開始，只是這一筆會走一般同步模式。
   var minutes = v8MinutesFromDate(d);
-  if (minutes < v8ToMinutes('07:30')) return false;
 
-  return true;
+  var morningFast = minutes >= v8ToMinutes('07:30') && minutes <= v8ToMinutes('08:00');
+  var eveningFast = minutes >= v8ToMinutes('17:00') && minutes <= v8ToMinutes('17:25');
+  if (morningFast || eveningFast) return true;
+
+  var overtimeFast = minutes >= v8ToMinutes('20:30') && minutes <= v8ToMinutes('20:50');
+  if (!overtimeFast) return false;
+
+  var day = d.getDay();
+  if (day === 0 || day === 6) return false;
+
+  var dateKey = v83DateKeyLocal(d);
+  if (V83_DAY_INFO.dateKey !== dateKey || V83_DAY_INFO.isNonWorkingDay === null) {
+    v83RefreshDayInfo();
+    return false;
+  }
+
+  return V83_DAY_INFO.isNonWorkingDay === false;
 }
+
+v83RefreshDayInfo();
+setInterval(v83RefreshDayInfo, 30 * 60 * 1000);
 
 function v8UpdateQueuePanel(message, level) {
   var panel = document.getElementById('queueStatusPanel');
