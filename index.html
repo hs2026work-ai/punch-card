@@ -298,6 +298,26 @@ cursor: pointer;
 .gate-box .gate-error {
 color: #c62828; font-size: 14px; margin-top: 10px; min-height: 18px;
 }
+
+/* ====== V7.1 效能診斷：只有網址 ?debug=1 時才顯示 ====== */
+.perf-debug-box {
+margin-top: 14px;
+padding: 12px 14px;
+border-radius: 8px;
+background: #eef6ff;
+border: 1px solid #90caf9;
+color: #0d47a1;
+font-size: 13px;
+line-height: 1.65;
+text-align: left;
+word-break: break-word;
+}
+.perf-debug-title {
+font-weight: bold;
+font-size: 14px;
+margin-bottom: 4px;
+}
+
 </style>
 </head>
 <body>
@@ -492,6 +512,71 @@ updateClock();
 const statusEl = document.getElementById('status-text');
 let busy = false;
 
+
+// ====== V7.1 效能診斷 ======
+// 平常完全不顯示；只有網址加上 ?debug=1 才會啟用。
+var PERF_DEBUG_MODE =
+new URLSearchParams(window.location.search).get('debug') === '1';
+
+var currentPerfTrace = null;
+window.__lastQrInputMs = null;
+
+function perfRound(value) {
+var n = Number(value);
+return Number.isFinite(n) ? Math.round(n) : 0;
+}
+
+function buildPerfDebugHtml(data) {
+if (!PERF_DEBUG_MODE) return '';
+
+var c = data && data._clientPerf ? data._clientPerf : {};
+var s = data && data.perf ? data.perf : {};
+
+var requestTotal = Number(c.requestTotalMs || 0);
+var serverTotal = Number(s.serverTotalMs || 0);
+var googleTransit = Math.max(0, requestTotal - serverTotal);
+
+var rows = [
+['QR 掃描器輸入', c.qrInputMs, 'ms'],
+['已掃描 → 送出 API', c.beforeFetchMs, 'ms'],
+['API 往返總時間', c.requestTotalMs, 'ms'],
+['Apps Script 執行時間', s.serverTotalMs, 'ms'],
+['員工資料查詢', s.employeeLookupMs, 'ms'],
+['開啟試算表', s.openSpreadsheetMs, 'ms'],
+['今日狀態快取檢查', s.checkStateCacheMs, 'ms'],
+['今日狀態準備', s.prepareTodayStateMs, 'ms'],
+['等待寫入鎖', s.lockWaitMs, 'ms'],
+['鎖內重新讀快取', s.reloadStateCacheMs, 'ms'],
+['建立今日打卡狀態', s.buildContextMs, 'ms'],
+['規則判斷', s.validationMs, 'ms'],
+['正式寫入試算表', s.sheetWriteMs, 'ms'],
+['加班自動補登', s.backfillEveningMs, 'ms'],
+['中午未休息處理', s.pendingLunchMs, 'ms'],
+['更新今日快取', s.saveStateCacheMs, 'ms'],
+['鎖內核心處理', s.lockedCoreMs, 'ms'],
+['網路＋Google 啟動／轉送（估算）', googleTransit, 'ms'],
+['掃描完成 → 顯示結果', c.scanToResultMs, 'ms']
+];
+
+var html = '<div class="perf-debug-box">' +
+'<div class="perf-debug-title">⚙️ 效能診斷（debug=1）</div>';
+
+rows.forEach(function (row) {
+var value = Number(row[1]);
+if (!Number.isFinite(value) || value < 0) return;
+html += row[0] + '：<b>' + perfRound(value) + '</b> ' + row[2] + '<br>';
+});
+
+if (Object.prototype.hasOwnProperty.call(s, 'todayStateCacheHit')) {
+html += '今日狀態快取：<b>' +
+(s.todayStateCacheHit ? '命中' : '未命中／重新建立') +
+'</b>';
+}
+
+html += '</div>';
+return html;
+}
+
 function parseScan(rawText) {
 var text = rawText.trim();
 if (text.indexOf('http') === 0) {
@@ -516,6 +601,11 @@ function handleScan(rawText) {
   if (busy) return;
   busy = true;
   currentMakeupReportTs = null;
+
+  currentPerfTrace = {
+    scanDetectedPerf: performance.now(),
+    qrInputMs: Number(window.__lastQrInputMs || 0)
+  };
 
   var parsed = parseScan(rawText);
 
@@ -556,10 +646,43 @@ function callApi(params) {
 + (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
 + (params.overtimeOutTime ? '&overtimeOutTime=' + encodeURIComponent(params.overtimeOutTime) : '')
 + (params.overtimeOutMemo ? '&overtimeOutMemo=' + encodeURIComponent(params.overtimeOutMemo) : '')
-+ (params.reportTs ? '&reportTs=' + encodeURIComponent(params.reportTs) : '');
++ (params.reportTs ? '&reportTs=' + encodeURIComponent(params.reportTs) : '')
++ (PERF_DEBUG_MODE ? '&debug=1' : '');
 
-fetch(url)
-.then(function (r) { return r.json(); })
+var requestStartPerf = performance.now();
+
+if (currentPerfTrace) {
+currentPerfTrace.beforeFetchMs =
+requestStartPerf - currentPerfTrace.scanDetectedPerf;
+}
+
+fetch(url, { cache: 'no-store' })
+.then(function (r) {
+var headersPerf = performance.now();
+return r.json().then(function (data) {
+var jsonPerf = performance.now();
+
+if (PERF_DEBUG_MODE) {
+data._clientPerf = {
+qrInputMs: currentPerfTrace ? currentPerfTrace.qrInputMs : 0,
+beforeFetchMs: currentPerfTrace ? currentPerfTrace.beforeFetchMs : 0,
+requestToHeadersMs: headersPerf - requestStartPerf,
+responseJsonMs: jsonPerf - headersPerf,
+requestTotalMs: jsonPerf - requestStartPerf,
+scanToResultMs: currentPerfTrace
+? jsonPerf - currentPerfTrace.scanDetectedPerf
+: jsonPerf - requestStartPerf
+};
+
+console.log('宏升打卡效能診斷', {
+client: data._clientPerf,
+server: data.perf || {}
+});
+}
+
+return data;
+});
+})
 .then(function (data) {
 if (data.status === 'need_reason') {
 // 相容舊版後端：不再顯示原因選單，直接以打卡異常提示呈現。
@@ -570,14 +693,27 @@ name: data.name,
 type: '上班',
 time: new Date(Number(data.ts) || Date.now()).toLocaleString('zh-TW', { hour12: false }),
 isAbnormalPunch: true,
-message: '若未請假請記得補請，未請假將視為遲到或曠職'
+message: '若未請假請記得補請，未請假將視為遲到或曠職',
+perf: data.perf,
+_clientPerf: data._clientPerf
 });
 } else {
 showResultCard(data);
 }
 })
 .catch(function (err) {
-showResultCard({ status: 'error', message: '連線失敗，請確認網路後重新掃描' });
+showResultCard({
+status: 'error',
+message: '連線失敗，請確認網路後重新掃描',
+_clientPerf: PERF_DEBUG_MODE && currentPerfTrace
+? {
+qrInputMs: currentPerfTrace.qrInputMs,
+beforeFetchMs: currentPerfTrace.beforeFetchMs,
+requestTotalMs: performance.now() - requestStartPerf,
+scanToResultMs: performance.now() - currentPerfTrace.scanDetectedPerf
+}
+: null
+});
 });
 }
 
@@ -767,7 +903,13 @@ html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()"
 html += '<p class="line">' + (data.message || '發生錯誤，請重新掃描') + '</p>';
 }
 
+if (PERF_DEBUG_MODE) {
+html += buildPerfDebugHtml(data);
+}
+
 var countdownSeconds = (isAbnormalPunch || showEarlyBtn || showEarlyReminder) ? 8 : 1;
+// debug 模式延長顯示，方便截圖；一般員工使用仍維持原本 1 秒／8 秒。
+if (PERF_DEBUG_MODE) countdownSeconds = Math.max(countdownSeconds, 15);
 html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
 card.innerHTML = html;
 
@@ -1234,6 +1376,7 @@ updateSoundToggleBtn();
   // 仍會被組回 H、S、0～9。
   var physicalBuffer = '';
   var fallbackBuffer = '';
+  var scanInputStartPerf = null;
 
   function codeToAscii(e) {
     var code = e.code || '';
@@ -1282,6 +1425,7 @@ updateSoundToggleBtn();
     physicalBuffer = '';
     fallbackBuffer = '';
     scannerInput.value = '';
+    scanInputStartPerf = null;
   }
 
   function refocusScanner() {
@@ -1323,6 +1467,13 @@ updateSoundToggleBtn();
       e.preventDefault();
 
       var scanned = (physicalBuffer || fallbackBuffer || scannerInput.value || '').trim();
+
+      if (scanInputStartPerf !== null) {
+        window.__lastQrInputMs = Math.max(0, performance.now() - scanInputStartPerf);
+      } else {
+        window.__lastQrInputMs = 0;
+      }
+
       resetScannerBuffers();
 
       if (scanned) {
@@ -1338,6 +1489,9 @@ updateSoundToggleBtn();
 
     var ch = codeToAscii(e);
     if (ch) {
+      if (scanInputStartPerf === null) {
+        scanInputStartPerf = performance.now();
+      }
       physicalBuffer += ch;
 
       // 阻止中文輸入法把 H/S 轉成注音或組字；我們已用 code 自己收下字符。
@@ -1350,6 +1504,9 @@ updateSoundToggleBtn();
 
   // 備援：若某些特殊掃描器沒有正常提供 KeyboardEvent.code，仍保留原 input 路徑。
   scannerInput.addEventListener('input', function () {
+    if (scanInputStartPerf === null && scannerInput.value) {
+      scanInputStartPerf = performance.now();
+    }
     fallbackBuffer = scannerInput.value;
   });
 
