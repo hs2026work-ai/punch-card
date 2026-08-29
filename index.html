@@ -698,6 +698,8 @@ function v8ToMinutes(hhmm) {
   return Number(parts[0]) * 60 + Number(parts[1]);
 }
 
+// V8.2 全尖峰：08:00 上班、17:00 下班、20:30 左右加班結束都走快速佇列。
+// 實際仍沿用既有正常時間窗：05:00–08:00、17:00–17:25、17:25–20:50。
 function v8IsNormalPunchWindow(dateObj) {
   var minutes = v8MinutesFromDate(dateObj);
   return (
@@ -712,7 +714,7 @@ function v8IsQueueEligibleLivePunch(ts) {
   if (isNaN(d.getTime())) return false;
   if (!v8IsNormalPunchWindow(d)) return false;
 
-  // V8.1：週六／週日沒有「提前上班」提醒，因此即使 07:30 前也可直接進快速佇列。
+  // V8.2：週六／週日沒有「提前上班」提醒，因此即使 07:30 前也可直接進快速佇列。
   var day = d.getDay();
   if (day === 0 || day === 6) return true;
 
