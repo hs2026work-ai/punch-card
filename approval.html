@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宏升工業社｜請假審核</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      padding:20px 16px 50px;
+      background:#f3f6fb;
+      font-family:"Microsoft JhengHei", Arial, sans-serif;
+      color:#263238;
+    }
+
+    .container{
+      width:100%;
+      max-width:560px;
+      margin:auto;
+    }
+
+    .header{
+      text-align:center;
+      margin-bottom:18px;
+    }
+
+    .header h1{
+      margin:0;
+      font-size:24px;
+      color:#17386b;
+    }
+
+    .header p{
+      margin:8px 0 0;
+      color:#718096;
+      font-size:14px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      box-shadow:0 6px 24px rgba(0,0,0,.08);
+    }
+
+    .loading{
+      text-align:center;
+      padding:35px 10px;
+      color:#718096;
+    }
+
+    .row{
+      padding:12px 0;
+      border-bottom:1px solid #edf0f5;
+    }
+
+    .row:last-child{
+      border-bottom:none;
+    }
+
+    .label{
+      font-size:13px;
+      color:#8a94a6;
+      margin-bottom:5px;
+    }
+
+    .value{
+      font-size:16px;
+      font-weight:600;
+      word-break:break-word;
+    }
+
+    .reason{
+      line-height:1.6;
+    }
+
+    .status-box{
+      margin-top:18px;
+      padding:14px;
+      border-radius:10px;
+      background:#f7f8fb;
+      text-align:center;
+      font-weight:700;
+      display:none;
+    }
+
+    .button-area{
+      display:flex;
+      gap:12px;
+      margin-top:22px;
+    }
+
+    button{
+      flex:1;
+      border:none;
+      border-radius:12px;
+      min-height:54px;
+      font-size:17px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.15s;
+    }
+
+    .approve{
+      color:#fff;
+      background:#27864a;
+    }
+
+    .reject{
+      color:#9b2633;
+      background:#f4e7e9;
+    }
+
+    button:disabled{
+      background:#d1d5db !important;
+      color:#7b818a !important;
+      cursor:not-allowed;
+      opacity:1;
+    }
+
+    .processing{
+      background:#fff7dc;
+      color:#9a6500;
+    }
+
+    .success{
+      background:#e8f6ed;
+      color:#21733f;
+    }
+
+    .rejected{
+      background:#fdecec;
+      color:#a32934;
+    }
+
+    .error{
+      background:#fdecec;
+      color:#a32934;
+    }
+
+    .processed{
+      background:#eef1f5;
+      color:#667085;
+    }
+
+    .hidden{
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>請假審核</h1>
+    <p id="reviewerText">正在確認審核資料…</p>
+  </div>
+
+  <div class="card">
+
+    <div id="loading" class="loading">
+      資料讀取中…
+    </div>
+
+    <div id="detail" class="hidden">
+
+      <div class="row">
+        <div class="label">員工</div>
+        <div class="value" id="employee"></div>
+      </div>
+
+      <div class="row">
+        <div class="label">假別</div>
+        <div class="value" id="leaveType"></div>
+      </div>
+
+      <div class="row">
+        <div class="label">起訖時間</div>
+        <div class="value" id="leaveTime"></div>
+      </div>
+
+      <div class="row">
+        <div class="label">事由</div>
+        <div class="value reason" id="reason"></div>
+      </div>
+
+      <div id="statusBox" class="status-box"></div>
+
+      <div id="buttonArea" class="button-area">
+        <button
+          id="approveBtn"
+          class="approve"
+          onclick="submitReview('approve')"
+        >
+          同意
+        </button>
+
+        <button
+          id="rejectBtn"
+          class="reject"
+          onclick="submitReview('reject')"
+        >
+          拒絕
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const LIFF_ID = '2010875519-qVP2Xoag';
+
+const GAS_URL =
+  'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
+
+let LINE_USER_ID = '';
+let ROW = null;
+let STAGE = null;
+let submitting = false;
+
+
+// ===== 初始化 =====
+async function init(){
+
+  try{
+
+    const params = new URLSearchParams(window.location.search);
+
+    ROW = Number(params.get('row'));
+    STAGE = Number(params.get('stage'));
+
+    if(!ROW || !STAGE){
+      showFatal('審核連結資料不完整。');
+      return;
+    }
+
+    await liff.init({
+      liffId:LIFF_ID
+    });
+
+    if(!liff.isLoggedIn()){
+      liff.login({
+        redirectUri:window.location.href
+      });
+      return;
+    }
+
+    const profile = await liff.getProfile();
+
+    LINE_USER_ID = profile.userId;
+
+    await loadDetail();
+
+  }catch(err){
+
+    showFatal(
+      '開啟審核頁失敗：' +
+      err.message
+    );
+  }
+}
+
+
+// ===== 讀取假單 =====
+async function loadDetail(){
+
+  try{
+
+    const res = await fetch(
+      GAS_URL,
+      {
+        method:'POST',
+
+        headers:{
+          'Content-Type':'text/plain;charset=utf-8'
+        },
+
+        body:JSON.stringify({
+          action:'getApprovalDetail',
+          userId:LINE_USER_ID,
+          row:ROW,
+          stage:STAGE
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(!data.success){
+      showFatal(
+        data.message ||
+        '讀取假單失敗。'
+      );
+      return;
+    }
+
+    document
+      .getElementById('loading')
+      .classList
+      .add('hidden');
+
+    document
+      .getElementById('detail')
+      .classList
+      .remove('hidden');
+
+    document
+      .getElementById('reviewerText')
+      .textContent =
+      data.reviewer + '審核';
+
+    document
+      .getElementById('employee')
+      .textContent =
+      data.empName +
+      '（' +
+      data.empId +
+      '）';
+
+    document
+      .getElementById('leaveType')
+      .textContent =
+      data.leaveType;
+
+    document
+      .getElementById('leaveTime')
+      .textContent =
+      data.startDate +
+      ' ' +
+      data.startTime +
+      ' ～ ' +
+      data.endDate +
+      ' ' +
+      data.endTime;
+
+    document
+      .getElementById('reason')
+      .textContent =
+      data.reason || '－';
+
+    // 已處理過
+    if(data.processed){
+
+      disableButtons();
+
+      showStatus(
+        data.currentStatus === '已核准'
+          ? '✅ 此筆已同意'
+          : data.currentStatus === '已拒絕'
+            ? '❌ 此筆已拒絕'
+            : '此階段已免審',
+        'processed'
+      );
+
+      return;
+    }
+
+    // 尚未輪到這一關時，也直接禁用
+    if(data.currentStatus !== '審核中'){
+
+      disableButtons();
+
+      showStatus(
+        '目前尚未輪到此階段審核',
+        'processed'
+      );
+    }
+
+  }catch(err){
+
+    showFatal(
+      '讀取資料失敗：' +
+      err.message
+    );
+  }
+}
+
+
+// ===== 送出審核 =====
+async function submitReview(action){
+
+  if(submitting){
+    return;
+  }
+
+  submitting = true;
+
+  // 一按下去立即灰色
+  disableButtons();
+
+  showStatus(
+    action === 'approve'
+      ? '處理中：正在同意此筆申請…'
+      : '處理中：正在拒絕此筆申請…',
+    'processing'
+  );
+
+  try{
+
+    const res = await fetch(
+      GAS_URL,
+      {
+        method:'POST',
+
+        headers:{
+          'Content-Type':'text/plain;charset=utf-8'
+        },
+
+        body:JSON.stringify({
+          action:'submitApprovalV2',
+          userId:LINE_USER_ID,
+          row:ROW,
+          stage:STAGE,
+          reviewAction:action
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(data.success){
+
+      if(data.result === 'approved'){
+
+        showStatus(
+          '✅ 已同意該筆請假申請',
+          'success'
+        );
+
+      }else{
+
+        showStatus(
+          '❌ 已拒絕該筆請假申請',
+          'rejected'
+        );
+      }
+
+      // 完成後保持灰色
+      submitting = true;
+
+      return;
+    }
+
+    if(data.alreadyProcessed){
+
+      showStatus(
+        data.message,
+        'processed'
+      );
+
+      submitting = true;
+
+      return;
+    }
+
+    showStatus(
+      '⚠️ ' +
+      (
+        data.message ||
+        '審核失敗'
+      ),
+      'error'
+    );
+
+    enableButtons();
+    submitting = false;
+
+  }catch(err){
+
+    showStatus(
+      '⚠️ 連線失敗，請重新操作。',
+      'error'
+    );
+
+    enableButtons();
+    submitting = false;
+  }
+}
+
+
+// ===== UI =====
+function disableButtons(){
+
+  document
+    .getElementById('approveBtn')
+    .disabled = true;
+
+  document
+    .getElementById('rejectBtn')
+    .disabled = true;
+}
+
+
+function enableButtons(){
+
+  document
+    .getElementById('approveBtn')
+    .disabled = false;
+
+  document
+    .getElementById('rejectBtn')
+    .disabled = false;
+}
+
+
+function showStatus(text,type){
+
+  const box =
+    document.getElementById('statusBox');
+
+  box.style.display = 'block';
+
+  box.className =
+    'status-box ' +
+    type;
+
+  box.textContent = text;
+}
+
+
+function showFatal(message){
+
+  document
+    .getElementById('loading')
+    .innerHTML =
+    '⚠️ ' +
+    message;
+}
+
+
+init();
+
+</script>
+
+</body>
+</html>
