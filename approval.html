@@ -231,21 +231,91 @@ let ROW = null;
 let STAGE = null;
 let submitting = false;
 
+  function getApprovalParams(){
+
+  const urlParams =
+    new URLSearchParams(window.location.search);
+
+  // ===== 一般網址直接帶 row / stage =====
+  let row = urlParams.get('row');
+  let stage = urlParams.get('stage');
+
+  if(row && stage){
+    return {
+      row:row,
+      stage:stage
+    };
+  }
+
+
+  // ===== LIFF 會把參數包進 liff.state =====
+  const liffState =
+    urlParams.get('liff.state');
+
+  if(liffState){
+
+    try{
+
+      const decoded =
+        decodeURIComponent(liffState);
+
+      // 可能長這樣：
+      // ?row=123&stage=1
+      // /approval.html?row=123&stage=1
+
+      const qIndex =
+        decoded.indexOf('?');
+
+      const query =
+        qIndex >= 0
+          ? decoded.substring(qIndex + 1)
+          : decoded.replace(/^\?/, '');
+
+      const stateParams =
+        new URLSearchParams(query);
+
+      row =
+        stateParams.get('row');
+
+      stage =
+        stateParams.get('stage');
+
+      if(row && stage){
+        return {
+          row:row,
+          stage:stage
+        };
+      }
+
+    }catch(e){
+      console.log(
+        'liff.state 解析失敗',
+        e
+      );
+    }
+  }
+
+
+  return {
+    row:'',
+    stage:''
+  };
+}
 
 // ===== 初始化 =====
 async function init(){
 
   try{
 
-    const params = new URLSearchParams(window.location.search);
+    const params = getApprovalParams();
 
-    ROW = Number(params.get('row'));
-    STAGE = Number(params.get('stage'));
+ROW = Number(params.row);
+STAGE = Number(params.stage);
 
-    if(!ROW || !STAGE){
-      showFatal('審核連結資料不完整。');
-      return;
-    }
+if(!ROW || !STAGE){
+  showFatal('審核連結資料不完整。');
+  return;
+}
 
     await liff.init({
       liffId:LIFF_ID
