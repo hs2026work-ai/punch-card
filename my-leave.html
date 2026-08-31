@@ -22,9 +22,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{box-sizing:border-box
 <div class="card"><h2>📋 請假紀錄 / Bản ghi</h2><div id="recordList"><div class="no-record">正在讀取…</div></div></div></div>
 <script>
 var APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";var LIFF_ID="2010875519-HfpuEzI8";
+var ENABLE_GENDER_PREVIEW = false;
+
 function getPreviewGender(){
+  if(!ENABLE_GENDER_PREVIEW) return '';
+
   var v=new URLSearchParams(window.location.search).get('previewGender');
   v=String(v||'').toLowerCase();
+
   return v==='male'?'男':(v==='female'?'女':'');
 }
 var PREVIEW_GENDER=getPreviewGender();
