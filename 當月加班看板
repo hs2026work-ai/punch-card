@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>宏升工業社｜當月加班看板</title>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 18px 14px 60px;
+  font-family:
+    "Microsoft JhengHei",
+    Arial,
+    sans-serif;
+  background: #f3f6fb;
+  color: #263238;
+}
+
+
+.container {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+
+/* ==============================
+   Header
+============================== */
+
+.header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #17386b;
+  font-size: 25px;
+}
+
+.month {
+  margin-top: 7px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #e0752c;
+}
+
+.updated {
+  margin-top: 6px;
+  color: #8a94a6;
+  font-size: 12px;
+}
+
+
+/* ==============================
+   Summary
+============================== */
+
+.summary {
+  display: grid;
+  grid-template-columns:
+    repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  background: #fff;
+  border-radius: 13px;
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow:
+    0 3px 12px
+    rgba(0,0,0,.06);
+}
+
+.summary-number {
+  font-size: 24px;
+  font-weight: 800;
+  color: #17386b;
+}
+
+.summary-label {
+  margin-top: 5px;
+  color: #7b8794;
+  font-size: 12px;
+}
+
+
+/* ==============================
+   Section
+============================== */
+
+.section {
+  margin-top: 22px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content:
+    space-between;
+  margin-bottom: 10px;
+}
+
+.section-title h2 {
+  margin: 0;
+  color: #17386b;
+  font-size: 20px;
+}
+
+.section-count {
+  font-size: 13px;
+  color: #8a94a6;
+}
+
+
+/* ==============================
+   Recommended
+============================== */
+
+.recommend-box {
+  background: #eaf5ec;
+  border-left:
+    5px solid #2e7d32;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.recommend-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #256537;
+  margin-bottom: 8px;
+}
+
+.recommend-item {
+  padding: 5px 0;
+  font-size: 14px;
+  color: #355b3c;
+}
+
+
+/* ==============================
+   Employee cards
+============================== */
+
+.employee-list {
+  display: grid;
+  gap: 10px;
+}
+
+.employee-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 15px 16px;
+  display: flex;
+  align-items: center;
+  justify-content:
+    space-between;
+  box-shadow:
+    0 3px 12px
+    rgba(0,0,0,.06);
+}
+
+.employee-left {
+  min-width: 0;
+}
+
+.employee-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #263238;
+}
+
+.employee-id {
+  margin-top: 4px;
+  color: #8a94a6;
+  font-size: 13px;
+}
+
+.employee-right {
+  text-align: right;
+  padding-left: 12px;
+}
+
+.hours {
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.hours-unit {
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.status {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+
+/* ==============================
+   Level colors
+============================== */
+
+.level-green {
+  border-left:
+    6px solid #45a049;
+}
+
+.level-green .hours,
+.level-green .status {
+  color: #2e7d32;
+}
+
+
+.level-yellow {
+  border-left:
+    6px solid #f2c037;
+  background: #fffdf2;
+}
+
+.level-yellow .hours,
+.level-yellow .status {
+  color: #a87300;
+}
+
+
+.level-orange {
+  border-left:
+    6px solid #e0752c;
+  background: #fff6ef;
+}
+
+.level-orange .hours,
+.level-orange .status {
+  color: #c45716;
+}
+
+
+/* ==============================
+   Empty / Loading
+============================== */
+
+.loading,
+.empty {
+  background: #fff;
+  border-radius: 14px;
+  text-align: center;
+  padding: 35px 15px;
+  color: #8a94a6;
+  box-shadow:
+    0 3px 12px
+    rgba(0,0,0,.05);
+}
+
+
+/* ==============================
+   Legend
+============================== */
+
+.legend {
+  background: #fff;
+  border-radius: 12px;
+  padding: 13px 15px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #667085;
+}
+
+
+/* ==============================
+   Mobile
+============================== */
+
+@media (
+  max-width: 480px
+) {
+
+  body {
+    padding:
+      14px 10px 50px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .employee-card {
+    padding:
+      14px 13px;
+  }
+
+  .employee-name {
+    font-size: 16px;
+  }
+
+  .hours {
+    font-size: 21px;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+  <div class="header">
+
+    <h1>
+      宏升工業社
+      <br>
+      當月加班看板
+    </h1>
+
+    <div
+      id="month"
+      class="month"
+    >
+      載入中...
+    </div>
+
+    <div
+      id="updated"
+      class="updated"
+    >
+    </div>
+
+  </div>
+
+
+  <div class="legend">
+
+    🟢 低於 42 小時：
+    可優先安排
+    <br>
+
+    ⚠️ 42～44.9 小時：
+    請注意
+    <br>
+
+    🚨 45 小時以上：
+    優先避免再增加加班
+
+  </div>
+
+
+  <div id="loading" class="loading">
+    正在讀取本月加班資料...
+  </div>
+
+
+  <div
+    id="main"
+    style="display:none;"
+  >
+
+
+    <div class="summary">
+
+      <div class="summary-card">
+
+        <div
+          id="totalCount"
+          class="summary-number"
+        >
+          0
+        </div>
+
+        <div class="summary-label">
+          管理人數
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div
+          id="yellowCount"
+          class="summary-number"
+        >
+          0
+        </div>
+
+        <div class="summary-label">
+          黃燈
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div
+          id="orangeCount"
+          class="summary-number"
+        >
+          0
+        </div>
+
+        <div class="summary-label">
+          橘燈
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- 場內 -->
+
+    <div class="section">
+
+      <div class="section-title">
+
+        <h2>
+          🏭 場內人員
+        </h2>
+
+        <div
+          id="factoryCount"
+          class="section-count"
+        >
+        </div>
+
+      </div>
+
+
+      <div
+        id="factoryRecommend"
+        class="recommend-box"
+      >
+      </div>
+
+
+      <div
+        id="factoryList"
+        class="employee-list"
+      >
+      </div>
+
+    </div>
+
+
+    <!-- 行政 -->
+
+    <div class="section">
+
+      <div class="section-title">
+
+        <h2>
+          🗂️ 行政人員
+        </h2>
+
+        <div
+          id="adminCount"
+          class="section-count"
+        >
+        </div>
+
+      </div>
+
+
+      <div
+        id="adminRecommend"
+        class="recommend-box"
+      >
+      </div>
+
+
+      <div
+        id="adminList"
+        class="employee-list"
+      >
+      </div>
+
+    </div>
+
+
+  </div>
+
+</div>
+
+
+<script>
+
+
+function loadDashboard() {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(data) {
+
+        if (
+          !data ||
+          !data.success
+        ) {
+
+          showError(
+            '讀取資料失敗'
+          );
+
+          return;
+        }
+
+
+        renderDashboard(
+          data
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        showError(
+          error.message ||
+          '系統發生錯誤'
+        );
+
+      }
+    )
+
+    .getOvertimeDashboardData();
+
+}
+
+
+// ==================================================
+// Render
+// ==================================================
+
+function renderDashboard(
+  data
+) {
+
+  document
+    .getElementById(
+      'loading'
+    )
+    .style
+    .display =
+      'none';
+
+
+  document
+    .getElementById(
+      'main'
+    )
+    .style
+    .display =
+      'block';
+
+
+  document
+    .getElementById(
+      'month'
+    )
+    .textContent =
+      data.month;
+
+
+  document
+    .getElementById(
+      'updated'
+    )
+    .textContent =
+      '資料時間：' +
+      data.updatedAt;
+
+
+  var all =
+    data.factory.concat(
+      data.admin
+    );
+
+
+  var yellow =
+    all.filter(
+      function(x) {
+        return x.level ===
+          'yellow';
+      }
+    ).length;
+
+
+  var orange =
+    all.filter(
+      function(x) {
+        return x.level ===
+          'orange';
+      }
+    ).length;
+
+
+  document
+    .getElementById(
+      'totalCount'
+    )
+    .textContent =
+      all.length;
+
+
+  document
+    .getElementById(
+      'yellowCount'
+    )
+    .textContent =
+      yellow;
+
+
+  document
+    .getElementById(
+      'orangeCount'
+    )
+    .textContent =
+      orange;
+
+
+  document
+    .getElementById(
+      'factoryCount'
+    )
+    .textContent =
+      data.factory.length +
+      ' 人';
+
+
+  document
+    .getElementById(
+      'adminCount'
+    )
+    .textContent =
+      data.admin.length +
+      ' 人';
+
+
+  renderRecommend(
+    'factoryRecommend',
+    data.recommendedFactory
+  );
+
+
+  renderRecommend(
+    'adminRecommend',
+    data.recommendedAdmin
+  );
+
+
+  renderList(
+    'factoryList',
+    data.factory
+  );
+
+
+  renderList(
+    'adminList',
+    data.admin
+  );
+
+}
+
+
+// ==================================================
+// 建議安排
+// ==================================================
+
+function renderRecommend(
+  id,
+  list
+) {
+
+  var el =
+    document.getElementById(
+      id
+    );
+
+
+  if (
+    !list ||
+    list.length === 0
+  ) {
+
+    el.innerHTML =
+      '<div class="recommend-title">' +
+      '目前無可顯示資料' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  var html =
+    '<div class="recommend-title">' +
+    '✅ 目前加班時數較低，可優先參考' +
+    '</div>';
+
+
+  list.forEach(
+    function(item) {
+
+      html +=
+        '<div class="recommend-item">' +
+        item.empId +
+        '　' +
+        escapeHtml(
+          item.empName
+        ) +
+        '　' +
+        Number(
+          item.hours
+        ).toFixed(1) +
+        ' 小時' +
+        '</div>';
+
+    }
+  );
+
+
+  el.innerHTML =
+    html;
+
+}
+
+
+// ==================================================
+// 人員列表
+// ==================================================
+
+function renderList(
+  id,
+  list
+) {
+
+  var el =
+    document.getElementById(
+      id
+    );
+
+
+  if (
+    !list ||
+    list.length === 0
+  ) {
+
+    el.innerHTML =
+      '<div class="empty">' +
+      '目前沒有資料' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  var html = '';
+
+
+  list.forEach(
+    function(item) {
+
+      html +=
+        '<div class="employee-card level-' +
+        item.level +
+        '">' +
+
+          '<div class="employee-left">' +
+
+            '<div class="employee-name">' +
+              escapeHtml(
+                item.empName ||
+                '未設定姓名'
+              ) +
+            '</div>' +
+
+            '<div class="employee-id">' +
+              item.empId +
+            '</div>' +
+
+          '</div>' +
+
+          '<div class="employee-right">' +
+
+            '<div class="hours">' +
+              Number(
+                item.hours
+              ).toFixed(1) +
+              '<span class="hours-unit">' +
+              '小時' +
+              '</span>' +
+            '</div>' +
+
+            '<div class="status">' +
+              item.icon +
+              ' ' +
+              item.levelText +
+            '</div>' +
+
+          '</div>' +
+
+        '</div>';
+
+    }
+  );
+
+
+  el.innerHTML =
+    html;
+
+}
+
+
+// ==================================================
+// Error
+// ==================================================
+
+function showError(
+  message
+) {
+
+  document
+    .getElementById(
+      'loading'
+    )
+    .innerHTML =
+      '⚠️ ' +
+      escapeHtml(
+        message
+      );
+
+}
+
+
+// ==================================================
+// 防止文字破壞 HTML
+// ==================================================
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value == null
+      ? ''
+      : value
+  )
+
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+
+  .replace(
+    /</g,
+    '&lt;'
+  )
+
+  .replace(
+    />/g,
+    '&gt;'
+  )
+
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+
+  .replace(
+    /'/g,
+    '&#039;'
+  );
+
+}
+
+
+loadDashboard();
+
+
+</script>
+
+
+</body>
+
+</html>
