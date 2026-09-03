@@ -1346,7 +1346,7 @@ if (PERF_DEBUG_MODE && PERF_DEBUG_VISIBLE) {
 html += buildPerfDebugHtml(data);
 }
 
-var countdownSeconds = (isAbnormalPunch || showEarlyBtn || showEarlyReminder) ? 8 : 1;
+var countdownSeconds = (isAbnormalPunch || showEarlyBtn || showEarlyReminder) ? 8 : 3;
 // debug 模式延長顯示，方便截圖；一般員工使用仍維持原本 1 秒／8 秒。
 if (PERF_DEBUG_MODE && PERF_DEBUG_VISIBLE) countdownSeconds = Math.max(countdownSeconds, 15);
 html += '<div class="countdown" id="resultCountdown">' + countdownSeconds + ' 秒後恢復掃描</div>';
