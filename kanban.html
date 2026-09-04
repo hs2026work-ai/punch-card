@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="場內與行政人員加班、請假資訊管理看板">
+  <title>人員工時管理看板</title>
+  <style>
+    :root {
+      --ink: #172638;
+      --muted: #68778a;
+      --line: #dce3ec;
+      --paper: #ffffff;
+      --canvas: #f3f6fa;
+      --green: #073b7a;
+      --green-soft: #e7eff9;
+      --gold: #f06a0a;
+      --gold-soft: #fff0e4;
+      --red: #b33f3f;
+      --red-soft: #fbeaea;
+      --blue: #16579b;
+      --blue-soft: #e7f0fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select { font: inherit; }
+
+    .hidden { display: none !important; }
+    .entry-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f1f4f8;
+    }
+    .login-box, .department-box {
+      width: min(100%, 430px);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 18px 55px rgba(7,59,122,.12);
+    }
+    .entry-mark {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: #073b7a;
+      color: #f47a1f;
+      font-weight: 900;
+      margin-bottom: 24px;
+    }
+    .entry-screen h1 { font-size: 24px; margin-bottom: 8px; }
+    .entry-screen p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 24px; }
+    .field-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+    .password-input {
+      width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 7px;
+      padding: 0 13px; outline: none;
+    }
+    .password-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
+    .remember-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 20px; font-size: 12px; color: var(--muted); }
+    .remember-row input { width: 17px; height: 17px; accent-color: var(--green); }
+    .primary-button {
+      width: 100%; height: 46px; border: 0; border-radius: 7px;
+      background: var(--green); color: #fff; font-weight: 800; cursor: pointer;
+    }
+    .primary-button:hover { background: #052e60; }
+    .login-error { min-height: 20px; margin: 8px 0 0 !important; color: var(--red) !important; }
+    .department-box { width: min(100%, 650px); }
+    .department-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .department-card {
+      min-height: 164px; padding: 22px; text-align: left; cursor: pointer;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+    }
+    .department-card:hover, .department-card:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,106,10,.11); }
+    .department-card strong { display: block; font-size: 22px; margin-bottom: 10px; }
+    .department-card span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .department-card b { display: block; margin-top: 20px; color: var(--gold); font-size: 12px; }
+    .text-button { border: 0; background: transparent; color: #c2d3e7; padding: 0; cursor: pointer; font-size: 11px; text-align: left; }
+    .text-button:hover { color: #fff; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #073b7a;
+      color: #fff;
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 42px; }
+    .brand-mark {
+      width: 38px; height: 38px; border-radius: 7px;
+      display: grid; place-items: center;
+      background: #f06a0a; color: #fff; font-weight: 900;
+    }
+    .brand strong { display: block; font-size: 16px; }
+    .brand small { color: #c2d3e7; font-size: 11px; }
+
+    .nav-label { color: #9eb9d8; font-size: 11px; margin: 0 10px 9px; }
+    .current-dept {
+      border-radius: 7px; padding: 12px 13px;
+      background: #fff; color: #073b7a; font-weight: 800;
+    }
+    .current-dept span { float: right; color: var(--gold); font-size: 11px; }
+
+    .sidebar-foot { margin-top: auto; color: #9eb9d8; font-size: 11px; line-height: 1.8; }
+
+    main { padding: 30px clamp(18px, 3vw, 44px) 48px; overflow: hidden; }
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+    h1 { font-size: clamp(23px, 3vw, 31px); margin: 0 0 6px; line-height: 1.25; }
+    .subtitle { margin: 0; color: var(--muted); font-size: 13px; }
+    .month-wrap { display: flex; align-items: center; gap: 9px; }
+    .month-wrap label { font-size: 12px; color: var(--muted); }
+    select, .search {
+      height: 40px; border: 1px solid var(--line); border-radius: 7px;
+      background: var(--paper); color: var(--ink); padding: 0 12px; outline: none;
+    }
+    select:focus, .search:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
+
+    .summary-grid {
+      margin-top: 28px; display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+      max-width: 720px;
+    }
+    .stat {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+      padding: 18px; min-height: 126px; position: relative; overflow: hidden;
+    }
+    .stat::after { content: ""; position: absolute; inset: auto 0 0; height: 4px; background: var(--tone); }
+    .stat-label { color: var(--muted); font-size: 12px; }
+    .stat-value { display: flex; align-items: baseline; gap: 5px; margin: 16px 0 7px; }
+    .stat-value strong { font-size: 29px; line-height: 1; }
+    .stat-value span { color: var(--muted); font-size: 12px; }
+    .stat-note { font-size: 11px; color: var(--muted); }
+
+    .section-head { margin: 30px 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .section-head h2 { font-size: 17px; margin: 0; }
+    .section-head p { font-size: 11px; margin: 4px 0 0; color: var(--muted); }
+    .search { width: 205px; }
+
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: 14px; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .panel-title { padding: 15px 17px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+    .panel-title strong { font-size: 13px; }
+    .panel-title small { color: var(--muted); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { color: var(--muted); background: #fafbfa; font-weight: 600; text-align: left; padding: 11px 15px; }
+    td { padding: 13px 15px; border-top: 1px solid #edf0ed; white-space: nowrap; }
+    tr:hover td { background: #fbfcfb; }
+    .person { font-weight: 700; }
+    .muted { color: var(--muted); }
+    .hours { font-weight: 800; color: var(--green); }
+    .notice-status { display: inline-block; padding: 4px 7px; border-radius: 4px; font-size: 10px; font-weight: 800; }
+    .notice-status.done { color: var(--green); background: var(--green-soft); }
+    .notice-status.pending { color: var(--red); background: var(--red-soft); }
+    .notice-status.none { color: var(--muted); background: #eef1ee; }
+    .overtime-panel { overflow-x: auto; }
+    .overtime-panel table { min-width: 960px; }
+    .tag { display: inline-block; border-radius: 4px; padding: 3px 7px; font-size: 10px; font-weight: 700; }
+    .tag.personal { color: var(--red); background: var(--red-soft); }
+    .tag.annual { color: var(--blue); background: var(--blue-soft); }
+    .tag.sick { color: var(--gold); background: var(--gold-soft); }
+
+    .ranking { padding: 6px 17px 14px; }
+    .rank-row { display: grid; grid-template-columns: 25px 70px 1fr 45px; gap: 8px; align-items: center; padding: 11px 0; border-bottom: 1px solid #edf0ed; font-size: 12px; }
+    .rank-row:last-child { border: 0; }
+    .rank-num { color: var(--muted); }
+    .bar { height: 7px; background: #edf1ed; border-radius: 4px; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--green); border-radius: inherit; }
+    .rank-hours { text-align: right; font-weight: 800; }
+
+    .empty { display: none; padding: 30px; text-align: center; color: var(--muted); }
+    .demo-note { margin-top: 13px; font-size: 10px; color: #7a817c; }
+    .date-control { display: flex; align-items: center; gap: 9px; }
+    .date-control label { color: var(--muted); font-size: 12px; }
+    .date-control input {
+      height: 40px; border: 1px solid var(--line); border-radius: 7px;
+      background: var(--paper); color: var(--ink); padding: 0 11px; outline: none;
+    }
+    .date-control input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
+    .day-summary { padding: 12px 16px; background: #f5f8fc; border-bottom: 1px solid var(--line); color: var(--green); font-size: 12px; font-weight: 700; }
+
+    @media (max-width: 980px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      body { font-size: 17px; }
+      .shell { display: block; }
+      .sidebar { height: auto; position: static; padding: 16px; }
+      .brand { margin-bottom: 14px; }
+      .brand strong { font-size: 18px; }
+      .brand small { font-size: 13px; }
+      .nav-label { display: none; }
+      .current-dept { margin-bottom: 12px; padding: 14px; font-size: 17px; }
+      .sidebar-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 0; }
+      .sidebar-foot br, .sidebar-foot > strong { display: none; }
+      .sidebar-foot .text-button { min-height: 44px; padding: 10px 4px; font-size: 14px; }
+      main { padding: 24px 14px 38px; }
+      .topbar { display: grid; }
+      h1 { font-size: 28px; }
+      .subtitle { font-size: 15px; line-height: 1.6; }
+      .month-wrap { display: grid; gap: 7px; margin-top: 18px; }
+      .month-wrap label, .date-control label { font-size: 15px; font-weight: 700; }
+      .month-wrap input, .date-control input, .search { width: 100%; height: 52px; font-size: 17px; }
+      .summary-grid { grid-template-columns: 1fr; max-width: none; }
+      .stat { min-height: 112px; padding: 18px; }
+      .stat-label, .stat-note { font-size: 14px; }
+      .stat-value strong { font-size: 34px; }
+      .section-head { display: block; margin-top: 32px; }
+      .section-head h2 { font-size: 22px; }
+      .section-head p { font-size: 14px; line-height: 1.5; }
+      .search { margin-top: 14px; }
+      .panel, .overtime-panel { overflow: visible; background: transparent; border: 0; }
+      .panel-title { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; margin-bottom: 10px; padding: 14px; }
+      .panel-title strong { font-size: 16px; }
+      .panel-title small { font-size: 14px; }
+      .panel table, .overtime-panel table { min-width: 0; display: block; }
+      table thead { display: none; }
+      table tbody { display: grid; gap: 12px; }
+      table tr { display: block; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; }
+      table td {
+        display: grid; grid-template-columns: minmax(118px, 42%) 1fr; gap: 12px;
+        align-items: center; min-height: 48px; padding: 9px 0;
+        border-top: 1px solid #edf1f6; white-space: normal; font-size: 16px;
+      }
+      table td:first-child { border-top: 0; }
+      table td::before { content: attr(data-label); color: var(--muted); font-size: 14px; font-weight: 700; }
+      .person { font-size: 18px; }
+      .hours { font-size: 20px; }
+      .notice-status, .tag { width: fit-content; padding: 6px 9px; font-size: 14px; }
+      .date-control { display: grid; margin-top: 14px; }
+      .day-summary { border: 1px solid var(--line); border-radius: 7px; margin-bottom: 10px; padding: 14px; font-size: 16px; line-height: 1.6; }
+      .empty { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; font-size: 16px; line-height: 1.6; }
+    }
+    @media (max-width: 460px) {
+      .login-box, .department-box { padding: 24px 20px; }
+      .department-options { grid-template-columns: 1fr; }
+      .department-card { min-height: 150px; }
+      .department-card strong { font-size: 26px; }
+      .department-card span, .department-card b { font-size: 15px; }
+      .login-box h1, .department-box h1 { font-size: 27px; }
+      .entry-screen p, .field-label, .remember-row { font-size: 16px; }
+      .password-input, .primary-button { height: 54px; font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="entry-screen" id="loginView">
+    <form class="login-box" id="loginForm">
+      <div class="entry-mark">HR</div>
+      <h1>人員工時看板</h1>
+      <p>請輸入管理密碼以查看加班與請假資訊。</p>
+      <label class="field-label" for="password">密碼</label>
+      <input class="password-input" id="password" type="password" inputmode="numeric" autocomplete="current-password" required autofocus>
+      <label class="remember-row"><input id="rememberDevice" type="checkbox"> 記住此手機，下次免輸入密碼</label>
+      <button class="primary-button" type="submit">登入</button>
+      <p class="login-error" id="loginError" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="entry-screen hidden" id="departmentView">
+    <div class="department-box">
+      <div class="entry-mark">HR</div>
+      <h1>選擇查看部門</h1>
+      <p>請選擇要查看的加班時數與每日請假狀況。</p>
+      <div class="department-options">
+        <button class="department-card" data-open-dept="field"><strong>廠內</strong><span>查看廠內人員加班時數、每日請假與當月請假狀況。</span><b>進入廠內看板 →</b></button>
+        <button class="department-card" data-open-dept="admin"><strong>行政</strong><span>查看行政人員加班時數、每日請假與當月請假狀況。</span><b>進入行政看板 →</b></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="shell hidden" id="dashboardView">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">HR</div>
+        <div><strong>人員工時看板</strong><small>Personnel dashboard</small></div>
+      </div>
+      <p class="nav-label">部門檢視</p>
+      <div class="current-dept" id="currentDeptLabel">廠內 <span>目前部門</span></div>
+      <div class="sidebar-foot">資料更新時間<br><strong>2026 / 09 / 03　21:30</strong><br><button class="text-button" id="backToDepartments">切換部門</button><br><button class="text-button" id="logoutButton">登出並取消記住</button></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">場內人員總覽</h1>
+          <p class="subtitle" id="pageSubtitle">掌握本月場內加班與請假狀況</p>
+        </div>
+        <div class="month-wrap">
+          <label for="month">檢視月份</label>
+          <input id="month" type="month" value="2026-09" aria-label="檢視月份">
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="統計摘要">
+        <article class="stat" style="--tone: var(--gold)"><span class="stat-label">今日加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依已登記紀錄統計</span></article>
+        <article class="stat" style="--tone: var(--blue)"><span class="stat-label">今日請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
+      </section>
+
+      <div class="section-head">
+        <div><h2 id="detailTitle">場內人員加班時數看板</h2><p>依本月累計時數排序</p></div>
+        <input class="search" id="search" type="search" placeholder="搜尋編號或姓名" aria-label="搜尋員工編號或姓名">
+      </div>
+
+      <section class="panel overtime-panel">
+          <div class="panel-title"><strong>人員每月加班統計</strong><small id="recordCount"></small></div>
+          <table>
+            <thead><tr><th>年月</th><th>員工編號</th><th>員工姓名</th><th>當月加班時數</th><th>42 小時是否已通知</th><th>42 小時通知時間</th><th>45 小時是否已通知</th><th>45 小時通知時間</th></tr></thead>
+            <tbody id="overtimeBody"></tbody>
+          </table>
+          <div class="empty" id="emptyState">找不到符合的人員</div>
+      </section>
+
+      <div class="section-head">
+        <div><h2 id="leaveTitle">廠內人員每日請假狀況</h2><p>選擇日期，查看當天可排班人力</p></div>
+        <div class="date-control"><label for="leaveDate">查看日期</label><input id="leaveDate" type="date" value="2026-09-04" aria-label="選擇請假日期"></div>
+      </div>
+      <section class="panel">
+        <div class="day-summary" id="daySummary"></div>
+        <table>
+          <thead><tr><th>人員</th><th>假別</th><th>請假日期</th><th>時間</th><th>時數</th><th>狀態</th></tr></thead>
+          <tbody id="leaveBody"></tbody>
+        </table>
+        <div class="empty" id="leaveEmpty">這一天沒有人請假，可以正常安排作業。</div>
+      </section>
+      <p class="demo-note">目前為版面示範資料，正式上線前可替換為實際人員與工時紀錄。</p>
+    </main>
+  </div>
+
+  <script>
+    const datasets = {
+      field: {
+        name: '廠內', people: 12, total: 142.5, todayOt: 4, todayLeave: 2, leaveHours: 56, leaveCount: 7,
+        trend: '較上月減少 8.5 小時',
+        overtime: [
+          ['HS005','陳志明',0,'未達門檻','—','未達門檻','—'],
+          ['HS006','林冠宇',0,'未達門檻','—','未達門檻','—'],
+          ['HS007','王俊傑',0,'未達門檻','—','未達門檻','—'],
+          ['HS008','張家豪',3,'未達門檻','—','未達門檻','—'],
+          ['HS009','李柏翰',0,'未達門檻','—','未達門檻','—'],
+          ['HS010','黃信凱',41.5,'未達門檻','—','未達門檻','—'],
+          ['HS011','吳建宏',42.5,'已通知','09 / 22 09:15','未達門檻','—'],
+          ['HS016','周宇翔',46,'已通知','09 / 20 10:05','已通知','09 / 26 08:45']
+        ],
+        ranks: [['陳志明',24.5],['王俊傑',21],['林冠宇',18.5],['李柏翰',16],['張家豪',14.5]],
+        leave: [
+          ['黃信凱','personal','事假','09 / 04','08:00－12:00','4','已核准'], ['吳建宏','annual','特休','09 / 05','全天','8','已核准'],
+          ['林冠宇','sick','病假','09 / 08','13:00－17:00','4','待核准']
+        ]
+      },
+      admin: {
+        name: '行政', people: 8, total: 86, todayOt: 3, todayLeave: 1, leaveHours: 40, leaveCount: 5,
+        trend: '較上月增加 6 小時',
+        overtime: [
+          ['AD001','林怡君',18,'未達門檻','—','未達門檻','—'],
+          ['AD002','蔡佩珊',43,'已通知','09 / 24 14:10','未達門檻','—'],
+          ['AD003','許雅雯',12.5,'未達門檻','—','未達門檻','—'],
+          ['AD004','鄭文凱',45.5,'已通知','09 / 21 11:30','已通知','09 / 28 09:05'],
+          ['AD005','徐嘉玲',10,'未達門檻','—','未達門檻','—'],
+          ['AD006','陳佳慧',8,'未達門檻','—','未達門檻','—']
+        ],
+        ranks: [['蔡佩珊',18],['鄭文凱',16.5],['林怡君',14],['許雅雯',12.5],['徐嘉玲',10]],
+        leave: [
+          ['陳佳慧','annual','特休','09 / 04','全天','8','已核准'], ['許雅雯','personal','事假','09 / 09','13:00－17:00','4','已核准'],
+          ['林怡君','sick','病假','09 / 12','09:00－12:00','3','待核准']
+        ]
+      }
+    };
+
+    const DEMO_PASSWORD = '123';
+    const TRUST_KEY = 'staffDashboardTrustedDevice';
+    let activeDept = 'field';
+    const $ = id => document.getElementById(id);
+
+    function showOnly(viewId) {
+      ['loginView', 'departmentView', 'dashboardView'].forEach(id => $(id).classList.toggle('hidden', id !== viewId));
+    }
+
+    function showDepartmentChoice() {
+      showOnly('departmentView');
+    }
+
+    function openDepartment(dept) {
+      activeDept = dept;
+      $('currentDeptLabel').innerHTML = `${datasets[dept].name} <span>目前部門</span>`;
+      $('search').value = '';
+      showOnly('dashboardView');
+      render();
+    }
+
+    function render() {
+      const d = datasets[activeDept];
+      const query = $('search').value.trim().toLowerCase();
+      const rows = d.overtime.filter(row => `${row[0]} ${row[1]}`.toLowerCase().includes(query));
+      const selectedMonth = $('month').value.slice(-2) || '09';
+      const selectedYear = Number($('month').value.slice(0, 4)) || 2026;
+      const rocMonth = `${selectedYear - 1911}/${selectedMonth}`;
+      $('pageTitle').textContent = `${d.name}人員總覽`;
+      $('pageSubtitle').textContent = `掌握本月${d.name}加班與請假狀況`;
+      $('detailTitle').textContent = `${d.name}人員加班時數看板`;
+      $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
+      $('todayOvertime').textContent = d.todayOt;
+      $('todayLeave').textContent = d.todayLeave;
+      $('recordCount').textContent = `${rows.length} 筆紀錄`;
+
+      $('overtimeBody').innerHTML = rows.map(r => {
+        const statusClass = status => status === '已通知' ? 'done' : status === '待通知' ? 'pending' : 'none';
+        const notice42 = r[4] === '—' ? r[4] : `${selectedMonth}${r[4].slice(2)}`;
+        const notice45 = r[6] === '—' ? r[6] : `${selectedMonth}${r[6].slice(2)}`;
+        return `<tr><td data-label="年月">${rocMonth}</td><td data-label="員工編號" class="muted">${r[0]}</td><td data-label="員工姓名" class="person">${r[1]}</td><td data-label="當月加班時數" class="hours">${Number(r[2]).toFixed(1)} 小時</td><td data-label="42 小時通知"><span class="notice-status ${statusClass(r[3])}">${r[3]}</span></td><td data-label="42 小時通知時間">${notice42}</td><td data-label="45 小時通知"><span class="notice-status ${statusClass(r[5])}">${r[5]}</span></td><td data-label="45 小時通知時間">${notice45}</td></tr>`;
+      }).join('');
+      $('emptyState').style.display = rows.length ? 'none' : 'block';
+      const selectedDate = $('leaveDate').value;
+      const selectedDay = selectedDate.slice(-2);
+      const dayLeave = d.leave.filter(r => r[3].slice(-2) === selectedDay);
+      $('leaveBody').innerHTML = dayLeave.map(r => `<tr><td data-label="人員" class="person">${r[0]}</td><td data-label="假別"><span class="tag ${r[1]}">${r[2]}</span></td><td data-label="請假日期">${selectedMonth} / ${r[3].slice(-2)}</td><td data-label="時間">${r[4]}</td><td data-label="時數">${r[5]} 小時</td><td data-label="狀態" class="muted">${r[6]}</td></tr>`).join('');
+      $('leaveEmpty').style.display = dayLeave.length ? 'none' : 'block';
+      $('daySummary').textContent = dayLeave.length
+        ? `${selectedMonth} 月 ${selectedDay} 日共有 ${dayLeave.length} 人請假，安排作業時請預留人力。`
+        : `${selectedMonth} 月 ${selectedDay} 日目前無請假紀錄。`;
+    }
+
+    $('loginForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if ($('password').value !== DEMO_PASSWORD) {
+        $('loginError').textContent = '密碼錯誤，請重新輸入。';
+        $('password').select();
+        return;
+      }
+      if ($('rememberDevice').checked) localStorage.setItem(TRUST_KEY, 'yes');
+      $('loginError').textContent = '';
+      $('password').value = '';
+      showDepartmentChoice();
+    });
+
+    document.querySelectorAll('[data-open-dept]').forEach(btn => btn.addEventListener('click', () => openDepartment(btn.dataset.openDept)));
+
+    $('search').addEventListener('input', render);
+    $('month').addEventListener('change', () => {
+      const monthValue = $('month').value;
+      $('leaveDate').min = `${monthValue}-01`;
+      const lastDay = new Date(Number(monthValue.slice(0, 4)), Number(monthValue.slice(5, 7)), 0).getDate();
+      $('leaveDate').max = `${monthValue}-${lastDay}`;
+      $('leaveDate').value = `${monthValue}-01`;
+      render();
+    });
+    $('leaveDate').addEventListener('change', render);
+    $('backToDepartments').addEventListener('click', showDepartmentChoice);
+    $('logoutButton').addEventListener('click', () => {
+      localStorage.removeItem(TRUST_KEY);
+      showOnly('loginView');
+      $('password').focus();
+    });
+
+    if (localStorage.getItem(TRUST_KEY) === 'yes') showDepartmentChoice();
+  </script>
+</body>
+</html>
