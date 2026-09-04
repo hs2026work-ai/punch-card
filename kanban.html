@@ -272,6 +272,7 @@
       .password-input, .primary-button { height: 54px; font-size: 18px; }
     }
   </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
   <section class="entry-screen" id="loginView">
@@ -323,7 +324,7 @@
       </header>
 
       <section class="summary-grid" aria-label="統計摘要">
-        <article class="stat" style="--tone: var(--gold)"><span class="stat-label">今日加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依已登記紀錄統計</span></article>
+        <article class="stat" style="--tone: var(--gold)"><span class="stat-label">本月有加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依當月累計資料統計</span></article>
         <article class="stat" style="--tone: var(--blue)"><span class="stat-label">今日請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
         <article class="stat recommendation-card" style="--tone: var(--gold)"><span class="stat-label">建議安排人員</span><div class="recommendation"><div class="recommended-names" id="recommendedNames"></div></div><span class="stat-note">依當月加班時數由少到多</span></article>
       </section>
@@ -400,6 +401,9 @@
 
     const DEMO_PASSWORD = '123';
     const TRUST_KEY = 'staffDashboardTrustedDevice';
+    const SESSION_KEY = 'staffDashboardSession';
+    const LIFF_ID = '2010875519-qGTjSOUL';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_Y5BC4QropGOiz2DDfxMRA0U4Ia2yAhCOVqeZfaEqrfsU2kKoPeo1hAV_YYWOxcVBDA/exec';
     let activeDept = 'field';
     const $ = id => document.getElementById(id);
 
@@ -409,6 +413,81 @@
 
     function showDepartmentChoice() {
       showOnly('departmentView');
+    }
+
+    function requestDashboardData(idToken) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `dashboardCallback_${Date.now()}`;
+        const script = document.createElement('script');
+        const timeout = setTimeout(() => finish(new Error('資料讀取逾時，請稍後再試。')), 15000);
+
+        function finish(error, data) {
+          clearTimeout(timeout);
+          delete window[callbackName];
+          script.remove();
+          error ? reject(error) : resolve(data);
+        }
+
+        window[callbackName] = data => finish(null, data);
+        script.onerror = () => finish(new Error('無法連線至試算表資料服務。'));
+        script.src = `${APPS_SCRIPT_URL}?action=data&idToken=${encodeURIComponent(idToken)}&callback=${encodeURIComponent(callbackName)}`;
+        document.head.appendChild(script);
+      });
+    }
+
+    function formatApiTime(value) {
+      if (!value) return '—';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return new Intl.DateTimeFormat('zh-TW', {
+        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+      }).format(date);
+    }
+
+    function mapApiEmployee(item) {
+      const hours = Number(item.hours || 0);
+      return [
+        item.empId || '',
+        item.empName || '未設定姓名',
+        hours,
+        item.notified42 || (hours >= 42 ? '已達門檻' : '未達門檻'),
+        formatApiTime(item.time42),
+        item.notified45 || (hours >= 45 ? '已達門檻' : '未達門檻'),
+        formatApiTime(item.time45)
+      ];
+    }
+
+    function applyLiveOvertimeData(data) {
+      datasets.field.overtime = Array.isArray(data.factory) ? data.factory.map(mapApiEmployee) : [];
+      datasets.admin.overtime = Array.isArray(data.admin) ? data.admin.map(mapApiEmployee) : [];
+      datasets.field.todayOt = datasets.field.overtime.filter(row => row[2] > 0).length;
+      datasets.admin.todayOt = datasets.admin.overtime.filter(row => row[2] > 0).length;
+      if (data.updatedAt) $('pageSubtitle').textContent = `加班資料更新：${data.updatedAt}`;
+    }
+
+    async function startAuthenticatedSession() {
+      try {
+        showOnly('loginView');
+        $('loginError').textContent = '正在確認 LINE 身分並讀取試算表資料…';
+        if (!window.liff) throw new Error('LINE 登入元件載入失敗，請檢查網路。');
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: location.href });
+          return;
+        }
+        const idToken = liff.getIDToken();
+        if (!idToken) throw new Error('無法取得 LINE 登入資訊，請重新登入。');
+        const data = await requestDashboardData(idToken);
+        if (!data || !data.success || !data.authorized) {
+          throw new Error(data && data.message ? data.message : '此 LINE 帳號沒有查看權限。');
+        }
+        applyLiveOvertimeData(data);
+        $('loginError').textContent = '';
+        showDepartmentChoice();
+      } catch (error) {
+        showOnly('loginView');
+        $('loginError').textContent = error && error.message ? error.message : '資料載入失敗，請稍後重試。';
+      }
     }
 
     function openDepartment(dept) {
@@ -453,7 +532,7 @@
         : `${selectedMonth} 月 ${selectedDay} 日目前無請假紀錄。`;
     }
 
-    $('loginForm').addEventListener('submit', event => {
+    $('loginForm').addEventListener('submit', async event => {
       event.preventDefault();
       if ($('password').value !== DEMO_PASSWORD) {
         $('loginError').textContent = '密碼錯誤，請重新輸入。';
@@ -461,9 +540,9 @@
         return;
       }
       if ($('rememberDevice').checked) localStorage.setItem(TRUST_KEY, 'yes');
-      $('loginError').textContent = '';
+      sessionStorage.setItem(SESSION_KEY, 'yes');
       $('password').value = '';
-      showDepartmentChoice();
+      await startAuthenticatedSession();
     });
 
     document.querySelectorAll('[data-open-dept]').forEach(btn => btn.addEventListener('click', () => openDepartment(btn.dataset.openDept)));
@@ -481,11 +560,15 @@
     $('backToDepartments').addEventListener('click', showDepartmentChoice);
     $('logoutButton').addEventListener('click', () => {
       localStorage.removeItem(TRUST_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
+      if (window.liff && liff.isLoggedIn()) liff.logout();
       showOnly('loginView');
       $('password').focus();
     });
 
-    if (localStorage.getItem(TRUST_KEY) === 'yes') showDepartmentChoice();
+    if (localStorage.getItem(TRUST_KEY) === 'yes' || sessionStorage.getItem(SESSION_KEY) === 'yes') {
+      startAuthenticatedSession();
+    }
   </script>
 </body>
 </html>
