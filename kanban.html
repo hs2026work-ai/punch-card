@@ -140,8 +140,7 @@
 
     .summary-grid {
       margin-top: 28px; display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
-      max-width: 720px;
+      grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
     }
     .stat {
       background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
@@ -153,6 +152,11 @@
     .stat-value strong { font-size: 29px; line-height: 1; }
     .stat-value span { color: var(--muted); font-size: 12px; }
     .stat-note { font-size: 11px; color: var(--muted); }
+    .recommendation { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); }
+    .recommendation-card .recommendation { margin-top: 17px; padding-top: 0; border-top: 0; }
+    .recommendation-label { display: block; margin-bottom: 9px; color: var(--green); font-size: 12px; font-weight: 800; }
+    .recommended-names { display: flex; flex-wrap: wrap; gap: 7px; }
+    .recommended-names span { padding: 6px 9px; border-radius: 5px; background: var(--green-soft); color: var(--green); font-size: 13px; font-weight: 800; }
 
     .section-head { margin: 30px 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .section-head h2 { font-size: 17px; margin: 0; }
@@ -228,6 +232,9 @@
       .stat { min-height: 112px; padding: 18px; }
       .stat-label, .stat-note { font-size: 14px; }
       .stat-value strong { font-size: 34px; }
+      .recommendation-label { font-size: 16px; }
+      .recommended-names { gap: 9px; }
+      .recommended-names span { padding: 9px 12px; font-size: 18px; }
       .section-head { display: block; margin-top: 32px; }
       .section-head h2 { font-size: 22px; }
       .section-head p { font-size: 14px; line-height: 1.5; }
@@ -318,6 +325,7 @@
       <section class="summary-grid" aria-label="統計摘要">
         <article class="stat" style="--tone: var(--gold)"><span class="stat-label">今日加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依已登記紀錄統計</span></article>
         <article class="stat" style="--tone: var(--blue)"><span class="stat-label">今日請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
+        <article class="stat recommendation-card" style="--tone: var(--gold)"><span class="stat-label">建議安排人員</span><div class="recommendation"><div class="recommended-names" id="recommendedNames"></div></div><span class="stat-note">依當月加班時數由少到多</span></article>
       </section>
 
       <div class="section-head">
@@ -424,6 +432,8 @@
       $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
       $('todayOvertime').textContent = d.todayOt;
       $('todayLeave').textContent = d.todayLeave;
+      const recommended = [...d.overtime].sort((a, b) => a[2] - b[2]).slice(0, 3);
+      $('recommendedNames').innerHTML = recommended.map(person => `<span>${person[1]}</span>`).join('');
       $('recordCount').textContent = `${rows.length} 筆紀錄`;
 
       $('overtimeBody').innerHTML = rows.map(r => {
