@@ -337,7 +337,7 @@
       <section class="panel overtime-panel">
           <div class="panel-title"><strong>人員每月加班統計</strong><small id="recordCount"></small></div>
           <table>
-            <thead><tr><th>年月</th><th>員工編號</th><th>員工姓名</th><th>當月加班時數</th><th>42 小時是否已通知</th><th>42 小時通知時間</th><th>45 小時是否已通知</th><th>45 小時通知時間</th></tr></thead>
+            <thead><tr><th>年月</th><th>員工編號</th><th>員工姓名</th><th>當月加班時數</th><th>39 小時是否已通知</th><th>39 小時通知時間</th><th>42 小時是否已通知</th><th>42 小時通知時間</th><th>45 小時看板警示</th></tr></thead>
             <tbody id="overtimeBody"></tbody>
           </table>
           <div class="empty" id="emptyState">找不到符合的人員</div>
@@ -450,10 +450,10 @@
         item.empId || '',
         item.empName || '未設定姓名',
         hours,
+        item.notified39 || (hours >= 39 ? '已達門檻' : '未達門檻'),
+        formatApiTime(item.time39),
         item.notified42 || (hours >= 42 ? '已達門檻' : '未達門檻'),
-        formatApiTime(item.time42),
-        item.notified45 || (hours >= 45 ? '已達門檻' : '未達門檻'),
-        formatApiTime(item.time45)
+        formatApiTime(item.time42)
       ];
     }
 
@@ -517,9 +517,11 @@
 
       $('overtimeBody').innerHTML = rows.map(r => {
         const statusClass = status => status === '已通知' ? 'done' : status === '待通知' ? 'pending' : 'none';
-        const notice42 = r[4] === '—' ? r[4] : `${selectedMonth}${r[4].slice(2)}`;
-        const notice45 = r[6] === '—' ? r[6] : `${selectedMonth}${r[6].slice(2)}`;
-        return `<tr><td data-label="年月">${rocMonth}</td><td data-label="員工編號" class="muted">${r[0]}</td><td data-label="員工姓名" class="person">${r[1]}</td><td data-label="當月加班時數" class="hours">${Number(r[2]).toFixed(1)} 小時</td><td data-label="42 小時通知"><span class="notice-status ${statusClass(r[3])}">${r[3]}</span></td><td data-label="42 小時通知時間">${notice42}</td><td data-label="45 小時通知"><span class="notice-status ${statusClass(r[5])}">${r[5]}</span></td><td data-label="45 小時通知時間">${notice45}</td></tr>`;
+        const notice39 = r[4] === '—' ? r[4] : `${selectedMonth}${r[4].slice(2)}`;
+        const notice42 = r[6] === '—' ? r[6] : `${selectedMonth}${r[6].slice(2)}`;
+        const level45 = Number(r[2]) >= 45 ? '45 小時以上' : '未達 45 小時';
+        const level45Class = Number(r[2]) >= 45 ? 'pending' : 'none';
+        return `<tr><td data-label="年月">${rocMonth}</td><td data-label="員工編號" class="muted">${r[0]}</td><td data-label="員工姓名" class="person">${r[1]}</td><td data-label="當月加班時數" class="hours">${Number(r[2]).toFixed(1)} 小時</td><td data-label="39 小時通知"><span class="notice-status ${statusClass(r[3])}">${r[3]}</span></td><td data-label="39 小時通知時間">${notice39}</td><td data-label="42 小時通知"><span class="notice-status ${statusClass(r[5])}">${r[5]}</span></td><td data-label="42 小時通知時間">${notice42}</td><td data-label="45 小時看板警示"><span class="notice-status ${level45Class}">${level45}</span></td></tr>`;
       }).join('');
       $('emptyState').style.display = rows.length ? 'none' : 'block';
       const selectedDate = $('leaveDate').value;
