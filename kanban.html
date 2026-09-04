@@ -525,9 +525,20 @@
         const idToken = liff.getIDToken();
         if (!idToken) throw new Error('無法取得 LINE 登入資訊，請重新登入。');
         const data = await requestDashboardData(idToken);
-        if (!data || !data.success || !data.authorized) {
-          throw new Error(data && data.message ? data.message : '此 LINE 帳號沒有查看權限。');
+        const apiMessage = data && data.message ? String(data.message) : '';
+        if (
+          apiMessage.includes('IdToken expired') &&
+          sessionStorage.getItem('lineTokenRefreshAttempted') !== 'yes'
+        ) {
+          sessionStorage.setItem('lineTokenRefreshAttempted', 'yes');
+          liff.logout();
+          liff.login({ redirectUri: location.href });
+          return;
         }
+        if (!data || !data.success || !data.authorized) {
+          throw new Error(apiMessage || '此 LINE 帳號沒有查看權限。');
+        }
+        sessionStorage.removeItem('lineTokenRefreshAttempted');
         applyLiveOvertimeData(data);
         $('loginError').textContent = '';
         showDepartmentChoice();
