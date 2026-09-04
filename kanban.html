@@ -477,7 +477,7 @@
 
         window[callbackName] = data => finish(null, data);
         script.onerror = () => finish(new Error('無法連線至試算表資料服務。'));
-        script.src = `${APPS_SCRIPT_URL}?action=data&idToken=${encodeURIComponent(idToken)}&callback=${encodeURIComponent(callbackName)}`;
+        script.src = `${APPS_SCRIPT_URL}?action=data&idToken=${encodeURIComponent(idToken)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
         document.head.appendChild(script);
       });
     }
