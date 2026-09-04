@@ -344,7 +344,7 @@
       <div id="overtimeView">
       <section class="summary-grid" aria-label="統計摘要">
         <article class="stat" style="--tone: var(--gold)"><span class="stat-label">本月有加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依當月累計資料統計</span></article>
-        <article class="stat" style="--tone: var(--blue)"><span class="stat-label">今日請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
+        <article class="stat" style="--tone: var(--blue)"><span class="stat-label">選定日期請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
         <article class="stat recommendation-card" style="--tone: var(--gold)"><span class="stat-label">建議安排人員</span><div class="recommendation"><div class="recommended-names" id="recommendedNames"></div></div><span class="stat-note">依當月加班時數由少到多</span></article>
       </section>
 
@@ -371,13 +371,13 @@
       <section class="panel">
         <div class="day-summary" id="daySummary"></div>
         <table>
-          <thead><tr><th>人員</th><th>假別</th><th>請假日期</th><th>時間</th><th>時數</th><th>狀態</th></tr></thead>
+          <thead><tr><th>員工編號</th><th>人員</th><th>假別</th><th>請假期間</th><th>當日時段</th></tr></thead>
           <tbody id="leaveBody"></tbody>
         </table>
         <div class="empty" id="leaveEmpty">這一天沒有人請假，可以正常安排作業。</div>
       </section>
       </div>
-      <p class="demo-note">目前為版面示範資料，正式上線前可替換為實際人員與工時紀錄。</p>
+      <p class="demo-note">加班與請假資料由公司試算表同步，事由不會顯示於網頁。</p>
     </main>
   </div>
 
@@ -490,9 +490,23 @@
       ];
     }
 
+    function mapApiLeave(item) {
+      return {
+        empId: item.empId || '',
+        empName: item.empName || '未設定姓名',
+        leaveType: item.leaveType || '請假',
+        startDate: item.startDate || '',
+        endDate: item.endDate || item.startDate || '',
+        startTime: item.startTime || '',
+        endTime: item.endTime || ''
+      };
+    }
+
     function applyLiveOvertimeData(data) {
       datasets.field.overtime = Array.isArray(data.factory) ? data.factory.map(mapApiEmployee) : [];
       datasets.admin.overtime = Array.isArray(data.admin) ? data.admin.map(mapApiEmployee) : [];
+      datasets.field.leave = Array.isArray(data.factoryLeave) ? data.factoryLeave.map(mapApiLeave) : [];
+      datasets.admin.leave = Array.isArray(data.adminLeave) ? data.adminLeave.map(mapApiLeave) : [];
       datasets.field.todayOt = datasets.field.overtime.filter(row => row[2] > 0).length;
       datasets.admin.todayOt = datasets.admin.overtime.filter(row => row[2] > 0).length;
       if (data.updatedAt) $('pageSubtitle').textContent = `加班資料更新：${data.updatedAt}`;
@@ -543,9 +557,15 @@
       $('pageSubtitle').textContent = `掌握本月${d.name}加班與請假狀況`;
       $('detailTitle').textContent = `${d.name}人員加班時數看板`;
       $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
+      const selectedDate = $('leaveDate').value;
+      const dayLeave = d.leave.filter(item => item.startDate <= selectedDate && item.endDate >= selectedDate);
+      const leaveIds = new Set(dayLeave.map(item => item.empId));
       $('todayOvertime').textContent = d.todayOt;
-      $('todayLeave').textContent = d.todayLeave;
-      const recommended = [...d.overtime].sort((a, b) => a[2] - b[2]).slice(0, 3);
+      $('todayLeave').textContent = dayLeave.length;
+      const recommended = [...d.overtime]
+        .filter(person => !leaveIds.has(person[0]))
+        .sort((a, b) => a[2] - b[2])
+        .slice(0, 3);
       $('recommendedNames').innerHTML = recommended.map(person => `<span>${person[1]}</span>`).join('');
       $('recordCount').textContent = `${rows.length} 筆紀錄`;
 
@@ -558,10 +578,13 @@
         return `<tr><td data-label="年月">${rocMonth}</td><td data-label="員工編號" class="muted">${r[0]}</td><td data-label="員工姓名" class="person">${r[1]}</td><td data-label="當月加班時數" class="hours">${Number(r[2]).toFixed(1)} 小時</td><td data-label="39 小時通知"><span class="notice-status ${statusClass(r[3])}">${r[3]}</span></td><td data-label="39 小時通知時間">${notice39}</td><td data-label="42 小時通知"><span class="notice-status ${statusClass(r[5])}">${r[5]}</span></td><td data-label="42 小時通知時間">${notice42}</td><td data-label="45 小時看板警示"><span class="notice-status ${level45Class}">${level45}</span></td></tr>`;
       }).join('');
       $('emptyState').style.display = rows.length ? 'none' : 'block';
-      const selectedDate = $('leaveDate').value;
       const selectedDay = selectedDate.slice(-2);
-      const dayLeave = d.leave.filter(r => r[3].slice(-2) === selectedDay);
-      $('leaveBody').innerHTML = dayLeave.map(r => `<tr><td data-label="人員" class="person">${r[0]}</td><td data-label="假別"><span class="tag ${r[1]}">${r[2]}</span></td><td data-label="請假日期">${selectedMonth} / ${r[3].slice(-2)}</td><td data-label="時間">${r[4]}</td><td data-label="時數">${r[5]} 小時</td><td data-label="狀態" class="muted">${r[6]}</td></tr>`).join('');
+      $('leaveBody').innerHTML = dayLeave.map(item => {
+        const typeClass = item.leaveType.includes('病') ? 'sick' : item.leaveType.includes('特休') ? 'annual' : 'personal';
+        const period = item.startDate === item.endDate ? item.startDate : `${item.startDate} 至 ${item.endDate}`;
+        const time = item.startTime && item.endTime ? `${item.startTime}－${item.endTime}` : '全天';
+        return `<tr><td data-label="員工編號" class="muted">${item.empId}</td><td data-label="人員" class="person">${item.empName}</td><td data-label="假別"><span class="tag ${typeClass}">${item.leaveType}</span></td><td data-label="請假期間">${period}</td><td data-label="當日時段">${time}</td></tr>`;
+      }).join('');
       $('leaveEmpty').style.display = dayLeave.length ? 'none' : 'block';
       $('daySummary').textContent = dayLeave.length
         ? `${selectedMonth} 月 ${selectedDay} 日共有 ${dayLeave.length} 人請假，安排作業時請預留人力。`
@@ -602,6 +625,11 @@
       showOnly('loginView');
       $('password').focus();
     });
+
+    const now = new Date();
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    $('month').value = localToday.slice(0, 7);
+    $('leaveDate').value = localToday;
 
     if (localStorage.getItem(TRUST_KEY) === 'yes' || sessionStorage.getItem(SESSION_KEY) === 'yes') {
       startAuthenticatedSession();
