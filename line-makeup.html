@@ -1,807 +1,695 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
 
-  <title>宏升工業社 - 補登</title>
+<meta charset="UTF-8">
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta
+    http-equiv="Cache-Control"
+    content="no-cache, no-store, must-revalidate"
+>
 
-    body {
-      font-family: "Microsoft JhengHei", Arial, sans-serif;
-      background: #f5f5f5;
-      color: #333;
-      margin: 0;
-      padding: 20px 16px 60px;
-    }
+<meta
+    http-equiv="Pragma"
+    content="no-cache"
+>
 
-    h1 {
-      font-size: 22px;
-      color: #1b2a5e;
-      text-align: center;
-      margin: 10px 0 4px;
-    }
+<meta
+    http-equiv="Expires"
+    content="0"
+>
 
-    .subtitle {
-      text-align: center;
-      font-size: 15px;
-      color: #888;
-      margin-bottom: 10px;
-    }
+<title>宏升工業社 - 補登</title>
 
-    .version {
-      text-align: center;
-      font-size: 11px;
-      color: #aaa;
-      margin-bottom: 14px;
-    }
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      border-top: 4px solid #e0752c;
-      padding: 24px 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      max-width: 420px;
-      margin: 0 auto;
-    }
 
-    #empInfo {
-      padding: 13px 14px;
-      margin-bottom: 18px;
-      background: #eef3fa;
-      border-radius: 8px;
-      color: #1b2a5e;
-      line-height: 1.6;
-    }
+<style>
 
-    #empName {
-      font-size: 19px;
-      font-weight: bold;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    #empId {
-      font-size: 14px;
-      color: #666;
-      margin-top: 3px;
-    }
+body {
+    font-family: "Microsoft JhengHei", Arial, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    margin: 0;
+    padding: 20px 16px 60px;
+}
 
-    label {
-      display: block;
-      font-size: 15px;
-      color: #666;
-      margin: 18px 0 6px;
-      font-weight: bold;
-    }
+h1 {
+    font-size: 22px;
+    color: #1b2a5e;
+    text-align: center;
+    margin: 10px 0 4px;
+}
 
-    select,
-    input,
-    textarea {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-family: inherit;
-      background: #fff;
-      color: #333;
-    }
+.subtitle {
+    text-align: center;
+    font-size: 15px;
+    color: #888;
+    margin-bottom: 10px;
+}
 
-    textarea {
-      min-height: 78px;
-      resize: vertical;
-    }
+.version {
+    text-align: center;
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 14px;
+}
 
-    .time-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+.card {
+    background: #fff;
+    border-radius: 12px;
+    border-top: 4px solid #e0752c;
+    padding: 24px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    max-width: 420px;
+    margin: 0 auto;
+}
 
-    .time-row select {
-      flex: 1;
-      text-align: center;
-    }
+#empInfo {
+    padding: 13px 14px;
+    margin-bottom: 18px;
+    background: #eef3fa;
+    border-radius: 8px;
+    color: #1b2a5e;
+    line-height: 1.6;
+}
 
-    .colon {
-      font-size: 20px;
-      font-weight: bold;
-    }
+#empName {
+    font-size: 19px;
+    font-weight: bold;
+}
 
-    .hint {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #fff4e8;
-      color: #a95416;
-      line-height: 1.6;
-      font-size: 14px;
-    }
+#empId {
+    font-size: 14px;
+    color: #666;
+    margin-top: 3px;
+}
 
-    .green-hint {
-      background: #edf7ee;
-      color: #1b5e20;
-    }
+label {
+    display: block;
+    font-size: 15px;
+    color: #666;
+    margin: 18px 0 6px;
+    font-weight: bold;
+}
 
-    .hidden {
-      display: none !important;
-    }
+select,
+input,
+textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    background: #fff;
+    color: #333;
+}
 
-    button {
-      width: 100%;
-      padding: 15px 0;
-      font-size: 18px;
-      font-weight: bold;
-      background: #e0752c;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      margin-top: 22px;
-      cursor: pointer;
-    }
+textarea {
+    min-height: 78px;
+    resize: vertical;
+}
 
-    button:disabled {
-      background: #ccc;
-      color: #666;
-    }
+.time-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
 
-    #statusMsg {
-      text-align: center;
-      font-size: 15px;
-      line-height: 1.7;
-      margin-top: 14px;
-      min-height: 22px;
-      white-space: pre-line;
-    }
+.time-row select {
+    flex: 1;
+    text-align: center;
+}
 
-    #statusMsg.error {
-      color: #c62828;
-    }
+.colon {
+    font-size: 20px;
+    font-weight: bold;
+}
 
-    #statusMsg.success {
-      color: #1b5e20;
-    }
+.hint {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff4e8;
+    color: #a95416;
+    line-height: 1.6;
+    font-size: 14px;
+}
 
-    #loading {
-      text-align: center;
-      padding: 60px 10px;
-      color: #888;
-      font-size: 16px;
-      line-height: 1.8;
-    }
-  </style>
+.green-hint {
+    background: #edf7ee;
+    color: #1b5e20;
+}
+
+.hidden {
+    display: none !important;
+}
+
+button {
+    width: 100%;
+    padding: 15px 0;
+    font-size: 18px;
+    font-weight: bold;
+    background: #e0752c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    margin-top: 22px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background: #ccc;
+    color: #666;
+}
+
+#statusMsg {
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-top: 14px;
+    min-height: 22px;
+    white-space: pre-line;
+}
+
+#statusMsg.error {
+    color: #c62828;
+}
+
+#statusMsg.success {
+    color: #1b5e20;
+}
+
+#loading {
+    text-align: center;
+    padding: 60px 10px;
+    color: #888;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+</style>
+
 </head>
 
+
 <body>
-  <!-- HS021 測試提示 -->
-  <div
-    id="testBanner"
-    class="hint"
-    style="display:none;max-width:420px;margin:0 auto 20px;border:2px solid #e0752c;"
-  ></div>
-
-  <!-- 拒絕原因頁 -->
-  <div id="rejectWrap" style="display:none;">
-    <h1>晚回來補登通知</h1>
-
-    <div class="card">
-      <div
-        id="rejectSummary"
-        style="white-space:pre-wrap;line-height:1.9;"
-      ></div>
-
-      <div class="hint">
-        拒絕原因會通知員工與人事。
-        打卡紀錄仍保留，由人事確認後手動更正或刪除。
-      </div>
-
-      <label for="rejectReason">拒絕原因（必填）</label>
-
-      <textarea
-        id="rejectReason"
-        maxlength="500"
-        placeholder="請說明這筆補登有哪些問題"
-      ></textarea>
-
-      <button id="rejectBtn" onclick="submitRejection()">
-        送出拒絕原因
-      </button>
-
-      <div
-        id="rejectStatus"
-        role="status"
-        style="white-space:pre-wrap;line-height:1.7;margin-top:14px;"
-      ></div>
-    </div>
+<div id="testBanner" class="hint" style="display:none;max-width:420px;margin:0 auto 20px;border:2px solid #e0752c;"></div>
+<div id="rejectWrap" style="display:none;">
+  <h1>晚回來補登通知</h1>
+  <div class="card">
+    <div id="rejectSummary" style="white-space:pre-wrap;line-height:1.9;"></div>
+    <div class="hint">拒絕原因會通知員工與人事。打卡紀錄仍保留，由人事確認後手動更正或刪除。</div>
+    <label for="rejectReason">拒絕原因（必填）</label>
+    <textarea id="rejectReason" maxlength="500" placeholder="請說明這筆補登有哪些問題"></textarea>
+    <button id="rejectBtn" onclick="submitRejection()">送出拒絕原因</button>
+    <div id="rejectStatus" role="status" style="white-space:pre-wrap;line-height:1.7;margin-top:14px;"></div>
   </div>
+</div>
 
-  <div id="loading">
+
+<div id="loading">
     載入中，請稍候...
-  </div>
+</div>
 
-  <!-- 補登頁 -->
-  <div id="formWrap" style="display:none;">
-    <h1>宏升工業社</h1>
 
-    <div class="subtitle">出勤補登</div>
-    <div class="version">V8.6・補登通知版</div>
+<div
+    id="formWrap"
+    style="display:none;"
+>
 
-    <div class="card">
-      <div id="empInfo">
-        <div id="empName">員工資料載入中...</div>
-        <div id="empId"></div>
-      </div>
+<h1>宏升工業社</h1>
 
-      <label for="makeupDate">補登日期</label>
-      <input type="date" id="makeupDate">
+<div class="subtitle">
+    出勤補登
+</div>
 
-      <div class="hint green-hint">
-        僅可選擇今天或過去日期，不可選未來日期。
-      </div>
+<div class="version">
+    V8.6.1・補登入口檢查版
+</div>
 
-      <label for="makeupType">補登項目</label>
 
-      <select id="makeupType">
-        <option value="">請選擇...</option>
-        <option value="中午未休息">
-          中午未休息（12:00～13:00）
-        </option>
-        <option value="下午未休息">
-          下午未休息（17:00～17:30）
-        </option>
-        <option value="提前上班">提前上班</option>
-        <option value="加班(外出)">加班（外出）晚回來</option>
-      </select>
+<div class="card">
 
-      <div id="lunchBlock" class="hidden">
-        <div class="hint">
-          中午休息時間為 <b>12:00～13:00</b>。
-          <br>
-          若此時段實際有工作，請使用此項補登。
-        </div>
-      </div>
 
-      <div id="afternoonBlock" class="hidden">
-        <div class="hint">
-          下午休息時間為 <b>17:00～17:30</b>。
-          <br>
-          若此時段實際有工作，請使用此項補登。
-        </div>
-      </div>
+<div id="empInfo">
 
-      <div id="earlyBlock" class="hidden">
-        <label>實際到班時間</label>
-
-        <div class="time-row">
-          <select id="earlyHour"></select>
-          <span class="colon">:</span>
-
-          <select id="earlyMinute">
-            <option value="00">00 分</option>
-            <option value="30">30 分</option>
-          </select>
-        </div>
-
-        <div class="hint">
-          提前上班可補登 05:00～07:30。
-          <br>
-          系統以 <b>0.5 小時</b> 為單位計算。
-        </div>
-      </div>
-
-      <div id="overtimeBlock" class="hidden">
-        <label>實際下班時間</label>
-
-        <div class="time-row">
-          <select id="overtimeHour"></select>
-          <span class="colon">:</span>
-
-          <select id="overtimeMinute">
-            <option value="00">00 分</option>
-            <option value="30">30 分</option>
-          </select>
-        </div>
-
-        <label for="reason">事由</label>
-
-        <textarea
-          id="reason"
-          maxlength="200"
-          placeholder="例如：送貨晚回、客戶現場處理、忘記打下班卡"
-        ></textarea>
-
-        <div class="hint">
-          若補登日期為今天，晚回來時間不得晚於目前時間。
-          <br>
-          事由請填寫清楚。補登後立即寫入，並通知相關人員。
-        </div>
-      </div>
-
-      <button id="submitBtn" onclick="submitMakeup()">
-        送出補登
-      </button>
-
-      <div id="statusMsg"></div>
+    <div id="empName">
+        員工資料載入中...
     </div>
-  </div>
 
-  <script>
-    // ==================================================
-    // V8.6：補登、拒絕原因與 HS021 隔離測試
-    // 沿用原 Apps Script 網址與 LIFF ID
-    // ==================================================
+    <div id="empId"></div>
 
-    var APPS_SCRIPT_URL =
-      'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
+</div>
 
-    var LIFF_ID = '2010875519-nrqXot3W';
 
-    var currentEmpId = '';
-    var currentEmpName = '';
-    var isSubmitting = false;
-    var pageParams;
+<label for="makeupDate">
+    補登日期
+</label>
 
-    // ==================================================
-    // 共用
-    // ==================================================
 
-    function pad2(value) {
-      return String(value).padStart(2, '0');
+<input
+    type="date"
+    id="makeupDate"
+>
+
+
+<div class="hint green-hint">
+    僅可選擇今天或過去日期，不可選未來日期。
+</div>
+
+
+<label for="makeupType">
+    補登項目
+</label>
+
+
+<select id="makeupType">
+
+    <option value="">
+        請選擇...
+    </option>
+
+    <option value="中午未休息">
+        中午未休息（12:00～13:00）
+    </option>
+
+    <option value="下午未休息">
+        下午未休息（17:00～17:30）
+    </option>
+
+    <option value="提前上班">
+        提前上班
+    </option>
+
+    <option value="加班(外出)">
+        加班（外出）晚回來
+    </option>
+
+</select>
+
+
+<div
+    id="lunchBlock"
+    class="hidden"
+>
+
+    <div class="hint">
+
+        中午休息時間為
+        <b>12:00～13:00</b>。
+
+        <br>
+
+        若此時段實際有工作，
+        請使用此項補登。
+
+    </div>
+
+</div>
+
+
+<div
+    id="afternoonBlock"
+    class="hidden"
+>
+
+    <div class="hint">
+
+        下午休息時間為
+        <b>17:00～17:30</b>。
+
+        <br>
+
+        若此時段實際有工作，
+        請使用此項補登。
+
+    </div>
+
+</div>
+
+
+<div
+    id="earlyBlock"
+    class="hidden"
+>
+
+<label>
+    實際到班時間
+</label>
+
+
+<div class="time-row">
+
+    <select id="earlyHour"></select>
+
+    <span class="colon">:</span>
+
+    <select id="earlyMinute">
+
+        <option value="00">
+            00 分
+        </option>
+
+        <option value="30">
+            30 分
+        </option>
+
+    </select>
+
+</div>
+
+
+<div class="hint">
+
+    提前上班可補登 05:00～07:30。
+
+    <br>
+
+    系統以
+    <b>0.5 小時</b>
+    為單位計算。
+
+</div>
+
+</div>
+
+
+<div
+    id="overtimeBlock"
+    class="hidden"
+>
+
+<label>
+    實際下班時間
+</label>
+
+
+<div class="time-row">
+
+    <select id="overtimeHour"></select>
+
+    <span class="colon">:</span>
+
+    <select id="overtimeMinute">
+
+        <option value="00">
+            00 分
+        </option>
+
+        <option value="30">
+            30 分
+        </option>
+
+    </select>
+
+</div>
+
+
+<label for="reason">
+    事由
+</label>
+
+
+<textarea
+    id="reason"
+    maxlength="200"
+    placeholder="例如：送貨晚回、客戶現場處理、忘記打下班卡"
+></textarea>
+
+
+<div class="hint">
+
+    若補登日期為今天，
+    晚回來時間不得晚於目前時間。
+
+    <br>
+
+    事由請填寫清楚。補登後立即寫入，並通知相關人員。
+
+</div>
+
+</div>
+
+
+<button
+    id="submitBtn"
+    onclick="submitMakeup()"
+>
+    送出補登
+</button>
+
+
+<div id="statusMsg"></div>
+
+
+</div>
+
+</div>
+
+
+
+<script>
+
+// V8.5：沿用原補登 LIFF 與 GitHub Pages 頁面，不新增另一個網頁。
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
+var LIFF_ID = '2010875519-nrqXot3W';
+var currentEmpId = '', currentEmpName = '', isSubmitting = false, pageParams;
+
+function pad2(value) { return String(value).padStart(2, '0'); }
+function getLocalDateString(date) {
+  var taipei = new Date(date.getTime() + 8 * 3600000);
+  return taipei.getUTCFullYear() + '-' + pad2(taipei.getUTCMonth() + 1) + '-' + pad2(taipei.getUTCDate());
+}
+function showStatus(message, isError) {
+  var el = document.getElementById('statusMsg');
+  el.textContent = message; el.className = isError ? 'error' : 'success';
+}
+function initializeDate() {
+  var input = document.getElementById('makeupDate');
+  input.value = input.max = getLocalDateString(new Date());
+}
+function initializeTimeSelects() {
+  [['earlyHour',5,7,'時'],['overtimeHour',0,23,'時'],['overtimeMinute',0,59,'分']].forEach(function (spec) {
+    var select = document.getElementById(spec[0]); select.innerHTML = '';
+    for (var n = spec[1]; n <= spec[2]; n++) {
+      var option = document.createElement('option'); option.value = pad2(n); option.textContent = pad2(n) + ' ' + spec[3]; select.appendChild(option);
     }
-
-    function getLocalDateString(date) {
-      var taipei = new Date(date.getTime() + 8 * 3600000);
-
-      return (
-        taipei.getUTCFullYear() +
-        '-' +
-        pad2(taipei.getUTCMonth() + 1) +
-        '-' +
-        pad2(taipei.getUTCDate())
-      );
+  });
+  document.getElementById('earlyHour').value = '07';
+  document.getElementById('overtimeHour').value = '17';
+  document.getElementById('overtimeMinute').value = '00';
+}
+function handleMakeupTypeChange() {
+  var type = document.getElementById('makeupType').value;
+  var blocks = { '中午未休息': 'lunchBlock', '下午未休息': 'afternoonBlock', '提前上班': 'earlyBlock', '加班(外出)': 'overtimeBlock' };
+  Object.keys(blocks).forEach(function (key) { document.getElementById(blocks[key]).classList.toggle('hidden', key !== type); });
+}
+function readPageParams() {
+  // liff.init 完成後才讀；也相容 LIFF 的 liff.state 轉址參數。
+  var params = new URLSearchParams(window.location.search), state = params.get('liff.state');
+  if (state) {
+    var question = state.indexOf('?');
+    var extra = new URLSearchParams(question >= 0 ? state.slice(question + 1) : state);
+    extra.forEach(function (value, key) { if (!params.has(key)) params.set(key, value); });
+  }
+  return params;
+}
+function getMakeupLabel(type) {
+  return { '中午未休息': '中午未休息（12:00～13:00）', '下午未休息': '下午未休息（17:00～17:30）', '提前上班': '提前上班', '加班(外出)': '晚回來' }[type] || type;
+}
+async function submitMakeup() {
+  if (isSubmitting) return;
+  var day = document.getElementById('makeupDate').value, type = document.getElementById('makeupType').value;
+  var button = document.getElementById('submitBtn');
+  try {
+    if (!day || !type) throw new Error('請選擇補登日期與項目');
+    if (day > getLocalDateString(new Date())) throw new Error('不可補登未來日期');
+    if (!currentEmpId) throw new Error('尚未取得員工資料');
+    var payload = { action: 'p85Makeup', workDate: day, reason: type, token: pageParams.get('flow') === 'late' ? pageParams.get('token') || '' : '' };
+    if (type === '提前上班') payload.earlyTime = document.getElementById('earlyHour').value + ':' + document.getElementById('earlyMinute').value;
+    if (type === '加班(外出)') {
+      payload.overtimeOutTime = document.getElementById('overtimeHour').value + ':' + document.getElementById('overtimeMinute').value;
+      payload.overtimeOutMemo = document.getElementById('reason').value.trim();
+      if (!payload.overtimeOutMemo) throw new Error('請填寫事由，例如送貨晚回或忘記打下班卡');
+      if (new Date(day + 'T' + payload.overtimeOutTime + ':00+08:00') > new Date()) throw new Error('下班時間不可晚於目前時間');
     }
-
-    function showStatus(message, isError) {
-      var el = document.getElementById('statusMsg');
-
-      el.textContent = message;
-      el.className = isError ? 'error' : 'success';
+    isSubmitting = true; button.disabled = true; button.textContent = '送出中…'; showStatus('', false);
+    var data = await callApi(payload);
+    var text = '✅ ' + data.message + '\n' + currentEmpName + '（' + currentEmpId + '）\n日期：' + day + '\n項目：' + getMakeupLabel(type);
+    if (payload.overtimeOutTime) text += '\n實際下班：' + payload.overtimeOutTime;
+    if (payload.earlyTime) text += '\n實際到班：' + payload.earlyTime;
+    showStatus(text, false); button.textContent = '已完成';
+  } catch (err) {
+    showStatus(p861ErrorText_(err), true); isSubmitting = false; button.disabled = false; button.textContent = '送出補登';
+  }
+}
+async function submitRejection() {
+  if (isSubmitting) return;
+  var button = document.getElementById('rejectBtn'), status = document.getElementById('rejectStatus');
+  try {
+    var reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) throw new Error('請填寫拒絕原因');
+    if (reason.length > 500) throw new Error('拒絕原因最多 500 字');
+    isSubmitting = true; button.disabled = true; button.textContent = '送出中…';
+    var data = await callApi({ action: 'p85Reject', token: pageParams.get('token'), rejectReason: reason });
+    status.textContent = '✅ ' + data.message; button.textContent = '已送出拒絕原因';
+  } catch (err) {
+    status.textContent = p861ErrorText_(err); isSubmitting = false; button.disabled = false; button.textContent = '送出拒絕原因';
+  }
+}
+// V8.6.1：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
+async function p861Step_(stage, fn) {
+  try { return await fn(); }
+  catch (cause) {
+    var err = new Error(cause && cause.message ? cause.message : String(cause));
+    err.p861Stage = cause && cause.p861Stage || stage;
+    err.p861Name = cause && (cause.p861Name || cause.name) || '';
+    err.p861Code = cause && (cause.p861Code || cause.code) || '';
+    throw err;
+  }
+}
+function p861ErrorText_(err) {
+  var stages = {
+    'PAGE': '準備頁面', 'SDK': '載入 LINE SDK', 'LIFF-INIT': 'LINE 初始化',
+    'PARAMS': '讀取入口參數', 'LOGIN': 'LINE 登入轉址', 'TOKEN': '取得 LINE 登入憑證',
+    'API-URL': '檢查後端網址', 'API-CONNECT': '連線到 Apps Script',
+    'API-READ': '讀取後端回應', 'API-JSON': '解析後端回應', 'API-RESULT': '後端處理結果'
+  };
+  var code = err && err.p861Stage || 'PAGE';
+  var message = String(err && err.message || err || '未知錯誤');
+  message = message.replace(/https?:\/\/[^\s"'<>]+/g, function (url) { return url.split(/[?#]/)[0] + '（參數已隱藏）'; });
+  message = message.replace(/\b(access_token|id_token|testSession|token|test)\s*[:=]\s*[^&\s"'<>]+/gi, '$1=（已隱藏）');
+  return '⚠️ V8.6.1｜' + code + '（' + (stages[code] || code) + '）\n' +
+    (err && err.p861Name ? err.p861Name + '：' : '') + message +
+    (err && err.p861Code ? '\n錯誤代碼：' + err.p861Code : '') +
+    '\n請提供這段錯誤訊息，先不要重建測試。';
+}
+function p861LoginReturnUrl_() {
+  // 只帶入本頁必要參數；不把 LINE OAuth 暫存參數或完整原始網址當成 redirectUri。
+  var result = new URLSearchParams();
+  ['flow','token','test'].forEach(function (key) {
+    if (pageParams.has(key)) result.set(key, pageParams.get(key));
+  });
+  if ((pageParams.has('test') || pageParams.get('flow') === 'test') && !pageParams.get('test')) {
+    throw new Error('缺少測試連結，沒有改用正式入口');
+  }
+  var query = result.toString();
+  return 'https://hs2026work-ai.github.io/punch-card/line-makeup.html' + (query ? '?' + query : '');
+}
+async function callApi(payload) {
+  var test = pageParams && pageParams.get('test');
+  payload.testRequired = !!(pageParams && (pageParams.has('test') || pageParams.get('flow') === 'test'));
+  if (payload.testRequired && !test) throw new Error('缺少測試連結，沒有送出正式補登');
+  if (test) payload.testSession = test;
+  payload.accessToken = await p861Step_('TOKEN', function () {
+    var token = liff.getAccessToken();
+    if (!token) throw new Error('LINE 登入已失效，請關閉後從原 LINE 測試訊息重新開啟');
+    return token;
+  });
+  var url = await p861Step_('API-URL', function () {
+    var value = String(APPS_SCRIPT_URL || '').trim();
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(value)) {
+      throw new Error('APPS_SCRIPT_URL 不是完整的 Apps Script /exec 網址，請確認沒有 Markdown 括號或多餘文字');
     }
-
-    // ==================================================
-    // 日期與時間選單
-    // ==================================================
-
-    function initializeDate() {
-      var input = document.getElementById('makeupDate');
-
-      input.value = input.max = getLocalDateString(new Date());
+    return value;
+  });
+  var response = await p861Step_('API-CONNECT', function () {
+    return fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload), cache: 'no-store'
+    });
+  });
+  var text = await p861Step_('API-READ', function () {
+    if (!response.ok) throw new Error('Apps Script 回傳 HTTP ' + response.status + '，請確認網頁部署狀態');
+    return response.text();
+  });
+  var data = await p861Step_('API-JSON', function () {
+    if (!String(text).trim()) throw new Error('Apps Script 回傳空白內容，請確認目前 /exec 的部署版本');
+    if (/^\s*</.test(text)) throw new Error('Apps Script 回傳了網頁而非補登 JSON 結果，請確認部署版本與存取設定');
+    try { return JSON.parse(text); }
+    catch (_) { throw new Error('Apps Script 回傳的內容不是有效 JSON，請確認目前 /exec 是否指向 V8.6 部署'); }
+  });
+  await p861Step_('API-RESULT', function () {
+    if (!data || data.status !== 'success') throw new Error(data && data.message || '後端未回傳成功狀態');
+  });
+  if (data.testMode) {
+    var banner = document.getElementById('testBanner');
+    banner.style.display = 'block';
+    banner.textContent = 'HS021 隔離測試｜模擬' + data.testRole + '通知。測試出勤日期：' + data.testDate + '。所有通知只送人事，正式出勤不受影響。';
+  }
+  return data;
+}
+async function initializeLiff() {
+  try {
+    await p861Step_('PAGE', function () {
+      initializeDate(); initializeTimeSelects();
+      document.getElementById('makeupType').addEventListener('change', handleMakeupTypeChange);
+      document.getElementById('loading').style.whiteSpace = 'pre-wrap';
+      document.getElementById('loading').textContent = 'V8.6.1：正在連接 LINE…';
+    });
+    await p861Step_('SDK', function () {
+      if (typeof liff === 'undefined' || typeof liff.init !== 'function') throw new Error('LINE SDK 未載入，請確認網路後重新開啟');
+    });
+    await p861Step_('LIFF-INIT', function () { return liff.init({ liffId: LIFF_ID }); });
+    pageParams = await p861Step_('PARAMS', readPageParams);
+    var loggedIn = await p861Step_('LOGIN', function () { return liff.isLoggedIn(); });
+    if (!loggedIn) {
+      await p861Step_('LOGIN', function () { return liff.login({ redirectUri: p861LoginReturnUrl_() }); });
+      return;
     }
-
-    function initializeTimeSelects() {
-      [
-        ['earlyHour', 5, 7, '時'],
-        ['overtimeHour', 0, 23, '時'],
-        ['overtimeMinute', 0, 59, '分']
-      ].forEach(function (spec) {
-        var select = document.getElementById(spec[0]);
-
-        select.innerHTML = '';
-
-        for (var n = spec[1]; n <= spec[2]; n++) {
-          var option = document.createElement('option');
-
-          option.value = pad2(n);
-          option.textContent = pad2(n) + ' ' + spec[3];
-
-          select.appendChild(option);
+    document.getElementById('loading').textContent = 'V8.6.1：LINE 已初始化，正在讀取員工／補登資料…';
+    if (pageParams.get('flow') === 'reject') {
+      var detail = await callApi({ action: 'p85RejectDetail', token: pageParams.get('token') });
+      document.getElementById('rejectSummary').textContent = detail.summary;
+      if (detail.processed) {
+        document.getElementById('rejectReason').value = detail.rejectReason;
+        document.getElementById('rejectReason').disabled = true;
+        document.getElementById('rejectBtn').disabled = true;
+        document.getElementById('rejectStatus').textContent = '此筆已拒絕，原打卡紀錄仍保留，由人事處理。';
+      }
+      document.getElementById('rejectWrap').style.display = 'block';
+    } else {
+      var data = await callApi({ action: 'p85Init', token: pageParams.get('flow') === 'late' ? pageParams.get('token') || '' : '' });
+      currentEmpId = data.empId; currentEmpName = data.name;
+      if (data.testMode && data.testDate) document.getElementById('makeupDate').value = data.testDate;
+      document.getElementById('empName').textContent = currentEmpName;
+      document.getElementById('empId').textContent = '員工編號：' + currentEmpId;
+      if (pageParams.get('flow') === 'late') {
+        document.getElementById('makeupType').value = '加班(外出)';
+        if (data.reminderDate) {
+          document.getElementById('makeupDate').value = data.reminderDate;
+          document.getElementById('makeupDate').disabled = true;
+          document.getElementById('makeupType').disabled = true;
         }
-      });
-
-      document.getElementById('earlyHour').value = '07';
-      document.getElementById('overtimeHour').value = '17';
-      document.getElementById('overtimeMinute').value = '00';
+        document.getElementById('reason').value = '忘記打下班卡';
+        handleMakeupTypeChange();
+      }
+      document.getElementById('formWrap').style.display = 'block';
     }
+    document.getElementById('loading').style.display = 'none';
+  } catch (err) {
+    document.getElementById('loading').textContent = p861ErrorText_(err);
+  }
+}
 
-    function handleMakeupTypeChange() {
-      var type = document.getElementById('makeupType').value;
+initializeLiff();
 
-      var blocks = {
-        '中午未休息': 'lunchBlock',
-        '下午未休息': 'afternoonBlock',
-        '提前上班': 'earlyBlock',
-        '加班(外出)': 'overtimeBlock'
-      };
 
-      Object.keys(blocks).forEach(function (key) {
-        document
-          .getElementById(blocks[key])
-          .classList.toggle('hidden', key !== type);
-      });
-    }
+</script>
 
-    // ==================================================
-    // API
-    // ==================================================
 
-    async function callApi(payload) {
-      var test = pageParams && pageParams.get('test');
-
-      payload.testRequired = !!(
-        pageParams &&
-        (
-          pageParams.has('test') ||
-          pageParams.get('flow') === 'test'
-        )
-      );
-
-      if (payload.testRequired && !test) {
-        throw new Error('缺少測試連結，沒有送出正式補登');
-      }
-
-      if (test) {
-        payload.testSession = test;
-      }
-
-      var token = liff.getAccessToken();
-
-      if (!token) {
-        throw new Error('LINE 登入已失效，請重新開啟頁面');
-      }
-
-      payload.accessToken = token;
-
-      var response = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      });
-
-      if (!response.ok) {
-        throw new Error('系統連線失敗，請稍後重試');
-      }
-
-      var data = await response.json();
-
-      if (!data || data.status !== 'success') {
-        throw new Error(
-          data && data.message || '系統處理失敗'
-        );
-      }
-
-      if (data.testMode) {
-        var banner = document.getElementById('testBanner');
-
-        banner.style.display = 'block';
-
-        banner.textContent =
-          'HS021 隔離測試｜模擬' +
-          data.testRole +
-          '通知。測試出勤日期：' +
-          data.testDate +
-          '。所有通知只送人事，正式出勤不受影響。';
-      }
-
-      return data;
-    }
-
-    // liff.init 完成後才讀取網址參數
-    function readPageParams() {
-      var params = new URLSearchParams(window.location.search);
-      var state = params.get('liff.state');
-
-      if (state) {
-        var question = state.indexOf('?');
-
-        var extra = new URLSearchParams(
-          question >= 0 ? state.slice(question + 1) : state
-        );
-
-        extra.forEach(function (value, key) {
-          if (!params.has(key)) {
-            params.set(key, value);
-          }
-        });
-      }
-
-      return params;
-    }
-
-    function getMakeupLabel(type) {
-      return {
-        '中午未休息': '中午未休息（12:00～13:00）',
-        '下午未休息': '下午未休息（17:00～17:30）',
-        '提前上班': '提前上班',
-        '加班(外出)': '晚回來'
-      }[type] || type;
-    }
-
-    // ==================================================
-    // 送出補登
-    // ==================================================
-
-    async function submitMakeup() {
-      if (isSubmitting) {
-        return;
-      }
-
-      var day = document.getElementById('makeupDate').value;
-      var type = document.getElementById('makeupType').value;
-      var button = document.getElementById('submitBtn');
-
-      try {
-        if (!day || !type) {
-          throw new Error('請選擇補登日期與項目');
-        }
-
-        if (day > getLocalDateString(new Date())) {
-          throw new Error('不可補登未來日期');
-        }
-
-        if (!currentEmpId) {
-          throw new Error('尚未取得員工資料');
-        }
-
-        var payload = {
-          action: 'p85Makeup',
-          workDate: day,
-          reason: type,
-
-          token:
-            pageParams.get('flow') === 'late'
-              ? pageParams.get('token') || ''
-              : ''
-        };
-
-        if (type === '提前上班') {
-          payload.earlyTime =
-            document.getElementById('earlyHour').value +
-            ':' +
-            document.getElementById('earlyMinute').value;
-        }
-
-        if (type === '加班(外出)') {
-          payload.overtimeOutTime =
-            document.getElementById('overtimeHour').value +
-            ':' +
-            document.getElementById('overtimeMinute').value;
-
-          payload.overtimeOutMemo =
-            document.getElementById('reason').value.trim();
-
-          if (!payload.overtimeOutMemo) {
-            throw new Error(
-              '請填寫事由，例如送貨晚回或忘記打下班卡'
-            );
-          }
-
-          var selectedTime = new Date(
-            day +
-            'T' +
-            payload.overtimeOutTime +
-            ':00+08:00'
-          );
-
-          if (selectedTime > new Date()) {
-            throw new Error('下班時間不可晚於目前時間');
-          }
-        }
-
-        isSubmitting = true;
-        button.disabled = true;
-        button.textContent = '送出中…';
-
-        showStatus('', false);
-
-        var data = await callApi(payload);
-
-        var text =
-          '✅ ' +
-          data.message +
-          '\n' +
-          currentEmpName +
-          '（' +
-          currentEmpId +
-          '）' +
-          '\n日期：' +
-          day +
-          '\n項目：' +
-          getMakeupLabel(type);
-
-        if (payload.overtimeOutTime) {
-          text += '\n實際下班：' + payload.overtimeOutTime;
-        }
-
-        if (payload.earlyTime) {
-          text += '\n實際到班：' + payload.earlyTime;
-        }
-
-        showStatus(text, false);
-        button.textContent = '已完成';
-
-      } catch (err) {
-        showStatus('⚠️ ' + err.message, true);
-
-        isSubmitting = false;
-        button.disabled = false;
-        button.textContent = '送出補登';
-      }
-    }
-
-    // ==================================================
-    // 送出拒絕原因
-    // ==================================================
-
-    async function submitRejection() {
-      if (isSubmitting) {
-        return;
-      }
-
-      var button = document.getElementById('rejectBtn');
-      var status = document.getElementById('rejectStatus');
-
-      try {
-        var reason =
-          document.getElementById('rejectReason').value.trim();
-
-        if (!reason) {
-          throw new Error('請填寫拒絕原因');
-        }
-
-        if (reason.length > 500) {
-          throw new Error('拒絕原因最多 500 字');
-        }
-
-        isSubmitting = true;
-        button.disabled = true;
-        button.textContent = '送出中…';
-
-        var data = await callApi({
-          action: 'p85Reject',
-          token: pageParams.get('token'),
-          rejectReason: reason
-        });
-
-        status.textContent = '✅ ' + data.message;
-        button.textContent = '已送出拒絕原因';
-
-      } catch (err) {
-        status.textContent = '⚠️ ' + err.message;
-
-        isSubmitting = false;
-        button.disabled = false;
-        button.textContent = '送出拒絕原因';
-      }
-    }
-
-    // ==================================================
-    // LIFF 初始化
-    // ==================================================
-
-    async function initializeLiff() {
-      try {
-        initializeDate();
-        initializeTimeSelects();
-
-        document
-          .getElementById('makeupType')
-          .addEventListener('change', handleMakeupTypeChange);
-
-        await liff.init({
-          liffId: LIFF_ID
-        });
-
-        if (!liff.isLoggedIn()) {
-          liff.login({
-            redirectUri: window.location.href
-          });
-
-          return;
-        }
-
-        pageParams = readPageParams();
-
-        if (pageParams.get('flow') === 'reject') {
-          var detail = await callApi({
-            action: 'p85RejectDetail',
-            token: pageParams.get('token')
-          });
-
-          document.getElementById('rejectSummary').textContent =
-            detail.summary;
-
-          if (detail.processed) {
-            document.getElementById('rejectReason').value =
-              detail.rejectReason;
-
-            document.getElementById('rejectReason').disabled =
-              true;
-
-            document.getElementById('rejectBtn').disabled =
-              true;
-
-            document.getElementById('rejectStatus').textContent =
-              '此筆已拒絕，原打卡紀錄仍保留，由人事處理。';
-          }
-
-          document.getElementById('rejectWrap').style.display =
-            'block';
-
-        } else {
-          var data = await callApi({
-            action: 'p85Init',
-
-            token:
-              pageParams.get('flow') === 'late'
-                ? pageParams.get('token') || ''
-                : ''
-          });
-
-          currentEmpId = data.empId;
-          currentEmpName = data.name;
-
-          if (data.testMode && data.testDate) {
-            document.getElementById('makeupDate').value =
-              data.testDate;
-          }
-
-          document.getElementById('empName').textContent =
-            currentEmpName;
-
-          document.getElementById('empId').textContent =
-            '員工編號：' + currentEmpId;
-
-          if (pageParams.get('flow') === 'late') {
-            document.getElementById('makeupType').value =
-              '加班(外出)';
-
-            if (data.reminderDate) {
-              document.getElementById('makeupDate').value =
-                data.reminderDate;
-
-              document.getElementById('makeupDate').disabled =
-                true;
-
-              document.getElementById('makeupType').disabled =
-                true;
-            }
-
-            document.getElementById('reason').value =
-              '忘記打下班卡';
-
-            handleMakeupTypeChange();
-          }
-
-          document.getElementById('formWrap').style.display =
-            'block';
-        }
-
-        document.getElementById('loading').style.display =
-          'none';
-
-      } catch (err) {
-        document.getElementById('loading').textContent =
-          '⚠️ ' +
-          err.message +
-          '。請重新從 LINE 開啟，或聯絡人事。';
-      }
-    }
-
-    initializeLiff();
-  </script>
 </body>
+
 </html>
