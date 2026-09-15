@@ -28,15 +28,15 @@ summary{font-size:18px;min-height:48px;padding:12px 0}.foot{font-size:16px;line-
 }
 
 [hidden]{display:none!important}.refresh{min-height:48px;padding:8px 18px;border:1px solid #073b7a;color:#073b7a;background:white;border-radius:8px;font:inherit}.times b{overflow-wrap:anywhere}.detail{overflow-wrap:anywhere}</style></head><body>
-<header><div class="brand">宏升工業社</div><div class="identity"><div><h1>我的出勤與加班</h1><p id="person">正在確認 LINE 身分…</p></div><span class="pill">個人專屬查詢</span></div></header>
-<main><p id="status" role="status" aria-live="polite">讀取中，請稍候。</p><button id="retry" class="refresh" hidden>重新讀取</button><div id="data" hidden><div class="month"><div><span style="display:block">本月紀錄</span><strong id="month"></strong></div><div class="updated" id="updated"></div><button id="refresh" class="refresh">重新整理</button></div>
+<header><div class="brand">宏升工業社</div><div class="identity"><div><h1>我的出勤與加班</h1><p id="person">正在確認 LINE 身分…</p></div><div style="display:grid;gap:12px"><button id="hrButton" class="refresh" hidden>人事專用</button><span class="pill">個人專屬查詢</span></div></div></header>
+<main><p id="status" role="status" aria-live="polite">讀取中，請稍候。</p><button id="retry" class="refresh" hidden>重新讀取</button><section id="hrPanel" class="card" hidden><label for="employee" style="display:block;margin-bottom:10px">選擇要查閱的員工</label><select id="employee" style="max-width:100%;font-size:20px;min-height:48px"></select><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="viewEmployee" class="refresh">查看員工資料</button><button id="backOwn" class="refresh">返回我的資料</button></div></section><p id="viewBanner" class="reason" role="status" hidden></p><div id="data" hidden><div class="month"><div><span style="display:block">本月紀錄</span><strong id="month"></strong></div><div class="updated" id="updated"></div><button id="refresh" class="refresh">重新整理</button></div>
 <div class="stats"><article class="stat"><span>平日出勤天數</span><strong id="days"></strong><p>依有上下班紀錄的日期計算</p></article><article class="stat"><span>加班總時數</span><strong id="hours"></strong><p>加班＋補登時數，含晚回來</p></article><article class="stat"><span>未休息補登</span><strong id="makeups"></strong><p>依補登專區紀錄列示</p></article></div>
 <nav class="tabs" role="tablist" aria-label="出勤紀錄類別"><button id="tab-work" role="tab" aria-controls="panel" data-tab="work" aria-selected="true">正常出勤</button><button id="tab-overtime" role="tab" aria-controls="panel" data-tab="overtime" aria-selected="false">加班</button><button id="tab-makeup" role="tab" aria-controls="panel" data-tab="makeup" aria-selected="false">補登</button></nav><section id="panel" role="tabpanel" tabindex="0" aria-labelledby="tab-work"></section></div><p class="foot">時數及出勤狀態依人事資料顯示。<br>資料如有疑問，請聯絡人事協助確認。</p></main>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script>'use strict';
 const LIFF_ID='2010875519-8AL8Aq1Q';
 const API_URL='https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
 const RETURN_URL='https://hs2026work-ai.github.io/punch-card/my-attendance.html';
-let records=null,current='work',busy=false;
+let records=null,current='work',busy=false,requestedEmployee='',hrMode=false;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function val(v){return esc(v||'—');}
@@ -63,23 +63,34 @@ function render(){
  }else{
  content+='<span class="tag">'+val(r['異常原因'])+'</span></div><div class="detail">補登時數：<strong>'+val(r['加班時數'])+' 小時</strong><br>紀錄時間：'+val(r['下班時間/加班結束時間'])+'</div>';
  }
+ if(records.isHR && r.hourIssue) content+='<p class="reason">'+esc(r.hourIssue)+'<br>原時數：'+esc(r['加班時數'] || '（空白）')+'</p>';
  return content+'</article>';
  }).join(''):'<div class="empty"><b>本月尚無紀錄</b>此分類目前沒有可顯示的資料。</div>';
  $('panel').innerHTML=html;
 }
 async function load(){
- if(busy)return;busy=true;records=null;$('data').hidden=true;$('retry').hidden=true;$('status').hidden=false;$('status').textContent='正在讀取本月資料…';$('person').textContent='正在確認 LINE 身分…';
+ if(busy)return;busy=true;const target=requestedEmployee;records=null;$('hrButton').hidden=true;$('hrPanel').hidden=true;$('viewBanner').hidden=true;$('data').hidden=true;$('retry').hidden=true;$('status').hidden=false;$('status').textContent='正在讀取本月資料…';$('person').textContent='正在確認 LINE 身分…';
  try{
  if(!window.liff)throw Error('LINE 元件未載入，請重新開啟。');
  await liff.init({liffId:LIFF_ID});
  if(!liff.isLoggedIn()){liff.login({redirectUri:RETURN_URL});return;}
  const token=liff.getAccessToken();if(!token)throw Error('LINE 登入已失效，請關閉後重新從 LINE 開啟。');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);let text;
- try{const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'personalAttendance',accessToken:token}),signal:controller.signal});if(!response.ok)throw Error('查詢服務暫時無法使用（HTTP '+response.status+'）。');text=await response.text();}finally{clearTimeout(timer);}
+ try{const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'personalAttendance',accessToken:token,...(target?{viewEmployeeId:target}:{})}),signal:controller.signal});if(!response.ok)throw Error('查詢服務暫時無法使用（HTTP '+response.status+'）。');text=await response.text();}finally{clearTimeout(timer);}
  let result;try{result=JSON.parse(text);}catch(_){throw Error('查詢服務尚未更新，請人事確認 Apps Script 已部署新版本。');}
  if(result.status!=='success')throw Error(result.message||'讀取失敗，請聯絡人事。');
  if(!['work','overtime','makeup'].every(k=>Array.isArray(result[k]))||!/^\d{4}-\d{2}$/.test(result.month))throw Error('資料格式不完整，請聯絡人事。');
- records=result;$('person').textContent=result.name+' · '+result.empId;
+ records=result;
+ if(target && !result.isHR)throw Error('人事查詢尚未啟用，請確認已更新部署。');
+ $('hrButton').hidden=!result.isHR;
+ $('hrPanel').hidden=!(result.isHR&&hrMode);
+ $('viewBanner').hidden=!(result.isHR&&hrMode);
+ $('viewBanner').textContent='人事查閱中：'+result.name+'（'+result.empId+'）・唯讀';
+ if(result.isHR){
+   $('employee').innerHTML='<option value="">請選擇員工</option>'+(result.employees||[]).map(e=>'<option value="'+esc(e.id)+'">'+esc(e.id+' · '+e.name)+'</option>').join('');
+   $('employee').value=target;
+ }
+ $('person').textContent=result.name+' · '+result.empId;
  $('month').textContent=result.month.slice(0,4)+' 年 '+Number(result.month.slice(5))+' 月';$('updated').textContent='讀取時間：'+result.readAt;
  const days=new Set(result.work.filter(r=>r['上班時間']||r['下班時間']).map(r=>r.date)).size;
  $('days').textContent=days+' 天';$('makeups').textContent=result.makeup.length+' 筆';
@@ -89,5 +100,8 @@ async function load(){
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{current=b.dataset.tab;if(records)render();});
 document.querySelector('.tabs').onkeydown=e=>{const bs=[...document.querySelectorAll('[data-tab]')];let n=bs.indexOf(document.activeElement);if(n<0||!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;e.preventDefault();n=e.key==='Home'?0:e.key==='End'?bs.length-1:(n+(e.key==='ArrowRight'?1:bs.length-1))%bs.length;bs[n].click();bs[n].focus();};
+$('hrButton').onclick=()=>{if(!records||!records.isHR)return;hrMode=true;$('hrPanel').hidden=false;$('viewBanner').hidden=false;$('viewBanner').textContent='人事查閱中：'+records.name+'（'+records.empId+'）・唯讀';};
+$('viewEmployee').onclick=()=>{if(busy)return;const id=$('employee').value;if(!id)return;requestedEmployee=id;current='work';load();};
+$('backOwn').onclick=()=>{if(busy)return;requestedEmployee='';hrMode=false;current='work';load();};
 $('retry').onclick=load;$('refresh').onclick=load;load();
 </script></body></html>
