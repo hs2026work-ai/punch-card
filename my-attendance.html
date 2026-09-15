@@ -30,7 +30,7 @@ summary{font-size:18px;min-height:48px;padding:12px 0}.foot{font-size:16px;line-
 [hidden]{display:none!important}.refresh{min-height:48px;padding:8px 18px;border:1px solid #073b7a;color:#073b7a;background:white;border-radius:8px;font:inherit}.times b{overflow-wrap:anywhere}.detail{overflow-wrap:anywhere}</style></head><body>
 <header><div class="brand">宏升工業社</div><div class="identity"><div><h1>我的出勤與加班</h1><p id="person">正在確認 LINE 身分…</p></div><span class="pill">個人專屬查詢</span></div></header>
 <main><p id="status" role="status" aria-live="polite">讀取中，請稍候。</p><button id="retry" class="refresh" hidden>重新讀取</button><div id="data" hidden><div class="month"><div><span style="display:block">本月紀錄</span><strong id="month"></strong></div><div class="updated" id="updated"></div><button id="refresh" class="refresh">重新整理</button></div>
-<div class="stats"><article class="stat"><span>出勤天數</span><strong id="days"></strong><p>依有上下班紀錄的日期計算</p></article><article class="stat"><span>加班時數</span><strong id="hours"></strong><p>含晚回來；不含未休息補登</p></article><article class="stat"><span>未休息補登</span><strong id="makeups"></strong><p>依補登專區紀錄列示</p></article></div>
+<div class="stats"><article class="stat"><span>平日出勤天數</span><strong id="days"></strong><p>依有上下班紀錄的日期計算</p></article><article class="stat"><span>加班時數</span><strong id="hours"></strong><p>含晚回來；不含未休息補登</p></article><article class="stat"><span>未休息補登</span><strong id="makeups"></strong><p>依補登專區紀錄列示</p></article></div>
 <nav class="tabs" role="tablist" aria-label="出勤紀錄類別"><button id="tab-work" role="tab" aria-controls="panel" data-tab="work" aria-selected="true">正常出勤</button><button id="tab-overtime" role="tab" aria-controls="panel" data-tab="overtime" aria-selected="false">加班</button><button id="tab-makeup" role="tab" aria-controls="panel" data-tab="makeup" aria-selected="false">補登</button></nav><section id="panel" role="tabpanel" tabindex="0" aria-labelledby="tab-work"></section></div><p class="foot">時數及出勤狀態依人事資料顯示。<br>資料如有疑問，請聯絡人事協助確認。</p></main>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script>'use strict';
 const LIFF_ID='2010875519-8AL8Aq1Q';
@@ -44,7 +44,7 @@ function time(v){const m=String(v||'').match(/(?:^|\s|T)(\d{1,2}):(\d{2})/);retu
 function span(label,v){return '<div><span>'+esc(label)+'</span><b>'+esc(time(v))+'</b></div>';}
 function amount(v){return v===null?'待確認':String(Math.round(v*100)/100);}
 function render(){
- const config={work:['每日正常出勤','上下班時間、時數與狀態，依出勤資料顯示。'],overtime:['我的加班紀錄','包含晚回來產生的加班；未休息補登另外列示。'],makeup:['我的補登紀錄','中午未休息、下午未休息等紀錄，依補登專區顯示。']};
+ const config={work:['每日正常出勤','平日上下班時間與狀態。週六、週日及國定假日請看「加班」。'],overtime:['我的加班紀錄','包含週六、週日、國定假日與晚回來的加班，不判定遲到或早退；未休息補登另外列示。'],makeup:['我的補登紀錄','中午未休息、下午未休息等紀錄，依補登專區顯示。']};
  document.querySelectorAll('[data-tab]').forEach(b=>{const on=b.dataset.tab===current;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
  $('panel').setAttribute('aria-labelledby','tab-'+current);
  let html='<div class="section-head"><h2>'+config[current][0]+'</h2><p>'+config[current][1]+'</p></div>';
