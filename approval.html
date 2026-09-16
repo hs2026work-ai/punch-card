@@ -191,6 +191,15 @@
           <div class="value reason" id="reason"></div>
         </div>
 
+        <div class="row">
+          <div class="label">假單 ID</div>
+          <div
+            class="value"
+            style="font-size:12px"
+            id="requestIdText"
+          ></div>
+        </div>
+
         <div id="statusBox" class="status-box"></div>
 
         <div id="buttonArea" class="button-area">
@@ -221,50 +230,51 @@
       'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
 
     let LINE_USER_ID = '';
-    let ROW = null;
+    let REQUEST_ID = '';
+    let CAN_REVIEW = false;
     let STAGE = null;
     let submitting = false;
 
-    // ===== 讀取審核連結參數 =====
+    // ===== 讀取固定假單 ID =====
     function getApprovalParams() {
-      const urlParams = new URLSearchParams(
+      const params = new URLSearchParams(
         window.location.search
       );
 
-      let row = urlParams.get('row');
-      let stage = urlParams.get('stage');
-
-      if (row && stage) {
-        return { row, stage };
+      if (params.has('requestId')) {
+        return {
+          requestId: params.get('requestId'),
+          stage: params.get('stage')
+        };
       }
 
-      // 相容 LIFF 包在 liff.state 裡面的參數。
-      const liffState = urlParams.get('liff.state');
+      // URLSearchParams 已解碼一次，不重複 decodeURIComponent。
+      const state = params.get('liff.state');
 
-      if (liffState) {
-        try {
-          // URLSearchParams 已解碼一次，不再重複解碼。
-          const decoded = liffState;
-          const qIndex = decoded.indexOf('?');
+      if (state) {
+        const index = state.indexOf('?');
 
-          const query = qIndex >= 0
-            ? decoded.substring(qIndex + 1).split('#')[0]
-            : decoded.replace(/^\?/, '');
+        const query = (
+          index >= 0
+            ? state.slice(index + 1)
+            : state
+        ).split('#')[0];
 
-          const stateParams = new URLSearchParams(query);
+        const nested = new URLSearchParams(query);
 
-          row = stateParams.get('row');
-          stage = stateParams.get('stage');
-
-          if (row && stage) {
-            return { row, stage };
-          }
-        } catch (error) {
-          console.log('liff.state 解析失敗', error);
+        if (nested.has('requestId')) {
+          return {
+            requestId: nested.get('requestId'),
+            stage: nested.get('stage')
+          };
         }
       }
 
-      return { row: '', stage: '' };
+      // 舊版 row 連結不轉換，避免誤讀另一張假單。
+      return {
+        requestId: '',
+        stage: ''
+      };
     }
 
     // ===== 初始化 =====
@@ -272,14 +282,15 @@
       try {
         disableButtons();
 
-        // 動態載入 SDK，避免 SDK 卡住時整頁無法顯示。
         await loadLiffSdk();
 
         document.getElementById('loading').textContent =
           '正在連線 LINE…';
 
         await withTimeout(
-          liff.init({ liffId: LIFF_ID }),
+          liff.init({
+            liffId: LIFF_ID
+          }),
           20000,
           'LINE 初始化逾時，請確認網路後重新載入。'
         );
@@ -287,17 +298,24 @@
         // 初始化完成後才讀取參數。
         const params = getApprovalParams();
 
-        ROW = Number(params.row);
+        REQUEST_ID = String(
+          params.requestId || ''
+        ).trim();
+
         STAGE = Number(params.stage);
 
+        const validId =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+            .test(REQUEST_ID);
+
         if (
-          !Number.isSafeInteger(ROW) ||
-          ROW <= 0 ||
+          !validId ||
           !Number.isSafeInteger(STAGE) ||
-          STAGE <= 0
+          STAGE < 1 ||
+          STAGE > 4
         ) {
           showFatal(
-            '審核連結資料不完整，請從原始請假通知重新開啟。'
+            '此為舊版或無效審核連結，請人事核對假單後重新發送通知。'
           );
           return;
         }
@@ -327,12 +345,15 @@
           '正在讀取假單…';
 
         await loadDetail();
+
       } catch (error) {
-        showFatal('開啟審核頁失敗：' + error.message);
+        showFatal(
+          '開啟審核頁失敗：' + error.message
+        );
       }
     }
 
-    // ===== 讀取假單 =====
+    // ===== 依 ID 讀取假單 =====
     async function loadDetail() {
       try {
         const data = await requestJson(GAS_URL, {
@@ -345,15 +366,40 @@
           body: JSON.stringify({
             action: 'getApprovalDetail',
             userId: LINE_USER_ID,
-            row: ROW,
+            requestId: REQUEST_ID,
             stage: STAGE
           })
         });
 
         if (!data.success) {
-          showFatal(data.message || '讀取假單失敗。');
+          showFatal(
+            data.message || '讀取假單失敗。'
+          );
           return;
         }
+
+        // 後端回傳必須與連結指定的 ID、階段一致。
+        if (
+          data.requestId !== REQUEST_ID ||
+          Number(data.stage) !== STAGE ||
+          !data.empId ||
+          !data.empName ||
+          !data.leaveType ||
+          !data.startDate ||
+          !data.endDate ||
+          !data.startTime ||
+          !data.endTime
+        ) {
+          showFatal(
+            '收到的假單資料不完整或與連結不符，已停止審核，請人事確認部署版本。'
+          );
+          return;
+        }
+
+        document.getElementById('requestIdText').textContent =
+          data.requestId;
+
+        CAN_REVIEW = data.canReview === true;
 
         document.getElementById('loading')
           .classList.add('hidden');
@@ -378,8 +424,13 @@
         document.getElementById('reason').textContent =
           data.reason || '－';
 
-        enableButtons();
+        if (CAN_REVIEW) {
+          enableButtons();
+        } else {
+          disableButtons();
+        }
 
+        // 已完成的階段不可再次操作。
         if (data.processed) {
           disableButtons();
 
@@ -395,22 +446,30 @@
           return;
         }
 
-        if (data.currentStatus !== '審核中') {
+        if (!CAN_REVIEW) {
           disableButtons();
 
           showStatus(
-            '目前尚未輪到此階段審核',
+            data.blockedMessage ||
+              '目前尚未輪到此階段審核',
             'processed'
           );
         }
+
       } catch (error) {
-        showFatal('讀取資料失敗：' + error.message);
+        showFatal(
+          '讀取資料失敗：' + error.message
+        );
       }
     }
 
-    // ===== 送出審核 =====
+    // ===== 依同一 ID 送出審核 =====
     async function submitReview(action) {
-      if (submitting) {
+      if (
+        submitting ||
+        !CAN_REVIEW ||
+        !['approve', 'reject'].includes(action)
+      ) {
         return;
       }
 
@@ -435,7 +494,7 @@
           body: JSON.stringify({
             action: 'submitApprovalV2',
             userId: LINE_USER_ID,
-            row: ROW,
+            requestId: REQUEST_ID,
             stage: STAGE,
             reviewAction: action
           })
@@ -454,13 +513,43 @@
             );
           }
 
-          // 完成後保持按鈕停用。
+          CAN_REVIEW = false;
+
+          if (data.warning) {
+            showStatus(
+              '審核已完成。' + data.warning,
+              'processing'
+            );
+          }
+
           submitting = true;
           return;
         }
 
+        // 寫入結果不明，保持停用並重新查詢。
+        if (data.uncertain) {
+          CAN_REVIEW = false;
+
+          showStatus(
+            data.message ||
+              '審核結果待確認，請重新載入。',
+            'error'
+          );
+
+          document.getElementById('retryBtn')
+            .classList.remove('hidden');
+
+          return;
+        }
+
         if (data.alreadyProcessed) {
-          showStatus(data.message, 'processed');
+          CAN_REVIEW = false;
+
+          showStatus(
+            data.message,
+            'processed'
+          );
+
           submitting = true;
           return;
         }
@@ -470,8 +559,11 @@
           'error'
         );
 
-        enableButtons();
-        submitting = false;
+        CAN_REVIEW = false;
+
+        document.getElementById('retryBtn')
+          .classList.remove('hidden');
+
       } catch (error) {
         showStatus(
           '⚠️ 未能確認審核結果，請重新載入查看最新狀態。請勿連續送出。',
@@ -481,8 +573,7 @@
         document.getElementById('retryBtn')
           .classList.remove('hidden');
 
-        // 連線中斷時，後端仍可能已完成寫入。
-        // 保持停用，重新載入確認狀態後再操作。
+        // 逾時不代表後端沒有寫入，不能直接重送。
         submitting = true;
       }
     }
@@ -507,6 +598,8 @@
     }
 
     function showFatal(message) {
+      CAN_REVIEW = false;
+
       const loading = document.getElementById('loading');
 
       loading.classList.remove('hidden');
@@ -524,7 +617,7 @@
       disableButtons();
     }
 
-    // ===== 非同步作業逾時處理 =====
+    // ===== 非同步逾時處理 =====
     function withTimeout(promise, ms, message) {
       let timer;
 
@@ -558,7 +651,9 @@
           if (window.liff) {
             resolve();
           } else {
-            reject(new Error('LINE 元件無法使用。'));
+            reject(new Error(
+              'LINE 元件無法使用。'
+            ));
           }
         };
 
@@ -578,7 +673,7 @@
       );
     }
 
-    // ===== 後端請求：包含逾時與回傳檢查 =====
+    // ===== 後端請求與回傳檢查 =====
     async function requestJson(url, options) {
       const controller = new AbortController();
 
@@ -625,6 +720,7 @@
         }
 
         return data;
+
       } catch (error) {
         if (error.name === 'AbortError') {
           throw new Error(
@@ -633,6 +729,7 @@
         }
 
         throw error;
+
       } finally {
         clearTimeout(timer);
       }
