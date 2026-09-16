@@ -29,7 +29,7 @@ summary{font-size:18px;min-height:48px;padding:12px 0}.foot{font-size:16px;line-
 
 [hidden]{display:none!important}.refresh{min-height:48px;padding:8px 18px;border:1px solid #073b7a;color:#073b7a;background:white;border-radius:8px;font:inherit}.times b{overflow-wrap:anywhere}.detail{overflow-wrap:anywhere}</style></head><body>
 <header><div class="brand">宏升工業社</div><div class="identity"><div><h1>我的出勤與加班</h1><p id="person">正在確認 LINE 身分…</p></div><div style="display:grid;gap:12px"><button id="hrButton" class="refresh" hidden>人事專用</button><span class="pill">個人專屬查詢</span></div></div></header>
-<main><p id="status" role="status" aria-live="polite">讀取中，請稍候。</p><button id="retry" class="refresh" hidden>重新讀取</button><section id="hrPanel" class="card" hidden><label for="employee" style="display:block;margin-bottom:10px">選擇要查閱的員工</label><select id="employee" style="max-width:100%;font-size:20px;min-height:48px"></select><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="viewEmployee" class="refresh">查看員工資料</button><button id="backOwn" class="refresh">返回我的資料</button></div></section><p id="viewBanner" class="reason" role="status" hidden></p><div id="data" hidden><div class="month"><div><span style="display:block">本月紀錄</span><strong id="month"></strong></div><div class="updated" id="updated"></div><button id="refresh" class="refresh">重新整理</button></div>
+<main><p id="status" role="status" aria-live="polite">讀取中，請稍候。</p><button id="retry" class="refresh" hidden>重新讀取</button><section id="hrPanel" class="card" hidden><div id="hourAudit" aria-live="polite"></div><label for="employee" style="display:block;margin-bottom:10px">選擇要查閱的員工</label><select id="employee" style="max-width:100%;font-size:20px;min-height:48px"></select><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="viewEmployee" class="refresh">查看員工資料</button><button id="backOwn" class="refresh">返回我的資料</button></div></section><p id="viewBanner" class="reason" role="status" hidden></p><div id="data" hidden><div class="month"><div><span style="display:block">本月紀錄</span><strong id="month"></strong></div><div class="updated" id="updated"></div><button id="refresh" class="refresh">重新整理</button></div>
 <div class="stats"><article class="stat"><span>平日出勤天數</span><strong id="days"></strong><p>依有上下班紀錄的日期計算</p></article><article class="stat"><span>加班總時數</span><strong id="hours"></strong><p>加班＋補登時數，含晚回來</p></article><article class="stat"><span>未休息補登</span><strong id="makeups"></strong><p>依補登專區紀錄列示</p></article></div>
 <nav class="tabs" role="tablist" aria-label="出勤紀錄類別"><button id="tab-work" role="tab" aria-controls="panel" data-tab="work" aria-selected="true">正常出勤</button><button id="tab-overtime" role="tab" aria-controls="panel" data-tab="overtime" aria-selected="false">加班</button><button id="tab-makeup" role="tab" aria-controls="panel" data-tab="makeup" aria-selected="false">補登</button></nav><section id="panel" role="tabpanel" tabindex="0" aria-labelledby="tab-work"></section></div><p class="foot">時數及出勤狀態依人事資料顯示。<br>資料如有疑問，請聯絡人事協助確認。</p></main>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script>'use strict';
@@ -68,6 +68,13 @@ function render(){
  }).join(''):'<div class="empty"><b>本月尚無紀錄</b>此分類目前沒有可顯示的資料。</div>';
  $('panel').innerHTML=html;
 }
+function renderHourAudit(audit){
+ const box=$('hourAudit');
+ if(!audit||!Array.isArray(audit.employees)){box.textContent='待確認清單尚未載入，請確認後端已更新部署。';return;}
+ const n=audit.employees.length;
+ box.innerHTML='<h2 style="font-size:24px">時數待確認員工 · '+n+' 人</h2><p>檢查本月加班與補登時數。點選員工可直接查看明細。</p>'+(n?audit.employees.map(e=>'<article class="card"><button class="refresh" data-audit-id="'+esc(e.id)+'" data-audit-view="'+esc(e.issues[0].view)+'">查看 '+esc(e.id+' · '+e.name)+'</button><p>'+e.issues.length+' 筆待確認</p>'+e.issues.map(i=>'<p class="reason">'+esc(i.date)+' · '+esc(i.sheet)+' 第 '+i.row+' 列<br>'+esc(i.reason)+'：'+esc(i.value||'（空白）')+'</p>').join('')+'</article>').join(''):'<p>本月未發現會造成總時數「待確認」的時數欄位。</p>')+(audit.invalidDates?'<p class="reason">另有 '+audit.invalidDates+' 筆日期無法辨識，無法判斷月份，未列入本次清單；請檢查來源表日期。</p>':'');
+ box.querySelectorAll('[data-audit-id]').forEach(b=>b.onclick=()=>{if(busy)return;requestedEmployee=b.dataset.auditId;current=b.dataset.auditView;load();});
+}
 async function load(){
  if(busy)return;busy=true;const target=requestedEmployee;records=null;$('hrButton').hidden=true;$('hrPanel').hidden=true;$('viewBanner').hidden=true;$('data').hidden=true;$('retry').hidden=true;$('status').hidden=false;$('status').textContent='正在讀取本月資料…';$('person').textContent='正在確認 LINE 身分…';
  try{
@@ -87,6 +94,7 @@ async function load(){
  $('viewBanner').hidden=!(result.isHR&&hrMode);
  $('viewBanner').textContent='人事查閱中：'+result.name+'（'+result.empId+'）・唯讀';
  if(result.isHR){
+   renderHourAudit(result.hourAudit);
    $('employee').innerHTML='<option value="">請選擇員工</option>'+(result.employees||[]).map(e=>'<option value="'+esc(e.id)+'">'+esc(e.id+' · '+e.name)+'</option>').join('');
    $('employee').value=target;
  }
