@@ -782,13 +782,15 @@ function v8UpdateQueuePanel(message, level) {
   if (level === 'error' || failed > 0) panel.classList.add('error');
   else if (level === 'warning' || pending > 0) panel.classList.add('warning');
 
-  var text = message || '背景同步中';
+  var text = escapeText(message || (pending ? '等待確認打卡紀錄' : '有紀錄需要核對'));
   text += '<br>待同步：<b>' + pending + '</b> 筆';
   if (failed > 0) {
     text += '｜需處理：<b>' + failed + '</b> 筆' +
-      '<button type="button" onclick="retryFailedPunches()">重新排隊</button>';
+      '';
   }
 
+  text += '<br><button type="button" onclick="retryFailedPunches()">立即核對同步</button>' +
+    '<button type="button" onclick="v8ShowSyncDetails()">查看明細</button>';
   panel.innerHTML = text;
 }
 
@@ -816,39 +818,6 @@ function v8IsRetryableServerError(data) {
   if (!data || data.status === 'success') return false;
   var msg = String(data.message || '');
   return /系統忙碌|多人同時打卡|稍等|逾時|timeout|temporar/i.test(msg);
-}
-
-function v8MoveToFailed(item, message, data) {
-  var failed = v8GetFailedQueue();
-  item.failedAt = Date.now();
-  item.lastError = String(message || '背景同步失敗');
-  if (data && data.message) item.serverMessage = String(data.message);
-  failed.push(item);
-  v8SetFailedQueue(failed.slice(-100));
-  v8UpdateQueuePanel('⚠️ 有打卡紀錄需要管理員確認：' + item.id, 'error');
-}
-
-function retryFailedPunches() {
-  var failed = v8GetFailedQueue();
-  if (!failed.length) {
-    v8UpdateQueuePanel('', '');
-    return;
-  }
-
-  var pending = v8GetPendingQueue();
-  failed.forEach(function (item) {
-    item.retryCount = Number(item.retryCount || 0);
-    delete item.failedAt;
-    delete item.lastError;
-    delete item.serverMessage;
-    pending.push(item);
-  });
-
-  if (pending.length > V8_QUEUE_MAX) pending = pending.slice(-V8_QUEUE_MAX);
-  v8SetPendingQueue(pending);
-  v8SetFailedQueue([]);
-  v8UpdateQueuePanel('🔄 已重新排入背景同步', 'warning');
-  processPunchQueue();
 }
 
 function v8EnqueueLivePunch(id, ts, base) {
@@ -894,114 +863,211 @@ function v8BuildQueuedPunchUrl(item) {
     + (PERF_DEBUG_MODE ? '&debug=1' : '');
 }
 
-function v8ScheduleQueueRetry(delayMs) {
-  if (v8QueueRetryTimer) clearTimeout(v8QueueRetryTimer);
-  v8QueueRetryTimer = setTimeout(function () {
-    v8QueueRetryTimer = null;
-    processPunchQueue();
-  }, Number(delayMs) || 3000);
+// ====== 同步修正版：保留原本 localStorage key，承接既有待同步紀錄 ======
+var V8_SYNC_TIMEOUT_MS = 45000;
+var v8SyncPaused = false;
+var v8RecheckRequested = true;
+var v8CheckedFailed = {};
+
+function v8FetchJsonWithTimeout(url) {
+  var controller = new AbortController();
+  var timer;
+  var timeout = new Promise(function (_, reject) {
+    timer = setTimeout(function () {
+      controller.abort();
+      reject(new Error('回覆逾時；尚未確認是否已寫入'));
+    }, V8_SYNC_TIMEOUT_MS);
+  });
+  var request = fetch(url, { cache: 'no-store', signal: controller.signal })
+    .then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json().catch(function () {
+        throw new Error('後端未回傳有效資料，請確認部署版本與存取權限');
+      });
+    });
+  return Promise.race([request, timeout]).finally(function () { clearTimeout(timer); });
+}
+
+function v8RequireStorage(ok) {
+  if (!ok) {
+    v8SyncPaused = true;
+    throw new Error('無法儲存同步狀態，請保留此頁並檢查瀏覽器儲存空間');
+  }
+}
+
+function v8CheckReceipt(item) {
+  if (!item.requestId || !item.id || !Number.isFinite(Number(item.ts))) {
+    return Promise.resolve({ state: 'review', message: '識別資料不完整，請人工核對' });
+  }
+  var base = item.base || FALLBACK_SCRIPT_URL;
+  var url = base + (base.indexOf('?') < 0 ? '?' : '&') + 'mode=punch_status'
+    + '&receipt=' + encodeURIComponent(item.requestId)
+    + '&employeeId=' + encodeURIComponent(item.id)
+    + '&scanTs=' + encodeURIComponent(item.ts);
+  return v8FetchJsonWithTimeout(url).then(function (data) {
+    if (!data || data.syncVersion !== 2 || data.requestId !== item.requestId ||
+        data.id !== item.id || Number(data.ts) !== Number(item.ts)) {
+      throw new Error('後端版本或回覆不符，請確認已部署同步修正版');
+    }
+    return data;
+  });
+}
+
+function v8RemoveConfirmed(item) {
+  // 按 requestId 移除，不能直接 shift() 刪除可能已改變的第一筆。
+  v8RequireStorage(v8SetPendingQueue(v8GetPendingQueue().filter(function (x) {
+    return x.requestId !== item.requestId;
+  })));
+  v8RequireStorage(v8SetFailedQueue(v8GetFailedQueue().filter(function (x) {
+    return x.requestId !== item.requestId;
+  })));
+  v8ShowSynced(item, null);
+}
+
+function v8MarkForReview(item, message) {
+  var failed = v8GetFailedQueue();
+  var updated = Object.assign({}, item, { lastError: message, failedAt: Date.now() });
+  var index = failed.findIndex(function (x) { return x.requestId === item.requestId; });
+  if (index < 0) failed.push(updated); else failed[index] = updated;
+  // 先保存待核對紀錄，再從待同步移除；儲存失敗不丟資料。
+  v8RequireStorage(v8SetFailedQueue(failed));
+  v8RequireStorage(v8SetPendingQueue(v8GetPendingQueue().filter(function (x) {
+    return x.requestId !== item.requestId;
+  })));
+  v8CheckedFailed[item.requestId] = true;
+  v8UpdateQueuePanel('⚠️ ' + item.id + '：' + message, 'error');
+}
+
+function v8DeferItem(item, message) {
+  var queue = v8GetPendingQueue();
+  var index = queue.findIndex(function (x) { return x.requestId === item.requestId; });
+  if (index >= 0) {
+    queue[index].retryCount = Number(queue[index].retryCount || 0) + 1;
+    queue[index].lastNetworkError = message;
+    queue[index].nextAttemptAt = Date.now() + Math.min(60000, 5000 * queue[index].retryCount);
+    v8RequireStorage(v8SetPendingQueue(queue));
+  }
+  v8UpdateQueuePanel('⏳ ' + item.id + '：' + message, 'warning');
+}
+
+function retryFailedPunches() {
+  // 此按鈕現在只重新核對，不把已失敗的舊打卡直接重送。
+  v8RecheckRequested = true;
+  v8CheckedFailed = {};
+  var queue = v8GetPendingQueue();
+  queue.forEach(function (item) { delete item.nextAttemptAt; });
+  if (!v8SetPendingQueue(queue)) {
+    v8UpdateQueuePanel('無法儲存同步狀態，請保留此頁並檢查瀏覽器儲存空間', 'error');
+    return;
+  }
+  v8SyncPaused = false;
+  v8UpdateQueuePanel('🔎 正在核對既有打卡紀錄', 'warning');
+  processPunchQueue();
+}
+
+function v8ShowSyncDetails() {
+  var lines = [];
+  [['待同步', v8GetPendingQueue()], ['需核對', v8GetFailedQueue()]].forEach(function (group) {
+    group[1].forEach(function (item) {
+      lines.push(group[0] + '｜' + item.id + '｜' + new Date(Number(item.ts)).toLocaleString('zh-TW')
+        + '\n' + (item.lastError || item.lastNetworkError || '等待核對'));
+    });
+  });
+  alert(lines.length ? lines.join('\n\n') : '目前沒有待同步紀錄');
+}
+
+async function v8RunSyncWorker() {
+  if (navigator.onLine === false) {
+    v8UpdateQueuePanel('🌐 網路中斷，紀錄已保留，恢復後自動核對', 'warning');
+    return;
+  }
+  var pending = v8GetPendingQueue();
+  var item = pending[0];
+  var checkOnly = false;
+  if (item && Number(item.nextAttemptAt || 0) > Date.now()) return;
+  if (!item && v8RecheckRequested) {
+    item = v8GetFailedQueue().find(function (x) { return !v8CheckedFailed[x.requestId]; });
+    checkOnly = true;
+    if (item) v8CheckedFailed[item.requestId] = true;
+    else v8RecheckRequested = false;
+  }
+  if (!item) { v8UpdateQueuePanel('', ''); return; }
+  try {
+    v8UpdateQueuePanel('🔎 正在核對 ' + item.id + ' 的打卡紀錄', 'warning');
+    var evidence = await v8CheckReceipt(item);
+    if (evidence.state === 'confirmed') {
+      v8RemoveConfirmed(item);
+      return;
+    }
+    if (evidence.state === 'review' || (evidence.state === 'not_found' &&
+        (checkOnly || evidence.canRetry !== true))) {
+      v8MarkForReview(item, evidence.message || '尚未確認完成，請人工核對');
+      return;
+    }
+    if (evidence.state !== 'not_found') {
+      throw new Error(evidence.message || '暫時無法核對，稍後自動再試');
+    }
+    // 只有後端確認查無紀錄、允許當日重送，才沿用原 requestId 送出。
+    var data = await v8FetchJsonWithTimeout(v8BuildQueuedPunchUrl(item) + '&syncProtocol=2');
+    if (data && data.status === 'success' && data.requestId === item.requestId) {
+      v8RemoveConfirmed(item);
+    } else if (v8IsRetryableServerError(data)) {
+      v8DeferItem(item, data.message || '系統忙碌，稍後核對');
+    } else if (data && data.status === 'error') {
+      // 下次手動核對可確認是否其實已寫入；不把錯誤當成功。
+      v8MarkForReview(item, data.message || '後端未確認完成，請人工核對');
+    } else {
+      throw new Error('未收到有效完成回覆，下次會先核對再決定是否重送');
+    }
+  } catch (error) {
+    var message = String(error && error.message || error);
+    if (v8SyncPaused) {
+      v8UpdateQueuePanel(message, 'error');
+    } else if (checkOnly) {
+      v8UpdateQueuePanel('⚠️ 核對未完成：' + message + '；紀錄已保留', 'error');
+    } else {
+      try { v8DeferItem(item, message); }
+      catch (storageError) { v8UpdateQueuePanel(String(storageError.message), 'error'); }
+    }
+  }
 }
 
 function processPunchQueue() {
-  if (v8QueueProcessing) return;
-
-  var queue = v8GetPendingQueue();
-  if (!queue.length) {
-    v8UpdateQueuePanel('', '');
-    return;
-  }
-
-  if (navigator.onLine === false) {
-    v8UpdateQueuePanel('🌐 網路暫時中斷，打卡已保存在本機，恢復後自動重送', 'warning');
-    v8ScheduleQueueRetry(4000);
-    return;
-  }
-
-  var item = queue[0];
+  if (v8QueueProcessing || v8SyncPaused) return;
   v8QueueProcessing = true;
-  var requestStarted = performance.now();
-
-  fetch(v8BuildQueuedPunchUrl(item), { cache: 'no-store' })
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function (data) {
-      var latest = v8GetPendingQueue();
-      if (!latest.length || latest[0].requestId !== item.requestId) {
-        // 佇列被其他流程更新時，不自行刪錯資料；下一輪重新讀。
-        return;
-      }
-
-      if (data && data.status === 'success') {
-        latest.shift();
-        v8SetPendingQueue(latest);
-        v8ShowSynced(item, data);
-
-        if (PERF_DEBUG_MODE) {
-          console.log('V8 queue perf', {
-            requestId: item.requestId,
-            totalMs: performance.now() - requestStarted,
-            server: data.perf || {},
-            duplicateRequest: data.duplicateRequest === true
-          });
-        }
-        return;
-      }
-
-      if (v8IsRetryableServerError(data)) {
-        item.retryCount = Number(item.retryCount || 0) + 1;
-        latest[0] = item;
-        v8SetPendingQueue(latest);
-        v8UpdateQueuePanel('⏳ Google 暫時忙碌，這筆會自動重送：' + item.id, 'warning');
-        v8ScheduleQueueRetry(Math.min(10000, 2000 + item.retryCount * 1000));
-        return;
-      }
-
-      // 非暫時性錯誤，例如短時間重複掃描／已打過下班／查無員工。
-      // 從待同步移出，另存「需處理」，避免永遠卡住後面其他人的打卡。
-      latest.shift();
-      v8SetPendingQueue(latest);
-      v8MoveToFailed(item, data && data.message ? data.message : '無法寫入', data);
-    })
-    .catch(function (err) {
-      var latest = v8GetPendingQueue();
-      if (latest.length && latest[0].requestId === item.requestId) {
-        item.retryCount = Number(item.retryCount || 0) + 1;
-        item.lastNetworkError = String(err && err.message ? err.message : err);
-        latest[0] = item;
-        v8SetPendingQueue(latest);
-      }
-      v8UpdateQueuePanel('🌐 尚未同步，已保存在本機並會自動重送：' + item.id, 'warning');
-      v8ScheduleQueueRetry(Math.min(12000, 2500 + item.retryCount * 1200));
-    })
-    .finally(function () {
-      v8QueueProcessing = false;
-      // 若前一筆已完成，立刻處理下一筆；若剛安排重試，process 會看到同一筆並再次送出，
-      // 因此只有在沒有 retry timer 時才立即續跑。
-      if (!v8QueueRetryTimer) {
-        setTimeout(processPunchQueue, 20);
-      }
-    });
+  var acquired = !navigator.locks;
+  // 支援 Web Locks 的瀏覽器可避免兩個分頁同時送出同一佇列。
+  var operation = navigator.locks
+    ? navigator.locks.request('punch-card-sync-v2', { ifAvailable: true }, function (lock) {
+        acquired = !!lock;
+        return lock ? v8RunSyncWorker() : undefined;
+      })
+    : v8RunSyncWorker();
+  Promise.resolve(operation).catch(function (error) {
+    console.error(error);
+    v8SyncPaused = true;
+    v8UpdateQueuePanel('同步暫停，紀錄已保留：' + error.message, 'error');
+  }).finally(function () {
+    v8QueueProcessing = false;
+    var next = v8GetPendingQueue()[0];
+    if (acquired && !v8SyncPaused && navigator.onLine !== false &&
+        ((next && Number(next.nextAttemptAt || 0) <= Date.now()) ||
+         (!next && v8RecheckRequested))) {
+      setTimeout(processPunchQueue, 100);
+    }
+  });
 }
 
-window.addEventListener('online', function () {
-  v8UpdateQueuePanel('🌐 網路已恢復，正在重新同步', 'warning');
-  processPunchQueue();
-});
-
-setInterval(function () {
-  if (v8GetPendingQueue().length && !v8QueueProcessing) processPunchQueue();
-}, 5000);
-
-setTimeout(function () {
-  var pending = v8GetPendingQueue().length;
-  var failed = v8GetFailedQueue().length;
-  if (pending || failed) {
-    v8UpdateQueuePanel(pending ? '🔄 發現尚未同步的打卡，正在處理' : '⚠️ 有先前失敗紀錄需要確認', pending ? 'warning' : 'error');
+window.addEventListener('online', retryFailedPunches);
+window.addEventListener('storage', function (event) {
+  if (event.key === V8_QUEUE_KEY || event.key === V8_FAILED_KEY) {
+    v8UpdateQueuePanel('', '');
+    processPunchQueue();
   }
-  processPunchQueue();
-}, 500);
+});
+setInterval(processPunchQueue, 5000);
+setTimeout(processPunchQueue, 500);
+
 
 function parseScan(rawText) {
 var text = rawText.trim();
