@@ -355,6 +355,12 @@ margin-bottom: 4px;
   cursor: pointer;
 }
 
+/* 同步資訊放在頁面底部，與員工掃描提示分開。 */
+.queue-status-panel { margin-top: auto; margin-bottom: 0; position: relative; top: 20px; font-size: 13px; }
+.sync-panel-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+.sync-panel-note { margin-top: 5px; line-height: 1.7; }
+.sync-panel-detail { margin-top: 8px; text-align: left; overflow-wrap: anywhere; }
+.sync-panel-detail summary { cursor: pointer; text-align: center; }
 </style>
 </head>
 <body>
@@ -377,12 +383,14 @@ margin-bottom: 4px;
   💡 XB-R60 掃描器已啟用輸入法防呆，可直接感應員工 QR Code
 </div>
 <div class="status" id="status-text">📷 請感應員工 QR Code</div>
-<div id="queueStatusPanel" class="queue-status-panel" aria-live="polite"></div>
 
 <a id="leaveRequestBtn" href="check-leave-form.html">📝 請假申請 Xin nghi phep</a>
 
 <!-- ====== 【新增】獨立補登入口：不會觸發正式打卡，適合「還要繼續加班但想先標記下午未休息」的情況 ====== -->
 <button id="standaloneMakeupBtn" type="button" onclick="openStandaloneMakeup()">🛠️ 補登（不影響今天打卡）</button>
+
+<!-- 同步狀態置於操作按鈕下方 -->
+<div id="queueStatusPanel" class="queue-status-panel" aria-live="polite"></div>
 
 <div class="overlay" id="resultOverlay">
 <div class="card" id="resultCard"></div>
@@ -767,37 +775,45 @@ setInterval(v83RefreshDayInfo, 30 * 60 * 1000);
 function v8UpdateQueuePanel(message, level) {
   var panel = document.getElementById('queueStatusPanel');
   if (!panel) return;
-
   var pending = v8GetPendingQueue().length;
   var failed = v8GetFailedQueue().length;
-
-  panel.classList.remove('show', 'warning', 'error');
-
-  if (!message && pending === 0 && failed === 0) {
-    panel.innerHTML = '';
-    return;
-  }
-
+  var detailOpen = panel.querySelector('details');
+  var wasOpen = detailOpen && detailOpen.open;
+  panel.classList.remove('warning', 'error');
   panel.classList.add('show');
-  if (level === 'error' || failed > 0) panel.classList.add('error');
-  else if (level === 'warning' || pending > 0) panel.classList.add('warning');
-
-  var text = escapeText(message || (pending ? '等待確認打卡紀錄' : '有紀錄需要核對'));
-  text += '<br>待同步：<b>' + pending + '</b> 筆';
-  if (failed > 0) {
-    text += '｜需處理：<b>' + failed + '</b> 筆' +
-      '';
+  var title;
+  var note;
+  if (failed > 0 || level === 'error') {
+    panel.classList.add('error');
+    title = '⚠️ 有紀錄需要管理員核對';
+    note = '等待確認存檔：' + pending + ' 筆｜需人工核對：' + failed + ' 筆' +
+      '<br>請管理員查看明細，確認後再決定是否需要補登。';
+  } else if (pending > 0) {
+    if (navigator.onLine === false) panel.classList.add('warning');
+    title = navigator.onLine === false ? '🌐 掃描紀錄已保留，等待網路恢復' : '🔄 已接收，正在確認存檔';
+    note = '等待確認存檔：' + pending + ' 筆' +
+      '<br>已收到的掃描不必重掃；請保持此頁開啟，下一位可繼續掃描。' +
+      '<br>尚未確認存檔，不代表打卡失敗。';
+  } else {
+    title = '本機沒有待確認的紀錄';
+    note = '可繼續感應員工 QR Code。';
   }
-
-  text += '<br><button type="button" onclick="retryFailedPunches()">立即核對同步</button>' +
-    '<button type="button" onclick="v8ShowSyncDetails()">查看明細</button>';
+  var text = '<div class="sync-panel-title">' + title + '</div>' +
+    '<div class="sync-panel-note">' + note + '</div>';
+  if (message || pending || failed) {
+    text += '<details class="sync-panel-detail"' + (wasOpen ? ' open' : '') + '>' +
+      '<summary>管理員：查看同步狀態</summary>' +
+      '<p>' + escapeText(message || '請查看明細確認各筆狀態') + '</p>' +
+      '<button type="button" onclick="retryFailedPunches()">立即核對同步</button>' +
+      '<button type="button" onclick="v8ShowSyncDetails()">查看明細</button></details>';
+  }
   panel.innerHTML = text;
 }
 
 function v8ShowAccepted(item) {
   var serial = ++v8StatusSerial;
   var name = item.name ? '｜' + item.name : '';
-  statusEl.innerText = '✅ 已接收 ' + item.id + name + '，請下一位直接掃描';
+  statusEl.innerText = '📥 已接收 ' + item.id + name + '，正在確認存檔；下一位請掃描';
   v8UpdateQueuePanel('⚡ 正在背景寫入出勤紀錄', 'warning');
 
   setTimeout(function () {
@@ -967,13 +983,13 @@ function retryFailedPunches() {
 
 function v8ShowSyncDetails() {
   var lines = [];
-  [['待同步', v8GetPendingQueue()], ['需核對', v8GetFailedQueue()]].forEach(function (group) {
+  [['等待確認存檔', v8GetPendingQueue()], ['需核對', v8GetFailedQueue()]].forEach(function (group) {
     group[1].forEach(function (item) {
       lines.push(group[0] + '｜' + item.id + '｜' + new Date(Number(item.ts)).toLocaleString('zh-TW')
         + '\n' + (item.lastError || item.lastNetworkError || '等待核對'));
     });
   });
-  alert(lines.length ? lines.join('\n\n') : '目前沒有待同步紀錄');
+  alert(lines.length ? lines.join('\n\n') : '目前沒有待確認紀錄');
 }
 
 async function v8RunSyncWorker() {
