@@ -3,10 +3,10 @@
 <style>
 :root{--blue:#1f4e79;--ink:#233449;--muted:#607286;--border:#d8e1ea;--orange:#d6883c}*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 "DFKai-SB","標楷體",serif}header{background:var(--blue);color:#fff;padding:25px max(24px,calc((100vw - 1120px)/2));border-bottom:4px solid var(--orange)}header strong{font-size:26px}header p{margin:4px 0;opacity:.85}main{max-width:1160px;margin:24px auto;padding:0 20px 60px}h1{font-size:23px;margin:0 0 10px}h2{font-size:20px;margin:0 0 12px}h3{font-size:18px;margin:0 0 8px}p{margin:8px 0 14px}section,.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:24px;margin:18px 0}button,.link{font:inherit;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:6px;padding:9px 16px;text-decoration:none;display:inline-block}button.secondary{background:#fff;color:var(--blue)}button.danger{background:#fff;color:#9b3933;border-color:#bd6d65}button:disabled{opacity:.45;cursor:wait}input,select,textarea{font:inherit;border:1px solid #a5b5c4;border-radius:5px;padding:9px;width:100%;max-width:100%;background:#fff;color:var(--ink)}input[type=checkbox]{width:20px;height:20px;flex-shrink:0}label{display:block;font-weight:600}.muted,small{color:var(--muted);font-size:14px}.row,.toolbar,.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.toolbar{justify-content:space-between}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.wide{grid-column:1/-1}.notice{background:#fff4df;border-left:4px solid var(--orange);padding:14px 18px;margin:16px 0}.tabs{display:flex;gap:12px;margin:22px 0}.tabs button{flex:1;background:#fff;color:var(--blue);padding:16px}.tabs button[aria-selected=true]{background:var(--blue);color:#fff}.tabs small{display:block;color:inherit;opacity:.8}.person{display:flex;align-items:center;gap:8px;font-weight:400;background:#f5f8fb;border-radius:5px;padding:9px}.people{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.check{display:flex;align-items:flex-start;gap:10px;font-weight:400}.badge{display:inline-block;font-size:14px;background:#eaf1f8;color:var(--blue);padding:3px 10px;border-radius:4px}.no{background:#fdeee9;color:#a04234}article{border-top:1px solid var(--border);padding:22px 0}article:first-child{border-top:0}.actions{margin:14px 0}.detail,pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}details{margin-top:14px;font-size:14px}summary{cursor:pointer;color:var(--blue)}.history{border-left:3px solid var(--border);padding-left:14px;margin:14px 0}.id{font-size:12px;overflow-wrap:anywhere;color:var(--muted)}#month{width:160px}#msg{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--blue);min-height:28px}#msg.error{color:#a33129}[hidden]{display:none!important}.agreement{max-height:230px;overflow:auto;background:#f4f7fa;padding:18px;border-radius:6px}.formActions{margin-top:20px}.empty{padding:24px 0;color:var(--muted)}@media(max-width:700px){main{padding:0 14px 40px}section{padding:18px}.grid{grid-template-columns:1fr 1fr}.people{grid-template-columns:1fr 1fr}.tabs{gap:8px}.tabs button{padding:12px 6px}header strong{font-size:22px}.actions button{flex:1 1 135px}}@media(max-width:420px){.people{grid-template-columns:1fr}.toolbar .row{gap:7px}button{padding:9px 12px}}
 input::-webkit-datetime-edit{font-family:"DFKai-SB","標楷體",serif}option{font-family:"DFKai-SB","標楷體",serif}
-</style></head><body>
+</style><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script></head><body>
 <header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main>
 <div id="msg" role="status" aria-live="polite"></div>
-<section id="login"><h1>使用本人 LINE 帳號登入</h1><p>依員工設定顯示個人及主管權限。首次登入請由人事綁定員工編號。</p><button id="prepareLogin">準備 LINE 登入</button><a id="loginLink" class="link" hidden>使用 LINE 登入</a><p class="muted">請在同一瀏覽器完成登入。若 LINE 內建瀏覽器無法完成，請改用 Chrome 或 Safari。</p></section>
+<section id="login"><h1>使用本人 LINE 帳號登入</h1><p>依員工設定顯示個人及主管權限。系統依 LINE 員工綁定資料辨識身分。</p><button id="prepareLogin">重新確認 LINE 身分</button><a id="loginLink" class="link" hidden>使用 LINE 登入</a><p class="muted">請從加班專用 LIFF 連結開啟，系統會自動確認您的 LINE 身分。</p></section>
 <div id="app" hidden>
 <div class="toolbar"><div><strong id="who"></strong><div id="roleText" class="muted"></div></div><div class="row"><span id="currentMonth"></span><input id="month" type="hidden"><button id="reload" class="secondary">重新整理</button><button id="logout" class="secondary">登出</button></div></div>
 <div id="testNotice" class="notice" hidden>測試模式：資料會儲存，LINE 訊息發送尚未開啟。</div>
@@ -117,36 +117,20 @@ async function openPunch(r){const data=await rpc('getPunchOvertime',token,r.id);
 $('closePunch').onclick=()=>{$('punchFormSection').hidden=true;};
 $('punchForm').onsubmit=e=>{e.preventDefault();run(async()=>{const d=punchEditing,r=d.pending;const result=await rpc('submitPunchOvertime',token,r.id,{guard:r.target,existingId:d.existing?.id||'',start:$('punchStart').value,end:$('punchEnd').value,dayType:$('punchDay').value,work:$('punchWork').value,correction:$('punchCorrection').value,agreed:$('punchAgree').checked,agreementVersion:d.agreement.version});$('punchFormSection').hidden=true;activeTarget=null;$('targetNotice').hidden=true;await refresh();msg('已送出實際加班確認，原打卡紀錄未改動。申請ID：'+result.id);});};
 
-const OT_LOGIN_TTL=10*60*1000;
-function rememberLogin(state,secret){
- const raw=JSON.stringify({state,secret,expires:Date.now()+OT_LOGIN_TTL});
- let saved=false;
- for(const name of ['sessionStorage','localStorage']){try{window[name].setItem('ot:flow:'+state,raw);saved=true;}catch(e){}}
- if(!saved)throw Error('瀏覽器無法儲存登入驗證，請允許網站儲存資料後重試。');
- for(const name of ['sessionStorage','localStorage']){try{const st=window[name];for(const key of Object.keys(st)){if(key.startsWith('ot:flow:')){try{if(JSON.parse(st.getItem(key)).expires<=Date.now())st.removeItem(key);}catch(e){st.removeItem(key);}}}}catch(e){}}
-}
-function recallLogin(state){
- if(!/^[0-9a-f]{64}$/.test(state||''))throw Error('登入驗證資料不正確，請重新登入。');
- for(const name of ['sessionStorage','localStorage']){try{const f=JSON.parse(window[name].getItem('ot:flow:'+state)||'null');if(f&&f.state===state&&/^[0-9a-f]{64}$/.test(f.secret)&&f.expires>Date.now()&&f.expires<=Date.now()+OT_LOGIN_TTL)return f.secret;}catch(e){}}
- throw Error('登入驗證已過期或返回不同瀏覽器。請在目前瀏覽器重新按「準備 LINE 登入」。');
-}
-function forgetLogin(state){for(const name of ['sessionStorage','localStorage']){try{window[name].removeItem('ot:flow:'+state);}catch(e){}}}
-$('prepareLogin').onclick=()=>run(async()=>{const secret=random();const reply=await rpc('beginLineLogin',secret,activeTarget);rememberLogin(reply.state,secret);$('loginLink').href=reply.url;$('loginLink').hidden=false;$('prepareLogin').hidden=true;msg('請點選「使用 LINE 登入」。');});
-$('logout').onclick=()=>run(async()=>{await rpc('logoutOvertime',token);sessionStorage.removeItem('ot:token');sessionStorage.removeItem('ot:target');token='';state=null;punchPending=[];activeTarget=null;$('app').hidden=true;$('login').hidden=false;$('prepareLogin').hidden=false;$('loginLink').hidden=true;msg('已登出。');});
-$('month').value=taipeiNow().slice(0,7);
-(async()=>{if(location.protocol==='file:'){msg('這是 GitHub Pages 版本，請上傳 GitHub 後以 HTTPS 網址開啟；本機檔案不能完成 LINE 登入。');return;}
- await run(async()=>{
- const q=new URLSearchParams(location.search),code=q.get('code'),oauthState=q.get('state');
- // 移除網址中的授權碼，避免後續連結及瀏覽器重新整理帶出登入資料。
- if(code||q.has('error'))history.replaceState(null,'',location.pathname);
- if(q.has('error'))throw Error('未完成 LINE 登入，請再試一次。');
+let liffReady=false;
+async function loginWithLiff(){
+ msg('正在確認 LINE 員工身分…');
+ if(!window.liff)throw Error('LINE 元件載入失敗，請確認網路後重新開啟。');
+ if(!liffReady){const c=await rpc('getOvertimeLiffConfig');await liff.init({liffId:c.liffId});liffReady=true;}
+ // init 完成後才讀取網址，保留 LIFF 自己處理的登入參數。
+ const q=new URLSearchParams(location.search);
  if(q.has('ot')||q.has('check')||q.has('kind')||q.has('v'))activeTarget={id:q.get('ot'),kind:q.get('kind'),version:q.get('v'),check:q.get('check')};
- if(code){
-  const loginSecret=recallLogin(oauthState);
-  const result=await rpc('completeLineLogin',oauthState,code,loginSecret);token=result.token;activeTarget=result.target;sessionStorage.setItem('ot:token',token);sessionStorage.setItem('ot:target',JSON.stringify(activeTarget));forgetLogin(oauthState);
- }else{token=sessionStorage.getItem('ot:token')||'';}
- if(token)await refresh();
- });
-})();
-
+ if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
+ const result=await rpc('loginOvertimeLiff',liff.getAccessToken(),activeTarget);
+ token=result.token;activeTarget=result.target;await refresh();
+}
+$('prepareLogin').onclick=()=>run(loginWithLiff);
+$('logout').onclick=()=>run(async()=>{await rpc('logoutOvertime',token);token='';state=null;punchPending=[];activeTarget=null;if(window.liff&&liffReady&&liff.isLoggedIn())liff.logout();$('app').hidden=true;$('login').hidden=false;$('prepareLogin').hidden=false;$('loginLink').hidden=true;msg('已登出。');});
+$('month').value=taipeiNow().slice(0,7);
+if(location.protocol==='file:'){msg('請上傳 GitHub，從加班 LIFF 連結開啟。');}else{run(loginWithLiff);}
 </script></body></html>
