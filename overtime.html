@@ -16,7 +16,7 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
  .person{width:100%}.person input{margin:0}
 }
 </style><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script></head><body>
-<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main>
+<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main><p class="muted">版本 0.7.3</p><div class="row"><button id="launchTest" type="button" hidden>進入 HS021 專用測試</button><button id="exitTest" type="button" class="secondary" hidden>返回正式模式</button></div>
 <section id="testPanel" hidden style="border:3px solid #d6883c;background:#fff4df">
 <h1>HS021 專用測試</h1><p>獨立測試紀錄，不列入正式出勤。此處的角色皆為模擬；實際操作與 LINE 收件人都是 HS021。</p>
 <label>切換測試身分<select id="testRole"><option value="HS005">廠內員工 HS005</option><option value="HS008">行政員工 HS008</option><option value="HS006">廠長 HS006</option><option value="HS017">主管 HS017</option><option value="HS021">人事 HS021</option></select></label>
@@ -78,7 +78,7 @@ async function refresh(){
  state=await rpc('listOvertime',token,$('month').value);punchPending=state.user.unlinked?[]:await rpc('listPunchOvertime',token);render();
 }
 function render(){
- $('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+(state.user.employeeId?'\n員工編號：'+state.user.employeeId:''));return;}
+ $('launchTest').hidden=testMode||state.user.id!=='HS021';$('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+(state.user.employeeId?'\n員工編號：'+state.user.employeeId:''));return;}
  $('who').textContent=state.user.id+'　'+state.user.name;$('roleText').textContent=({EMPLOYEE:'員工',MANAGER:'廠長',SUPERVISOR:'主管',HR:'人事'})[state.user.role]+'／'+state.user.dept+'／'+(state.user.category||'類別待設定');$('manageTab').hidden=false;if(state.user.role==='EMPLOYEE')tab='mine';
  $('accessDenied').hidden=true;$('recordsSection').hidden=false;$('currentMonth').textContent=taipeiNow().slice(0,7)+' 當月';$('testNotice').hidden=state.sendEnabled;$('month').disabled=!!activeTarget;$('mineTab').setAttribute('aria-selected',String(tab==='mine'));$('manageTab').setAttribute('aria-selected',String(tab==='manage'));$('management').hidden=tab!=='manage';$('personal').hidden=tab!=='mine';$('agreementText').textContent=state.agreement.text;$('formAgreement').textContent=state.agreement.text;$('listTitle').textContent=tab==='mine'?'當月已申請的加班':'當月已申請的加班';
  renderPunchPending();
@@ -135,7 +135,18 @@ async function openPunch(r){const data=await rpc('getPunchOvertime',token,r.id);
 $('closePunch').onclick=()=>{$('punchFormSection').hidden=true;};
 $('punchForm').onsubmit=e=>{e.preventDefault();run(async()=>{const d=punchEditing,r=d.pending;const result=await rpc('submitPunchOvertime',token,r.id,{guard:r.target,existingId:d.existing?.id||'',start:$('punchStart').value,end:$('punchEnd').value,dayType:$('punchDay').value,work:$('punchWork').value,correction:$('punchCorrection').value,agreed:$('punchAgree').checked,agreementVersion:d.agreement.version});$('punchFormSection').hidden=true;activeTarget=null;$('targetNotice').hidden=true;await refresh();msg('已送出實際加班確認，原打卡紀錄未改動。申請ID：'+result.id);});};
 
-let testMode=new URLSearchParams(location.search).get('test')==='1',testRole='HS005';
+function hasTestParameter(){
+ const params=new URLSearchParams(location.search);
+ if(params.get('test')==='1')return true;
+ const nested=params.get('liff.state')||'';
+ return new URL(nested||'/',location.origin).searchParams.get('test')==='1';
+}
+let testMode=hasTestParameter(),testRole='HS005';
+try{if(testMode)sessionStorage.setItem('ot:test-entry','1');else testMode=sessionStorage.getItem('ot:test-entry')==='1';}catch(e){}
+function showTestMode(){ $('testPanel').hidden=!testMode;$('exitTest').hidden=!testMode; }
+showTestMode();
+$('launchTest').onclick=()=>{const url=new URL(location.href);url.search='?test=1&v=073';try{sessionStorage.setItem('ot:test-entry','1');}catch(e){}location.assign(url.href);};
+$('exitTest').onclick=()=>{try{sessionStorage.removeItem('ot:test-entry');}catch(e){}location.assign(location.origin+location.pathname+'?v=073');};
 const TEST_METHODS=['listOvertime','enterOvertime','getOvertimeTarget','createOvertime','submitPersonalOvertime','updateOvertime','listPunchOvertime','testNotifications','retryTestNotifications'];
 async function rpc(name,...args){
  if(testMode&&TEST_METHODS.includes(name))return transportRpc('testOvertime',args[0],testRole,name,args.slice(1));
@@ -157,7 +168,7 @@ async function loginWithLiff(){
  if(!liffReady){const c=await rpc('getOvertimeLiffConfig');await liff.init({liffId:c.liffId});liffReady=true;}
  // init 完成後才讀取網址，保留 LIFF 自己處理的登入參數。
  const q=new URLSearchParams(location.search);
- testMode=q.get('test')==='1';$('testPanel').hidden=!testMode;
+ testMode=testMode||hasTestParameter();showTestMode();try{sessionStorage.removeItem('ot:test-entry');}catch(e){}
  if(q.has('ot')||q.has('check')||q.has('kind')||q.has('v'))activeTarget={id:q.get('ot'),kind:q.get('kind'),version:q.get('v'),check:q.get('check')};
  if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
  const result=await rpc('loginOvertimeLiff',liff.getAccessToken(),activeTarget);
