@@ -117,7 +117,21 @@ async function openPunch(r){const data=await rpc('getPunchOvertime',token,r.id);
 $('closePunch').onclick=()=>{$('punchFormSection').hidden=true;};
 $('punchForm').onsubmit=e=>{e.preventDefault();run(async()=>{const d=punchEditing,r=d.pending;const result=await rpc('submitPunchOvertime',token,r.id,{guard:r.target,existingId:d.existing?.id||'',start:$('punchStart').value,end:$('punchEnd').value,dayType:$('punchDay').value,work:$('punchWork').value,correction:$('punchCorrection').value,agreed:$('punchAgree').checked,agreementVersion:d.agreement.version});$('punchFormSection').hidden=true;activeTarget=null;$('targetNotice').hidden=true;await refresh();msg('已送出實際加班確認，原打卡紀錄未改動。申請ID：'+result.id);});};
 
-$('prepareLogin').onclick=()=>run(async()=>{const secret=random();sessionStorage.setItem('ot:pending',secret);const reply=await rpc('beginLineLogin',secret,activeTarget);sessionStorage.setItem('ot:state',reply.state);$('loginLink').href=reply.url;$('loginLink').hidden=false;$('prepareLogin').hidden=true;msg('請點選「使用 LINE 登入」。');});
+const OT_LOGIN_TTL=10*60*1000;
+function rememberLogin(state,secret){
+ const raw=JSON.stringify({state,secret,expires:Date.now()+OT_LOGIN_TTL});
+ let saved=false;
+ for(const name of ['sessionStorage','localStorage']){try{window[name].setItem('ot:flow:'+state,raw);saved=true;}catch(e){}}
+ if(!saved)throw Error('瀏覽器無法儲存登入驗證，請允許網站儲存資料後重試。');
+ for(const name of ['sessionStorage','localStorage']){try{const st=window[name];for(const key of Object.keys(st)){if(key.startsWith('ot:flow:')){try{if(JSON.parse(st.getItem(key)).expires<=Date.now())st.removeItem(key);}catch(e){st.removeItem(key);}}}}catch(e){}}
+}
+function recallLogin(state){
+ if(!/^[0-9a-f]{64}$/.test(state||''))throw Error('登入驗證資料不正確，請重新登入。');
+ for(const name of ['sessionStorage','localStorage']){try{const f=JSON.parse(window[name].getItem('ot:flow:'+state)||'null');if(f&&f.state===state&&/^[0-9a-f]{64}$/.test(f.secret)&&f.expires>Date.now()&&f.expires<=Date.now()+OT_LOGIN_TTL)return f.secret;}catch(e){}}
+ throw Error('登入驗證已過期或返回不同瀏覽器。請在目前瀏覽器重新按「準備 LINE 登入」。');
+}
+function forgetLogin(state){for(const name of ['sessionStorage','localStorage']){try{window[name].removeItem('ot:flow:'+state);}catch(e){}}}
+$('prepareLogin').onclick=()=>run(async()=>{const secret=random();const reply=await rpc('beginLineLogin',secret,activeTarget);rememberLogin(reply.state,secret);$('loginLink').href=reply.url;$('loginLink').hidden=false;$('prepareLogin').hidden=true;msg('請點選「使用 LINE 登入」。');});
 $('logout').onclick=()=>run(async()=>{await rpc('logoutOvertime',token);sessionStorage.removeItem('ot:token');sessionStorage.removeItem('ot:target');token='';state=null;punchPending=[];activeTarget=null;$('app').hidden=true;$('login').hidden=false;$('prepareLogin').hidden=false;$('loginLink').hidden=true;msg('已登出。');});
 $('month').value=taipeiNow().slice(0,7);
 (async()=>{if(location.protocol==='file:'){msg('這是 GitHub Pages 版本，請上傳 GitHub 後以 HTTPS 網址開啟；本機檔案不能完成 LINE 登入。');return;}
@@ -128,8 +142,8 @@ $('month').value=taipeiNow().slice(0,7);
  if(q.has('error'))throw Error('未完成 LINE 登入，請再試一次。');
  if(q.has('ot')||q.has('check')||q.has('kind')||q.has('v'))activeTarget={id:q.get('ot'),kind:q.get('kind'),version:q.get('v'),check:q.get('check')};
  if(code){
-  if(!oauthState||sessionStorage.getItem('ot:state')!==oauthState)throw Error('登入視窗與原視窗不一致，請從同一瀏覽器重新登入。');
-  const result=await rpc('completeLineLogin',oauthState,code,sessionStorage.getItem('ot:pending'));token=result.token;activeTarget=result.target;sessionStorage.setItem('ot:token',token);sessionStorage.setItem('ot:target',JSON.stringify(activeTarget));sessionStorage.removeItem('ot:state');sessionStorage.removeItem('ot:pending');
+  const loginSecret=recallLogin(oauthState);
+  const result=await rpc('completeLineLogin',oauthState,code,loginSecret);token=result.token;activeTarget=result.target;sessionStorage.setItem('ot:token',token);sessionStorage.setItem('ot:target',JSON.stringify(activeTarget));forgetLogin(oauthState);
  }else{token=sessionStorage.getItem('ot:token')||'';}
  if(token)await refresh();
  });
