@@ -39,7 +39,7 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
 <section id="login" hidden><h1>使用本人 LINE 帳號登入</h1><p>依員工設定顯示個人及主管權限。系統依 LINE 員工綁定資料辨識身分。</p><button id="prepareLogin">重新確認 LINE 身分</button><a id="loginLink" class="link" hidden>使用 LINE 登入</a><p class="muted">請從加班專用 LIFF 連結開啟，系統會自動確認您的 LINE 身分。</p></section>
 <div id="app" hidden>
 <div class="toolbar"><div><strong id="who"></strong><div id="roleText" class="muted"></div></div><div class="row"><span id="currentMonth"></span><input id="month" type="hidden"><button id="reload" class="secondary">重新整理</button><button id="logout" class="secondary">登出</button></div></div>
-<div id="testNotice" class="notice" hidden>LINE 通知尚未啟用，申請仍會儲存。請洽人事確認通知設定。</div>
+
 <div id="targetNotice" class="notice" hidden><strong id="targetLabel"></strong><p>目前只顯示此連結指定的一筆資料。</p><button id="leaveTarget" class="secondary">返回月份列表</button></div>
 <nav class="tabs" aria-label="操作入口"><button id="manageTab" aria-selected="false" hidden>主管入口<small>主管・人事・廠長</small></button><button id="mineTab" aria-selected="true">個人入口<small>本人 LINE 身分</small></button></nav>
 <section id="accessDenied" hidden><h1>無此權限</h1><p>主管入口僅限廠長、主管、人事。請使用個人入口。</p></section>
@@ -109,7 +109,7 @@ async function refresh(){loadGeneration++;applyHome(await rpc('getOvertimeHome',
 function render(){
  $('launchTest').hidden=true;$('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+(state.user.employeeId?'\n員工編號：'+state.user.employeeId:''));return;}
  $('who').textContent=state.user.id+'　'+state.user.name;$('roleText').textContent=({EMPLOYEE:'員工',MANAGER:'廠長',SUPERVISOR:'主管',HR:'人事'})[state.user.role]+'／'+state.user.dept+'／'+(state.user.category||'類別待設定');$('manageTab').hidden=false;if(state.user.role==='EMPLOYEE')tab='mine';
- $('accessDenied').hidden=true;$('recordsSection').hidden=false;$('currentMonth').textContent=taipeiNow().slice(0,7)+' 當月';$('testNotice').hidden=state.sendEnabled;$('month').disabled=!!activeTarget;$('mineTab').setAttribute('aria-selected',String(tab==='mine'));$('manageTab').setAttribute('aria-selected',String(tab==='manage'));$('management').hidden=tab!=='manage';$('personal').hidden=tab!=='mine';$('agreementText').textContent=state.agreement.text;$('formAgreement').textContent=state.agreement.text;$('listTitle').textContent=tab==='mine'?'當月已申請的加班':'當月已申請的加班';
+ $('accessDenied').hidden=true;$('recordsSection').hidden=false;$('currentMonth').textContent=taipeiNow().slice(0,7)+' 當月';$('month').disabled=!!activeTarget;$('mineTab').setAttribute('aria-selected',String(tab==='mine'));$('manageTab').setAttribute('aria-selected',String(tab==='manage'));$('management').hidden=tab!=='manage';$('personal').hidden=tab!=='mine';$('agreementText').textContent=state.agreement.text;$('formAgreement').textContent=state.agreement.text;$('listTitle').textContent=tab==='mine'?'當月已申請的加班':'當月已申請的加班';
  renderPunchPending();
  const list=state.requests.filter(r=>(!activeTarget||r.id===activeTarget.id)&&(tab==='mine'?r.isMine:r.canManage)).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start)),area=$('requests');area.replaceChildren();if(!list.length)area.append(text('p',recordsLoading?'正在載入當月紀錄，可先填寫申請…':'這個月份尚無資料。','empty'));
  list.forEach(r=>{
