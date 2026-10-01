@@ -60,7 +60,7 @@ async function refresh(){
  state=await rpc('listOvertime',token,$('month').value);punchPending=state.user.unlinked?[]:await rpc('listPunchOvertime',token);render();
 }
 function render(){
- $('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+'\n'+(state.user.employeeId?'員工編號：'+state.user.employeeId+'\n':'')+'本人 LINE ID：'+state.user.uid);return;}
+ $('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+(state.user.employeeId?'\n員工編號：'+state.user.employeeId:''));return;}
  $('who').textContent=state.user.id+'　'+state.user.name;$('roleText').textContent=({EMPLOYEE:'員工',MANAGER:'廠長',SUPERVISOR:'主管',HR:'人事'})[state.user.role]+'／'+state.user.dept+'／'+(state.user.category||'類別待設定');$('manageTab').hidden=false;if(state.user.role==='EMPLOYEE')tab='mine';
  $('accessDenied').hidden=true;$('recordsSection').hidden=false;$('currentMonth').textContent=taipeiNow().slice(0,7)+' 當月';$('testNotice').hidden=state.sendEnabled;$('month').disabled=!!activeTarget;$('mineTab').setAttribute('aria-selected',String(tab==='mine'));$('manageTab').setAttribute('aria-selected',String(tab==='manage'));$('management').hidden=tab!=='manage';$('personal').hidden=tab!=='mine';$('agreementText').textContent=state.agreement.text;$('formAgreement').textContent=state.agreement.text;$('listTitle').textContent=tab==='mine'?'當月已申請的加班':'當月已申請的加班';
  renderPunchPending();
