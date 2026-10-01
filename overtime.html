@@ -17,6 +17,12 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
 }
 </style><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script></head><body>
 <header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main>
+<section id="testPanel" hidden style="border:3px solid #d6883c;background:#fff4df">
+<h1>HS021 專用測試</h1><p>獨立測試紀錄，不列入正式出勤。此處的角色皆為模擬；實際操作與 LINE 收件人都是 HS021。</p>
+<label>切換測試身分<select id="testRole"><option value="HS005">廠內員工 HS005</option><option value="HS008">行政員工 HS008</option><option value="HS006">廠長 HS006</option><option value="HS017">主管 HS017</option><option value="HS021">人事 HS021</option></select></label>
+<p>先用廠內員工送出申請 → 切換廠長審核 → 切換人事審核。測主管安排時，請先個別選 HS005 或 HS008。</p>
+<div class="row"><button id="testInbox" type="button" class="secondary">查看測試通知</button><button id="testRetry" type="button" class="secondary">重試未成功通知</button></div><div id="testMessages"></div>
+</section>
 <div id="msg" role="status" aria-live="polite"></div>
 <section id="login"><h1>使用本人 LINE 帳號登入</h1><p>依員工設定顯示個人及主管權限。系統依 LINE 員工綁定資料辨識身分。</p><button id="prepareLogin">重新確認 LINE 身分</button><a id="loginLink" class="link" hidden>使用 LINE 登入</a><p class="muted">請從加班專用 LIFF 連結開啟，系統會自動確認您的 LINE 身分。</p></section>
 <div id="app" hidden>
@@ -51,7 +57,7 @@ function msg(s,error=false){$('msg').textContent=s;$('msg').classList.toggle('er
 // 只填「新的加班 API」部署網址；不要填原打卡專案網址。不放任何密鑰。
 const OVERTIME_API_URL='https://script.google.com/macros/s/AKfycby_Y5BC4QropGOiz2DDfxMRA0U4Ia2yAhCOVqeZfaEqrfsU2kKoPeo1hAV_YYWOxcVBDA/exec';
 function githubPage(){return location.origin+location.pathname;}
-async function rpc(name,...args){
+async function transportRpc(name,...args){
  if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(OVERTIME_API_URL))throw Error('請先在 overtime.html 設定 OVERTIME_API_URL，填新的加班 Apps Script /exec 網址。');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);let response;
  try{response=await fetch(OVERTIME_API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({protocol:'OT-GITHUB-1',page:githubPage(),method:name,args}),credentials:'omit',redirect:'follow',referrerPolicy:'no-referrer',signal:controller.signal});}
@@ -129,6 +135,21 @@ async function openPunch(r){const data=await rpc('getPunchOvertime',token,r.id);
 $('closePunch').onclick=()=>{$('punchFormSection').hidden=true;};
 $('punchForm').onsubmit=e=>{e.preventDefault();run(async()=>{const d=punchEditing,r=d.pending;const result=await rpc('submitPunchOvertime',token,r.id,{guard:r.target,existingId:d.existing?.id||'',start:$('punchStart').value,end:$('punchEnd').value,dayType:$('punchDay').value,work:$('punchWork').value,correction:$('punchCorrection').value,agreed:$('punchAgree').checked,agreementVersion:d.agreement.version});$('punchFormSection').hidden=true;activeTarget=null;$('targetNotice').hidden=true;await refresh();msg('已送出實際加班確認，原打卡紀錄未改動。申請ID：'+result.id);});};
 
+let testMode=new URLSearchParams(location.search).get('test')==='1',testRole='HS005';
+const TEST_METHODS=['listOvertime','enterOvertime','getOvertimeTarget','createOvertime','submitPersonalOvertime','updateOvertime','listPunchOvertime','testNotifications','retryTestNotifications'];
+async function rpc(name,...args){
+ if(testMode&&TEST_METHODS.includes(name))return transportRpc('testOvertime',args[0],testRole,name,args.slice(1));
+ return transportRpc(name,...args);
+}
+async function showTestNotifications(){
+ const list=await rpc('testNotifications',token),area=$('testMessages');area.replaceChildren();
+ if(!list.length)area.append(text('p','尚無測試通知。'));
+ list.forEach(n=>{const d=text('details',''),s=text('summary',n.date+' '+n.kind+'／'+n.status+' → HS021');d.append(s,text('p',n.error||''),text('p',n.text,'detail'));area.append(d);});
+}
+$('testRole').onchange=()=>run(async()=>{testRole=$('testRole').value;activeTarget=null;targetTabChosen=false;tab=testRole==='HS005'||testRole==='HS008'?'mine':'manage';editing=null;formMode='';$('formSection').hidden=true;$('punchFormSection').hidden=true;$('targetNotice').hidden=true;$('testMessages').replaceChildren();await refresh();msg('目前模擬：'+$('testRole').selectedOptions[0].textContent);});
+$('testInbox').onclick=()=>run(showTestNotifications);
+$('testRetry').onclick=()=>run(async()=>{await rpc('retryTestNotifications',token);await showTestNotifications();});
+
 let liffReady=false;
 async function loginWithLiff(){
  msg('正在確認 LINE 員工身分…');
@@ -136,6 +157,7 @@ async function loginWithLiff(){
  if(!liffReady){const c=await rpc('getOvertimeLiffConfig');await liff.init({liffId:c.liffId});liffReady=true;}
  // init 完成後才讀取網址，保留 LIFF 自己處理的登入參數。
  const q=new URLSearchParams(location.search);
+ testMode=q.get('test')==='1';$('testPanel').hidden=!testMode;
  if(q.has('ot')||q.has('check')||q.has('kind')||q.has('v'))activeTarget={id:q.get('ot'),kind:q.get('kind'),version:q.get('v'),check:q.get('check')};
  if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
  const result=await rpc('loginOvertimeLiff',liff.getAccessToken(),activeTarget);
