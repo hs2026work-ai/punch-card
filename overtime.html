@@ -16,7 +16,7 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
  .person{width:100%}.person input{margin:0}
 }
 </style><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script></head><body>
-<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main><p class="muted">版本 0.8</p><div class="row"><button id="launchTest" type="button" hidden>進入 HS021 專用測試</button><button id="exitTest" type="button" class="secondary" hidden>返回正式模式</button></div>
+<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main><p class="muted">版本 0.9</p><div class="row"><button id="launchTest" type="button" hidden>進入 HS021 專用測試</button><button id="exitTest" type="button" class="secondary" hidden>返回正式模式</button></div>
 <section id="testPanel" hidden style="border:3px solid #d6883c;background:#fff4df">
 <h1>HS021 專用測試</h1><p>獨立測試紀錄，不列入正式出勤。此處的角色皆為模擬；實際操作與 LINE 收件人都是 HS021。</p>
 <label>切換測試身分<select id="testRole"><option value="HS005">廠內員工 HS005</option><option value="HS008">行政員工 HS008</option><option value="HS006">廠長 HS006</option><option value="HS017">主管 HS017</option><option value="HS021">人事 HS021</option></select></label>
@@ -72,11 +72,21 @@ function text(tag,value,cls){const e=document.createElement(tag);e.textContent=v
 function button(label,fn,cls='secondary'){const e=text('button',label,cls);e.type='button';e.onclick=()=>run(fn);return e;}
 function taipeiNow(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function showTime(s){return s?new Date(s).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'—';}
-async function refresh(){
- $('month').value=taipeiNow().slice(0,7);
- if(activeTarget){$('app').hidden=false;$('login').hidden=true;$('targetNotice').hidden=false;$('requests').replaceChildren();$('formSection').hidden=true;try{const result=await rpc('getOvertimeTarget',token,activeTarget);$('month').value=result.month;if(!targetTabChosen){tab=result.request.isMine?'mine':'manage';targetTabChosen=true;}$('targetLabel').textContent='已開啟指定的加班資料';}catch(e){state=null;$('management').hidden=true;$('personal').hidden=true;$('targetLabel').textContent=e.message;throw e;}}
- state=await rpc('listOvertime',token,$('month').value);punchPending=state.user.unlinked?[]:await rpc('listPunchOvertime',token);render();
+function applyHome(home){
+ state=home.state;punchPending=home.pending||[];$('month').value=taipeiNow().slice(0,7);
+ if(home.targetInfo&&!targetTabChosen){tab=home.targetInfo.request.isMine?'mine':'manage';targetTabChosen=true;}
+ if(home.targetError){$('targetNotice').hidden=false;$('targetLabel').textContent=home.targetError;$('app').hidden=false;$('login').hidden=true;$('management').hidden=true;$('personal').hidden=true;$('recordsSection').hidden=true;$('punchPendingSection').hidden=true;throw Error(home.targetError);}
+ render();$('targetNotice').hidden=!activeTarget;
+ if(activeTarget){$('targetLabel').textContent='已開啟指定的加班資料';
+ const intent=new URLSearchParams(location.search).get('intent');
+ if(intent==='agree'||intent==='decline'){
+  $('targetLabel').textContent=intent==='agree'?'請核對資料，再按「同意加班」確認。':'請核對資料，再按「無法配合」確認。';
+  const label=intent==='agree'?'同意加班':'無法配合';const b=Array.from($('requests').querySelectorAll('button')).find(b=>b.textContent===label);if(b){b.style.outline='3px solid #D6883C';b.focus({preventScroll:true});}
+ }
+ }
 }
+async function refresh(){applyHome(await rpc('getOvertimeHome',token,activeTarget));}
+
 function render(){
  $('launchTest').hidden=testMode||state.user.id!=='HS021';$('login').hidden=true;$('app').hidden=false;if(state.user.unlinked){$('app').hidden=true;$('login').hidden=false;msg((state.user.reason||'請洽人事核對員工綁定。')+(state.user.employeeId?'\n員工編號：'+state.user.employeeId:''));return;}
  $('who').textContent=state.user.id+'　'+state.user.name;$('roleText').textContent=({EMPLOYEE:'員工',MANAGER:'廠長',SUPERVISOR:'主管',HR:'人事'})[state.user.role]+'／'+state.user.dept+'／'+(state.user.category||'類別待設定');$('manageTab').hidden=false;if(state.user.role==='EMPLOYEE')tab='mine';
@@ -144,9 +154,9 @@ let testMode=hasTestParameter(),testRole='HS005';
 try{if(testMode)sessionStorage.setItem('ot:test-entry','1');else testMode=sessionStorage.getItem('ot:test-entry')==='1';}catch(e){}
 function showTestMode(){ $('testPanel').hidden=!testMode;$('exitTest').hidden=!testMode; }
 showTestMode();
-$('launchTest').onclick=()=>{const url=new URL(location.href);url.search='?test=1&appver=080';try{sessionStorage.setItem('ot:test-entry','1');}catch(e){}location.assign(url.href);};
-$('exitTest').onclick=()=>{try{sessionStorage.removeItem('ot:test-entry');}catch(e){}location.assign(location.origin+location.pathname+'?appver=080');};
-const TEST_METHODS=['listOvertime','enterOvertime','getOvertimeTarget','createOvertime','submitPersonalOvertime','updateOvertime','listPunchOvertime','testNotifications','retryTestNotifications'];
+$('launchTest').onclick=()=>{const url=new URL(location.href);url.search='?test=1&appver=090';try{sessionStorage.setItem('ot:test-entry','1');}catch(e){}location.assign(url.href);};
+$('exitTest').onclick=()=>{try{sessionStorage.removeItem('ot:test-entry');}catch(e){}location.assign(location.origin+location.pathname+'?appver=090');};
+const TEST_METHODS=['getOvertimeHome','listOvertime','enterOvertime','getOvertimeTarget','createOvertime','submitPersonalOvertime','updateOvertime','listPunchOvertime','testNotifications','retryTestNotifications'];
 async function rpc(name,...args){
  if(testMode&&TEST_METHODS.includes(name))return transportRpc('testOvertime',args[0],testRole,name,args.slice(1));
  return transportRpc(name,...args);
@@ -164,14 +174,14 @@ let liffReady=false;
 async function loginWithLiff(){
  msg('正在確認 LINE 員工身分…');
  if(!window.liff)throw Error('LINE 元件載入失敗，請確認網路後重新開啟。');
- if(!liffReady){const c=await rpc('getOvertimeLiffConfig');await liff.init({liffId:c.liffId});liffReady=true;}
+ if(!liffReady){await liff.init({liffId:'2010875519-x1KBEMvA'});liffReady=true;}
  // init 完成後才讀取網址，保留 LIFF 自己處理的登入參數。
  const q=new URLSearchParams(location.search);
- testMode=testMode||hasTestParameter();showTestMode();try{sessionStorage.removeItem('ot:test-entry');}catch(e){}
+ testMode=testMode||hasTestParameter();if(testMode&&Array.from($('testRole').options).some(o=>o.value===q.get('acting'))){testRole=q.get('acting');$('testRole').value=testRole;}showTestMode();try{sessionStorage.removeItem('ot:test-entry');}catch(e){}
  if(q.has('ot')||q.has('check')||q.has('kind'))activeTarget={id:q.get('ot'),kind:q.get('kind'),version:q.get('v'),check:q.get('check')};
  if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
- const result=await rpc('loginOvertimeLiff',liff.getAccessToken(),activeTarget);
- token=result.token;activeTarget=result.target;await refresh();
+ const result=await rpc('openOvertimeLiff',liff.getAccessToken(),activeTarget,testMode?testRole:null);
+ token=result.token;msg('');applyHome(result.home);
 }
 $('prepareLogin').onclick=()=>run(loginWithLiff);
 $('logout').onclick=()=>run(async()=>{await rpc('logoutOvertime',token);token='';state=null;punchPending=[];activeTarget=null;if(window.liff&&liffReady&&liff.isLoggedIn())liff.logout();$('app').hidden=true;$('login').hidden=false;$('prepareLogin').hidden=false;$('loginLink').hidden=true;msg('已登出。');});
