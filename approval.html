@@ -191,14 +191,14 @@
           <div class="value reason" id="reason"></div>
         </div>
 
-       <div class="row hidden">
-  <div class="label">假單 ID</div>
-  <div
-    class="value"
-    style="font-size:12px"
-    id="requestIdText"
-  ></div>
-</div>
+        <div class="row hidden">
+          <div class="label">假單 ID</div>
+          <div
+            class="value"
+            style="font-size:12px"
+            id="requestIdText"
+          ></div>
+        </div>
 
         <div id="statusBox" class="status-box"></div>
 
@@ -371,6 +371,12 @@
           })
         });
 
+        // 取消狀態優先處理，不顯示審核按鈕。
+        if (isCancelled(data)) {
+          showCancelled(data);
+          return;
+        }
+
         if (!data.success) {
           showFatal(
             data.message || '讀取假單失敗。'
@@ -500,6 +506,12 @@
           })
         });
 
+        // 頁面開啟後才被取消，送出時仍會顯示取消。
+        if (isCancelled(data)) {
+          showCancelled(data);
+          return;
+        }
+
         if (data.success) {
           if (data.result === 'approved') {
             showStatus(
@@ -576,6 +588,50 @@
         // 逾時不代表後端沒有寫入，不能直接重送。
         submitting = true;
       }
+    }
+
+    // ===== 取消狀態 =====
+    function isCancelled(data) {
+      return (
+        data.cancelled === true ||
+        data.status === 'cancelled' ||
+        data.message === '此筆已取消'
+      );
+    }
+
+    function showCancelled(data) {
+      CAN_REVIEW = false;
+      submitting = true;
+
+      disableButtons();
+
+      document.getElementById('detail')
+        .classList.add('hidden');
+
+      document.getElementById('buttonArea')
+        .classList.add('hidden');
+
+      document.getElementById('retryBtn')
+        .classList.add('hidden');
+
+      const loading = document.getElementById('loading');
+
+      loading.classList.remove('hidden');
+
+      loading.textContent =
+        '此筆已取消' +
+        (
+          data.cancellationReason
+            ? '\n取消原因：' + data.cancellationReason
+            : ''
+        );
+
+      loading.style.whiteSpace = 'pre-line';
+      loading.style.fontSize = '24px';
+      loading.style.fontWeight = '700';
+
+      document.getElementById('reviewerText').textContent =
+        '此假單已取消，無需審核';
     }
 
     // ===== 畫面控制 =====
