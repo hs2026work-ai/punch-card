@@ -312,13 +312,14 @@
     <label for="hrEmployee">選擇員工</label>
     <select id="hrEmployee" disabled></select>
 
-    <button id="hrRefresh" disabled>重新查詢</button>
+    <button id="hrRefresh" disabled>重新查詢</button><button id="hrBackOwn" type="button" style="padding:10px 16px;font-size:15px">返回我的資料</button>
 
     <p class="hr-note">
       唯讀查看員工假勤額度、請假紀錄及取消原因。
     </p>
   </div>
 
+  <div style="max-width:430px;margin:0 auto 16px;text-align:right"><button id="hrEntryButton" type="button" style="display:none;padding:12px 18px;font-size:16px">人事專用</button></div>
   <div id="mainWrap">
     <h1>宏升工業社</h1>
     <div class="subtitle">個人假勤查詢</div>
@@ -800,6 +801,7 @@
 
           saveLocal(userId, data);
           render(data, false);
+          return data;
         })
         .catch(function(error) {
           showError(
@@ -811,8 +813,9 @@
     // 人事 API 的權限由後端驗證，不採信前端員工編號。
     async function hrApi(action, employeeId) {
       var token = liff.getIDToken();
+      var accessToken = liff.getAccessToken();
 
-      if (!token) {
+      if (!token && !accessToken) {
         throw new Error(
           "此入口需要 LINE openid 權限，請確認 LIFF 設定後重新登入。"
         );
@@ -830,6 +833,7 @@
           body: JSON.stringify({
             action: action,
             idToken: token,
+            accessToken: accessToken,
             empId: employeeId || ""
           }),
           signal: controller.signal
@@ -898,6 +902,9 @@
       var data = await hrApi("hrLeaveInit");
       var selection = el("hrEmployee");
       selection.innerHTML = "";
+      el('hrBackOwn').onclick = function() {
+        window.location.href = 'https://employee.hsind.com.tw/my-leave.html';
+      };
 
       data.employees.forEach(function(employee) {
         var option = document.createElement("option");
@@ -959,7 +966,22 @@
         var cached = loadLocal(profile.userId);
         if (cached) render(cached, true);
 
-        return loadSummary(profile.userId);
+        return loadSummary(profile.userId).then(async function(data) {
+          if (!data || data.empId !== 'HS021') return;
+          try {
+            // 按鈕須經後端驗證身分後才顯示。
+            await hrApi('hrLeaveInit');
+            el('hrEntryButton').style.display = 'inline-block';
+            el('hrEntryButton').onclick = async function() {
+              HR_MODE = true;
+              el('errorMsg').style.display = 'none';
+              try { await hrInit(); }
+              catch(error) { showError(error.message);el('hrHint').textContent='無法進入人事入口'; }
+            };
+          } catch(error) {
+            showError('人事入口尚未完成驗證：' + error.message);
+          }
+        });
       })
       .catch(function(error) {
         showError(error.message || "載入失敗，請重新從 LINE 開啟");
