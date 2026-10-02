@@ -2,796 +2,1099 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>宏升工業社｜請假審核</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>宏升工業社 - 個人假勤</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
     * {
       box-sizing: border-box;
     }
 
     body {
+      font-family: -apple-system, BlinkMacSystemFont,
+        "PingFang TC", "Noto Sans TC",
+        "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
       margin: 0;
-      padding: 20px 16px 50px;
-      background: #f3f6fb;
-      font-family: "Microsoft JhengHei", Arial, sans-serif;
-      color: #263238;
+      padding: 20px 14px 60px;
     }
 
-    .container {
-      width: 100%;
-      max-width: 560px;
-      margin: auto;
-    }
-
-    .header {
+    h1 {
+      font-size: 22px;
+      font-weight: 750;
+      color: #1b2a5e;
       text-align: center;
-      margin-bottom: 18px;
+      margin: 10px 0 4px;
     }
 
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      color: #17386b;
-    }
-
-    .header p {
-      margin: 8px 0 0;
-      color: #718096;
+    .subtitle {
+      text-align: center;
       font-size: 14px;
+      color: #888;
+      margin-bottom: 18px;
     }
 
     .card {
       background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, .08);
+      border-radius: 14px;
+      border-top: 4px solid #e0752c;
+      padding: 19px 16px;
+      box-shadow: 0 2px 9px rgba(0, 0, 0, .08);
+      max-width: 430px;
+      margin: 0 auto 16px;
     }
 
-    .loading {
+    .card h2 {
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 750;
+      color: #1b2a5e;
+      margin: 0 0 14px;
+    }
+
+    .empName {
       text-align: center;
-      padding: 35px 10px;
-      color: #718096;
-    }
-
-    .row {
-      padding: 12px 0;
-      border-bottom: 1px solid #edf0f5;
-    }
-
-    .row:last-child {
-      border-bottom: none;
-    }
-
-    .label {
-      font-size: 13px;
-      color: #8a94a6;
+      font-size: 15px;
+      color: #666;
       margin-bottom: 5px;
     }
 
-    .value {
-      font-size: 16px;
-      font-weight: 600;
-      word-break: break-word;
+    .update-note {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      margin: 0 0 12px;
     }
 
-    .reason {
+    .quota-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quota-row {
+      background: #f6f8fb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .quota-head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .quota-zh {
+      font-size: 17px;
+      font-weight: 750;
+      color: #374151;
+    }
+
+    .quota-vi {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .quota-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .remain-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #bf5d19;
+      line-height: 1.35;
+    }
+
+    .remain-label small {
+      display: block;
+      font-size: 11px;
+      color: #d1844d;
+      font-weight: 600;
+    }
+
+    .remaining {
+      font-size: 21px;
+      line-height: 1.25;
+      font-weight: 800;
+      color: #e0752c;
+      text-align: right;
+    }
+
+    .detail {
+      font-size: 12px;
+      color: #888;
+      margin-top: 8px;
+      line-height: 1.55;
+      border-top: 1px dashed #dde2e8;
+      padding-top: 8px;
+    }
+
+    .subquota {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 7px;
+      line-height: 1.55;
+    }
+
+    .extra-card {
+      background: #f8f7f4;
+      border-radius: 10px;
+      padding: 12px 13px;
+      margin-top: 11px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.7;
+    }
+
+    .extra-title {
+      font-weight: 750;
+      color: #1b2a5e;
+    }
+
+    .policy-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #f9f6f1;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #777;
+      line-height: 1.75;
+    }
+
+    .policy-note-title {
+      font-weight: 750;
+      margin-bottom: 4px;
+    }
+
+    .record-item {
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+    }
+
+    .record-item:last-child {
+      border-bottom: 0;
+    }
+
+    .record-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 750;
+      color: #1b2a5e;
+    }
+
+    .record-date,
+    .record-status,
+    .record-days,
+    .stage-row {
+      font-size: 12px;
+      color: #777;
+      margin-top: 5px;
+    }
+
+    .record-date {
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+
+    .record-days {
+      white-space: nowrap;
+    }
+
+    .stage-row {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .record-cancelled {
+      color: #a32934;
+      font-weight: 750;
+    }
+
+    .cancel-reason {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: #fff3e8;
+      color: #854b20;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .no-record {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      padding: 18px 0;
+    }
+
+    #errorMsg {
+      text-align: center;
+      color: #c62828;
+      font-size: 15px;
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.8;
+    }
+
+    .skeleton {
+      color: transparent !important;
+      background: linear-gradient(
+        90deg,
+        #eceff3 25%,
+        #f7f8fa 50%,
+        #eceff3 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+      min-width: 110px;
+      min-height: 24px;
+    }
+
+    #hrEmployee {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 16px;
+    }
+
+    #hrRefresh {
+      padding: 10px 16px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .hr-note {
+      font-size: 12px;
+      color: #777;
       line-height: 1.6;
     }
 
-    .status-box {
-      margin-top: 18px;
-      padding: 14px;
-      border-radius: 10px;
-      background: #f7f8fb;
-      text-align: center;
-      font-weight: 700;
-      display: none;
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
     }
 
-    .button-area {
-      display: flex;
-      gap: 12px;
-      margin-top: 22px;
-    }
+    @media (max-width: 380px) {
+      body {
+        padding-left: 9px;
+        padding-right: 9px;
+      }
 
-    button {
-      flex: 1;
-      border: none;
-      border-radius: 12px;
-      min-height: 54px;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: .15s;
-    }
+      .card {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
 
-    .approve {
-      color: #fff;
-      background: #27864a;
-    }
-
-    .reject {
-      color: #9b2633;
-      background: #f4e7e9;
-    }
-
-    button:disabled {
-      background: #d1d5db !important;
-      color: #7b818a !important;
-      cursor: not-allowed;
-      opacity: 1;
-    }
-
-    .processing {
-      background: #fff7dc;
-      color: #9a6500;
-    }
-
-    .success {
-      background: #e8f6ed;
-      color: #21733f;
-    }
-
-    .rejected,
-    .error {
-      background: #fdecec;
-      color: #a32934;
-    }
-
-    .processed {
-      background: #eef1f5;
-      color: #667085;
-    }
-
-    .hidden {
-      display: none;
+      .remaining {
+        font-size: 19px;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>請假審核</h1>
-      <p id="reviewerText">正在確認審核資料…</p>
+  <div id="errorMsg" style="display:none"></div>
+
+  <!-- 人事入口：後端驗證只有 HS021 可以查詢 -->
+  <div class="card" id="hrPanel" style="display:none">
+    <h2>人事個人假勤查詢</h2>
+
+    <div id="hrHint">
+      正在確認 HS021 身分…
+    </div>
+
+    <label for="hrEmployee">選擇員工</label>
+
+    <select id="hrEmployee" disabled></select>
+
+    <button id="hrRefresh" disabled>
+      重新查詢
+    </button>
+
+    <p class="hr-note">
+      唯讀查看員工假勤額度、請假紀錄及取消原因。
+    </p>
+  </div>
+
+  <div id="mainWrap">
+    <h1>宏升工業社</h1>
+    <div class="subtitle">個人假勤查詢</div>
+
+    <div class="card">
+      <div class="empName" id="empNameDisplay">
+        正在確認員工資料…
+      </div>
+
+      <div class="update-note" id="updateNote">
+        正在讀取最新假勤資料…
+      </div>
+
+      <h2>
+        📊 假勤額度 / Hạn mức nghỉ phép<br>
+        （<span id="quotaYear">—</span> 年度）
+      </h2>
+
+      <div class="quota-list">
+        <div class="quota-row">
+          <div class="quota-head">
+            <span class="quota-zh">特別假</span>
+            <span class="quota-vi">Nghỉ phép đặc biệt</span>
+          </div>
+
+          <div class="quota-main">
+            <div class="remain-label">
+              剩餘
+              <small>Còn lại</small>
+            </div>
+
+            <div
+              class="remaining skeleton"
+              id="specialRemaining"
+            >
+              讀取中
+            </div>
+          </div>
+
+          <div class="detail" id="specialDetail">
+            已休 —｜共 —
+          </div>
+        </div>
+
+        <div class="quota-row">
+          <div class="quota-head">
+            <span class="quota-zh">事假</span>
+            <span class="quota-vi">Nghỉ việc riêng</span>
+          </div>
+
+          <div class="quota-main">
+            <div class="remain-label">
+              剩餘
+              <small>Còn lại</small>
+            </div>
+
+            <div
+              class="remaining skeleton"
+              id="personalRemaining"
+            >
+              讀取中
+            </div>
+          </div>
+
+          <div class="detail" id="personalDetail">
+            已休 —｜共 —
+          </div>
+
+          <div class="subquota" id="familyCareInline"></div>
+        </div>
+
+        <div class="quota-row">
+          <div class="quota-head">
+            <span class="quota-zh">病假</span>
+            <span class="quota-vi">Nghỉ ốm</span>
+          </div>
+
+          <div class="quota-main">
+            <div class="remain-label">
+              剩餘
+              <small>Còn lại</small>
+            </div>
+
+            <div
+              class="remaining skeleton"
+              id="sickRemaining"
+            >
+              讀取中
+            </div>
+          </div>
+
+          <div class="detail" id="sickDetail">
+            已休 —｜共 —
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="extra-card"
+        id="menstrualCard"
+        style="display:none"
+      >
+        <div class="extra-title">
+          生理假 / Nghỉ kinh nguyệt
+        </div>
+
+        <div id="menstrualInfo"></div>
+      </div>
+
+      <div class="policy-note">
+        <div class="policy-note-title">備註：</div>
+        <div>
+          ・家庭照顧假每年上限 7 天（56 小時），併入事假額度計算。
+        </div>
+        <div>
+          ・女性員工依「假勤管理」分頁的性別資料顯示生理假資訊。
+        </div>
+        <div>
+          ・生理假前 3 日不列入病假天數，第 4 日起列入病假天數。
+        </div>
+      </div>
     </div>
 
     <div class="card">
-      <div id="loading" class="loading">
-        資料讀取中…
-      </div>
+      <h2>📋 請假紀錄 / Bản ghi</h2>
 
-      <button
-        id="retryBtn"
-        class="hidden"
-        onclick="window.location.reload()"
-      >
-        重新載入
-      </button>
-
-      <div id="detail" class="hidden">
-        <div class="row">
-          <div class="label">員工</div>
-          <div class="value" id="employee"></div>
-        </div>
-
-        <div class="row">
-          <div class="label">假別</div>
-          <div class="value" id="leaveType"></div>
-        </div>
-
-        <div class="row">
-          <div class="label">起訖時間</div>
-          <div class="value" id="leaveTime"></div>
-        </div>
-
-        <div class="row">
-          <div class="label">事由</div>
-          <div class="value reason" id="reason"></div>
-        </div>
-
-        <div class="row hidden">
-          <div class="label">假單 ID</div>
-          <div
-            class="value"
-            style="font-size:12px"
-            id="requestIdText"
-          ></div>
-        </div>
-
-        <div id="statusBox" class="status-box"></div>
-
-        <div id="buttonArea" class="button-area">
-          <button
-            id="approveBtn"
-            class="approve"
-            onclick="submitReview('approve')"
-          >
-            同意
-          </button>
-
-          <button
-            id="rejectBtn"
-            class="reject"
-            onclick="submitReview('reject')"
-          >
-            拒絕
-          </button>
-        </div>
+      <div id="recordList">
+        <div class="no-record">正在讀取…</div>
       </div>
     </div>
   </div>
 
   <script>
-    const LIFF_ID = '2010875519-qVP2Xoag';
+    var APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec";
 
-    const GAS_URL =
-      'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
+    var LIFF_ID = "2010875519-HfpuEzI8";
 
-    let LINE_USER_ID = '';
-    let REQUEST_ID = '';
-    let CAN_REVIEW = false;
-    let STAGE = null;
-    let submitting = false;
+    var ENABLE_GENDER_PREVIEW = false;
 
-    // ===== 讀取固定假單 ID =====
-    function getApprovalParams() {
-      const params = new URLSearchParams(
+    var CACHE_PREFIX = "hs_leave_summary_v8_bilingual_";
+    var CACHE_MAX_AGE = 86400000;
+
+    var HR_MODE =
+      new URLSearchParams(window.location.search).get("hr") === "1";
+
+    var hrRequestNumber = 0;
+
+    function getPreviewGender() {
+      if (!ENABLE_GENDER_PREVIEW) return "";
+
+      var value = new URLSearchParams(
         window.location.search
-      );
+      ).get("previewGender");
 
-      if (params.has('requestId')) {
-        return {
-          requestId: params.get('requestId'),
-          stage: params.get('stage')
-        };
-      }
+      value = String(value || "").toLowerCase();
 
-      // URLSearchParams 已解碼一次，不重複 decodeURIComponent。
-      const state = params.get('liff.state');
-
-      if (state) {
-        const index = state.indexOf('?');
-
-        const query = (
-          index >= 0
-            ? state.slice(index + 1)
-            : state
-        ).split('#')[0];
-
-        const nested = new URLSearchParams(query);
-
-        if (nested.has('requestId')) {
-          return {
-            requestId: nested.get('requestId'),
-            stage: nested.get('stage')
-          };
-        }
-      }
-
-      // 舊版 row 連結不轉換，避免誤讀另一張假單。
-      return {
-        requestId: '',
-        stage: ''
-      };
+      return value === "male"
+        ? "男"
+        : value === "female"
+          ? "女"
+          : "";
     }
 
-    // ===== 初始化 =====
-    async function init() {
-      try {
-        disableButtons();
+    var PREVIEW_GENDER = getPreviewGender();
 
-        await loadLiffSdk();
-
-        document.getElementById('loading').textContent =
-          '正在連線 LINE…';
-
-        await withTimeout(
-          liff.init({
-            liffId: LIFF_ID
-          }),
-          20000,
-          'LINE 初始化逾時，請確認網路後重新載入。'
-        );
-
-        // 初始化完成後才讀取參數。
-        const params = getApprovalParams();
-
-        REQUEST_ID = String(
-          params.requestId || ''
-        ).trim();
-
-        STAGE = Number(params.stage);
-
-        const validId =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-            .test(REQUEST_ID);
-
-        if (
-          !validId ||
-          !Number.isSafeInteger(STAGE) ||
-          STAGE < 1 ||
-          STAGE > 4
-        ) {
-          showFatal(
-            '此為舊版或無效審核連結，請人事核對假單後重新發送通知。'
-          );
-          return;
-        }
-
-        if (!liff.isLoggedIn()) {
-          liff.login({
-            redirectUri: window.location.href
-          });
-          return;
-        }
-
-        const profile = await withTimeout(
-          liff.getProfile(),
-          15000,
-          '讀取 LINE 身分逾時，請重新載入。'
-        );
-
-        LINE_USER_ID = profile.userId;
-
-        if (!LINE_USER_ID) {
-          throw new Error(
-            '無法取得 LINE 身分，請重新開啟通知。'
-          );
-        }
-
-        document.getElementById('loading').textContent =
-          '正在讀取假單…';
-
-        await loadDetail();
-
-      } catch (error) {
-        showFatal(
-          '開啟審核頁失敗：' + error.message
-        );
+    function effectiveFemale(data) {
+      if (PREVIEW_GENDER) {
+        return PREVIEW_GENDER === "女";
       }
+
+      return female(data);
     }
 
-    // ===== 依 ID 讀取假單 =====
-    async function loadDetail() {
-      try {
-        const data = await requestJson(GAS_URL, {
-          method: 'POST',
+    function applyPreviewBadge() {
+      if (!PREVIEW_GENDER) return;
 
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+      var note = document.getElementById("updateNote");
 
-          body: JSON.stringify({
-            action: 'getApprovalDetail',
-            userId: LINE_USER_ID,
-            requestId: REQUEST_ID,
-            stage: STAGE
-          })
+      note.textContent =
+        "🧪 測試預覽：" +
+        (PREVIEW_GENDER === "男" ? "男生版" : "女生版") +
+        "（僅改畫面，不改實際資料）";
+
+      note.style.color = "#b45309";
+      note.style.fontWeight = "700";
+    }
+
+    function num(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+        return 0;
+      }
+
+      if (typeof value === "number") {
+        return value;
+      }
+
+      var match = String(value)
+        .replace(/,/g, "")
+        .match(/-?\d+(?:\.\d+)?/);
+
+      return match ? Number(match[0]) : 0;
+    }
+
+    function fh(value) {
+      var number = Number(value);
+      return (isFinite(number) ? number : 0).toFixed(1);
+    }
+
+    function hd(value) {
+      var hours = num(value);
+      var days = Math.floor(hours / 8);
+      var remaining = Math.round((hours % 8) * 10) / 10;
+
+      var text = fh(hours) + "時（" + days + "天";
+
+      if (remaining > 0) {
+        text += fh(remaining) + "時";
+      }
+
+      return text + "）";
+    }
+
+    function qd(used, total) {
+      return "已休 " + fh(num(used)) + "時　｜　共 " + hd(total);
+    }
+
+    function female(data) {
+      return String(data.gender || "").trim() === "女";
+    }
+
+    function icon(value) {
+      if (value === "已取消") return "🚫";
+      if (value === "已核准" || value === "免審") return "✅";
+      if (value === "已拒絕") return "❌";
+      if (value === "審核中") return "🟡";
+      return "⚪";
+    }
+
+    function fdays(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+        return "";
+      }
+
+      return Math.round(Number(value) * 100) / 100;
+    }
+
+    function render(data, cache) {
+      if (!data || !data.success) return;
+
+      document.getElementById("empNameDisplay").textContent =
+        data.empName + "（" + data.empId + "）";
+
+      if (PREVIEW_GENDER) {
+        applyPreviewBadge();
+      } else {
+        document.getElementById("updateNote").textContent =
+          cache
+            ? "先顯示上次資料，正在背景更新最新資料…"
+            : "已更新最新資料";
+      }
+
+      [
+        "specialRemaining",
+        "personalRemaining",
+        "sickRemaining"
+      ].forEach(function(id) {
+        document.getElementById(id).classList.remove("skeleton");
+      });
+
+      if (data.quota) {
+        document.getElementById("quotaYear").textContent =
+          data.quota.year;
+
+        document.getElementById("specialRemaining").textContent =
+          hd(data.quota.special.remaining);
+
+        document.getElementById("specialDetail").textContent =
+          qd(data.quota.special.used, data.quota.special.total);
+
+        document.getElementById("personalRemaining").textContent =
+          hd(data.quota.personal.remaining);
+
+        document.getElementById("personalDetail").textContent =
+          qd(data.quota.personal.used, data.quota.personal.total);
+
+        document.getElementById("sickRemaining").textContent =
+          hd(data.quota.sick.remaining);
+
+        document.getElementById("sickDetail").textContent =
+          qd(data.quota.sick.used, data.quota.sick.total);
+      } else {
+        document.getElementById("quotaYear").textContent =
+          "尚無資料";
+
+        [
+          "specialRemaining",
+          "personalRemaining",
+          "sickRemaining"
+        ].forEach(function(id) {
+          document.getElementById(id).textContent = "尚無資料";
         });
 
-        // 取消狀態優先處理，不顯示審核按鈕。
-        if (isCancelled(data)) {
-          showCancelled(data);
-          return;
-        }
-
-        if (!data.success) {
-          showFatal(
-            data.message || '讀取假單失敗。'
-          );
-          return;
-        }
-
-        // 後端回傳必須與連結指定的 ID、階段一致。
-        if (
-          data.requestId !== REQUEST_ID ||
-          Number(data.stage) !== STAGE ||
-          !data.empId ||
-          !data.empName ||
-          !data.leaveType ||
-          !data.startDate ||
-          !data.endDate ||
-          !data.startTime ||
-          !data.endTime
-        ) {
-          showFatal(
-            '收到的假單資料不完整或與連結不符，已停止審核，請人事確認部署版本。'
-          );
-          return;
-        }
-
-        document.getElementById('requestIdText').textContent =
-          data.requestId;
-
-        CAN_REVIEW = data.canReview === true;
-
-        document.getElementById('loading')
-          .classList.add('hidden');
-
-        document.getElementById('detail')
-          .classList.remove('hidden');
-
-        document.getElementById('reviewerText').textContent =
-          data.reviewer + '審核';
-
-        document.getElementById('employee').textContent =
-          data.empName + '（' + data.empId + '）';
-
-        document.getElementById('leaveType').textContent =
-          data.leaveType;
-
-        document.getElementById('leaveTime').textContent =
-          data.startDate + ' ' + data.startTime +
-          ' ～ ' +
-          data.endDate + ' ' + data.endTime;
-
-        document.getElementById('reason').textContent =
-          data.reason || '－';
-
-        if (CAN_REVIEW) {
-          enableButtons();
-        } else {
-          disableButtons();
-        }
-
-        // 已完成的階段不可再次操作。
-        if (data.processed) {
-          disableButtons();
-
-          showStatus(
-            data.currentStatus === '已核准'
-              ? '✅ 此筆已同意'
-              : data.currentStatus === '已拒絕'
-                ? '❌ 此筆已拒絕'
-                : '此階段已免審',
-            'processed'
-          );
-
-          return;
-        }
-
-        if (!CAN_REVIEW) {
-          disableButtons();
-
-          showStatus(
-            data.blockedMessage ||
-              '目前尚未輪到此階段審核',
-            'processed'
-          );
-        }
-
-      } catch (error) {
-        showFatal(
-          '讀取資料失敗：' + error.message
-        );
+        [
+          "specialDetail",
+          "personalDetail",
+          "sickDetail"
+        ].forEach(function(id) {
+          document.getElementById(id).textContent = "已休 —｜共 —";
+        });
       }
-    }
 
-    // ===== 依同一 ID 送出審核 =====
-    async function submitReview(action) {
-      if (
-        submitting ||
-        !CAN_REVIEW ||
-        !['approve', 'reject'].includes(action)
-      ) {
+      if (data.familyCare) {
+        document.getElementById("familyCareInline").textContent =
+          "家庭照顧假：已休 " +
+          fh(data.familyCare.used) +
+          "時｜審核中 " +
+          fh(data.familyCare.pending || 0) +
+          "時｜尚可使用 " +
+          hd(data.familyCare.remaining) +
+          "｜年度上限 56.0時（7天）";
+      } else {
+        document.getElementById("familyCareInline").textContent =
+          "家庭照顧假：年度上限 56.0時（7天），併入事假額度";
+      }
+
+      if (effectiveFemale(data)) {
+        document.getElementById("menstrualCard").style.display =
+          "block";
+
+        document.getElementById("menstrualInfo").textContent =
+          data.menstrual
+            ? "已休 " +
+              fh(data.menstrual.used || 0) +
+              "時｜剩餘 " +
+              hd(data.menstrual.remaining || 0) +
+              "｜共 " +
+              hd(data.menstrual.total || 0)
+            : "目前尚無生理假額度資料";
+      } else {
+        document.getElementById("menstrualCard").style.display =
+          "none";
+      }
+
+      var recordList = document.getElementById("recordList");
+      recordList.innerHTML = "";
+
+      if (!data.records || !data.records.length) {
+        recordList.innerHTML =
+          '<div class="no-record">目前尚無請假紀錄</div>';
         return;
       }
 
-      submitting = true;
-      disableButtons();
+      data.records.forEach(function(record) {
+        var div = document.createElement("div");
+        div.className = "record-item";
 
-      showStatus(
-        action === 'approve'
-          ? '處理中：正在同意此筆申請…'
-          : '處理中：正在拒絕此筆申請…',
-        'processing'
-      );
+        var top = document.createElement("div");
+        top.className = "record-top";
 
-      try {
-        const data = await requestJson(GAS_URL, {
-          method: 'POST',
+        var type = document.createElement("span");
+        type.textContent = record.leaveType || "";
 
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+        var days = document.createElement("span");
+        days.className = "record-days";
 
-          body: JSON.stringify({
-            action: 'submitApprovalV2',
-            userId: LINE_USER_ID,
-            requestId: REQUEST_ID,
-            stage: STAGE,
-            reviewAction: action
-          })
+        var dayValue = fdays(record.days);
+        days.textContent =
+          dayValue === "" ? "" : dayValue + " 天";
+
+        top.appendChild(type);
+        top.appendChild(days);
+        div.appendChild(top);
+
+        var date = document.createElement("div");
+        date.className = "record-date";
+
+        ["start", "end"].forEach(function(key) {
+          var line = document.createElement("div");
+
+          line.textContent =
+            (key === "start" ? "開始：" : "結束：") +
+            leaveDateTime(
+              record[key + "Date"],
+              record[key + "Time"]
+            );
+
+          date.appendChild(line);
         });
 
-        // 頁面開啟後才被取消，送出時仍會顯示取消。
-        if (isCancelled(data)) {
-          showCancelled(data);
-          return;
+        div.appendChild(date);
+
+        var cancelled =
+          record.cancelled === true ||
+          record.status === "此筆已取消";
+
+        var status = document.createElement("div");
+        status.className = "record-status";
+
+        status.textContent = cancelled
+          ? "此筆已取消 / Đơn nghỉ phép này đã bị hủy"
+          : record.status || "";
+
+        if (cancelled) {
+          status.classList.add("record-cancelled");
         }
 
-        if (data.success) {
-          if (data.result === 'approved') {
-            showStatus(
-              '✅ 已同意該筆請假申請',
-              'success'
+        div.appendChild(status);
+
+        if (cancelled) {
+          var cancelReason = document.createElement("div");
+          cancelReason.className = "cancel-reason";
+
+          cancelReason.textContent =
+            "取消原因 / Lý do hủy：" +
+            (
+              record.cancellationReason ||
+              "人事未填寫 / Chưa có lý do"
             );
-          } else {
-            showStatus(
-              '❌ 已拒絕該筆請假申請',
-              'rejected'
-            );
-          }
 
-          CAN_REVIEW = false;
-
-          if (data.warning) {
-            showStatus(
-              '審核已完成。' + data.warning,
-              'processing'
-            );
-          }
-
-          submitting = true;
-          return;
+          div.appendChild(cancelReason);
         }
 
-        // 寫入結果不明，保持停用並重新查詢。
-        if (data.uncertain) {
-          CAN_REVIEW = false;
+        var stages = document.createElement("div");
+        stages.className = "stage-row";
 
-          showStatus(
-            data.message ||
-              '審核結果待確認，請重新載入。',
-            'error'
-          );
+        [
+          ["foreman", "廠長"],
+          ["manager", "主管"],
+          ["sectionChief", "課長"],
+          ["hr", "人事"]
+        ].forEach(function(pair) {
+          var span = document.createElement("span");
 
-          document.getElementById('retryBtn')
-            .classList.remove('hidden');
+          span.textContent =
+            icon(record[pair[0]]) + " " + pair[1];
 
-          return;
+          stages.appendChild(span);
+        });
+
+        div.appendChild(stages);
+        recordList.appendChild(div);
+      });
+    }
+
+    function leaveTimeText(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        String(value).trim() === ""
+      ) {
+        return "時間未提供";
+      }
+
+      var raw = String(value).trim();
+
+      var match = raw.match(
+        /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+      );
+
+      if (!match && /^\d{3,4}$/.test(raw)) {
+        raw = raw.padStart(4, "0");
+        match = [raw, raw.slice(0, 2), raw.slice(2)];
+      }
+
+      if (
+        !match ||
+        Number(match[1]) > 23 ||
+        Number(match[2]) > 59
+      ) {
+        return "時間待核對";
+      }
+
+      return String(match[1]).padStart(2, "0") +
+        ":" + match[2];
+    }
+
+    function leaveDateTime(date, time) {
+      return String(date || "日期未提供") +
+        " " + leaveTimeText(time);
+    }
+
+    function showError(message) {
+      var error = document.getElementById("errorMsg");
+      error.style.display = "block";
+      error.textContent = message;
+    }
+
+    function key(userId) {
+      return CACHE_PREFIX + userId;
+    }
+
+    function loadLocal(userId) {
+      try {
+        var raw = localStorage.getItem(key(userId));
+        if (!raw) return null;
+
+        var saved = JSON.parse(raw);
+
+        if (
+          !saved ||
+          !saved.data ||
+          Date.now() - saved.ts > CACHE_MAX_AGE
+        ) {
+          return null;
         }
 
-        if (data.alreadyProcessed) {
-          CAN_REVIEW = false;
-
-          showStatus(
-            data.message,
-            'processed'
-          );
-
-          submitting = true;
-          return;
-        }
-
-        showStatus(
-          '⚠️ ' + (data.message || '審核失敗'),
-          'error'
-        );
-
-        CAN_REVIEW = false;
-
-        document.getElementById('retryBtn')
-          .classList.remove('hidden');
-
+        return saved.data;
       } catch (error) {
-        showStatus(
-          '⚠️ 未能確認審核結果，請重新載入查看最新狀態。請勿連續送出。',
-          'error'
-        );
-
-        document.getElementById('retryBtn')
-          .classList.remove('hidden');
-
-        // 逾時不代表後端沒有寫入，不能直接重送。
-        submitting = true;
+        return null;
       }
     }
 
-    // ===== 取消狀態 =====
-    function isCancelled(data) {
-      return (
-        data.cancelled === true ||
-        data.status === 'cancelled' ||
-        data.message === '此筆已取消'
-      );
-    }
-
-    function showCancelled(data) {
-      CAN_REVIEW = false;
-      submitting = true;
-
-      disableButtons();
-
-      document.getElementById('detail')
-        .classList.add('hidden');
-
-      document.getElementById('buttonArea')
-        .classList.add('hidden');
-
-      document.getElementById('retryBtn')
-        .classList.add('hidden');
-
-      const loading = document.getElementById('loading');
-
-      loading.classList.remove('hidden');
-
-      loading.textContent =
-        '此筆已取消' +
-        (
-          data.cancellationReason
-            ? '\n取消原因：' + data.cancellationReason
-            : ''
+    function saveLocal(userId, data) {
+      try {
+        localStorage.setItem(
+          key(userId),
+          JSON.stringify({
+            ts: Date.now(),
+            data: data
+          })
         );
-
-      loading.style.whiteSpace = 'pre-line';
-      loading.style.fontSize = '24px';
-      loading.style.fontWeight = '700';
-
-      document.getElementById('reviewerText').textContent =
-        '此假單已取消，無需審核';
+      } catch (error) {
+        // 無法使用本機快取時，仍可正常查詢。
+      }
     }
 
-    // ===== 畫面控制 =====
-    function disableButtons() {
-      document.getElementById('approveBtn').disabled = true;
-      document.getElementById('rejectBtn').disabled = true;
-    }
-
-    function enableButtons() {
-      document.getElementById('approveBtn').disabled = false;
-      document.getElementById('rejectBtn').disabled = false;
-    }
-
-    function showStatus(text, type) {
-      const box = document.getElementById('statusBox');
-
-      box.style.display = 'block';
-      box.className = 'status-box ' + type;
-      box.textContent = text;
-    }
-
-    function showFatal(message) {
-      CAN_REVIEW = false;
-
-      const loading = document.getElementById('loading');
-
-      loading.classList.remove('hidden');
-      loading.textContent = '⚠️ ' + message;
-
-      document.getElementById('detail')
-        .classList.add('hidden');
-
-      document.getElementById('reviewerText').textContent =
-        '未能完成載入';
-
-      document.getElementById('retryBtn')
-        .classList.remove('hidden');
-
-      disableButtons();
-    }
-
-    // ===== 非同步逾時處理 =====
-    function withTimeout(promise, ms, message) {
-      let timer;
-
-      return Promise.race([
-        promise,
-        new Promise((_, reject) => {
-          timer = setTimeout(() => {
-            reject(new Error(message));
-          }, ms);
+    function loadSummary(userId) {
+      return fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          action: "getMyLeaveSummary",
+          userId: userId
         })
-      ]).finally(() => {
-        clearTimeout(timer);
-      });
+      })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          if (!data.success) {
+            throw new Error(data.message || "讀取失敗");
+          }
+
+          saveLocal(userId, data);
+          render(data, false);
+        })
+        .catch(function(error) {
+          showError(
+            "⚠️ " +
+            (error.message || "連線失敗，請稍後重新開啟")
+          );
+        });
     }
 
-    // ===== 載入 LINE SDK =====
-    function loadLiffSdk() {
-      if (window.liff) {
-        return Promise.resolve();
+    // ===== 人事入口：由後端驗證 HS021 =====
+    async function hrApi(action, employeeId) {
+      var token = liff.getIDToken();
+
+      if (!token) {
+        throw new Error(
+          "此入口需要 LINE openid 權限，請確認 LIFF 設定後重新登入。"
+        );
       }
 
-      const loadingPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
+      var controller = new AbortController();
 
-        script.src =
-          'https://static.line-scdn.net/liff/edge/2/sdk.js';
-
-        script.async = true;
-
-        script.onload = () => {
-          if (window.liff) {
-            resolve();
-          } else {
-            reject(new Error(
-              'LINE 元件無法使用。'
-            ));
-          }
-        };
-
-        script.onerror = () => {
-          reject(new Error(
-            'LINE 元件載入失敗，請確認網路後重新載入。'
-          ));
-        };
-
-        document.head.appendChild(script);
-      });
-
-      return withTimeout(
-        loadingPromise,
-        15000,
-        'LINE 元件載入逾時，請確認網路後重新載入。'
-      );
-    }
-
-    // ===== 後端請求與回傳檢查 =====
-    async function requestJson(url, options) {
-      const controller = new AbortController();
-
-      const timer = setTimeout(() => {
+      var timer = setTimeout(function() {
         controller.abort();
       }, 25000);
 
       try {
-        const response = await fetch(url, {
-          ...options,
+        var response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify({
+            action: action,
+            idToken: token,
+            empId: employeeId || ""
+          }),
           signal: controller.signal
         });
 
         if (!response.ok) {
-          throw new Error(
-            '伺服器回應異常（HTTP ' +
-            response.status +
-            '），請稍後重試。'
-          );
+          throw new Error("伺服器連線失敗");
         }
 
-        let data;
+        var data = await response.json();
 
-        try {
-          data = await response.json();
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            throw error;
-          }
-
-          throw new Error(
-            '伺服器未回傳有效資料，請確認 Apps Script 部署與存取設定。'
-          );
-        }
-
-        if (
-          !data ||
-          typeof data !== 'object' ||
-          typeof data.success !== 'boolean'
-        ) {
-          throw new Error(
-            '伺服器回傳格式不正確，請聯絡管理者。'
-          );
+        if (!data.success) {
+          throw new Error(data.message || "查詢失敗");
         }
 
         return data;
-
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          throw new Error(
-            '連線逾時，請確認網路後重新載入。'
-          );
-        }
-
-        throw error;
-
       } finally {
         clearTimeout(timer);
       }
     }
 
-    init();
+    async function hrLoadSelected() {
+      var selection = document.getElementById("hrEmployee");
+      var employeeId = selection.value;
+
+      if (!employeeId) return;
+
+      var requestNumber = ++hrRequestNumber;
+
+      document.getElementById("mainWrap").style.display =
+        "none";
+
+      document.getElementById("errorMsg").style.display =
+        "none";
+
+      document.getElementById("hrHint").textContent =
+        "正在讀取 " + employeeId + " 的假勤資料…";
+
+      document.getElementById("hrRefresh").disabled = true;
+
+      try {
+        var data = await hrApi(
+          "hrLeaveSummary",
+          employeeId
+        );
+
+        // 避免快速切換員工時，舊回應蓋掉新資料。
+        if (requestNumber !== hrRequestNumber) return;
+
+        if (data.empId !== employeeId) {
+          throw new Error(
+            "回傳的員工資料不符，請重新查詢。"
+          );
+        }
+
+        render(data, false);
+
+        document.getElementById("mainWrap").style.display =
+          "block";
+
+        document.getElementById("hrHint").textContent =
+          "目前查看：" +
+          data.empName +
+          "（" + data.empId + "）";
+      } catch (error) {
+        if (requestNumber === hrRequestNumber) {
+          showError(
+            error.name === "AbortError"
+              ? "查詢逾時，請重新查詢。"
+              : error.message
+          );
+
+          document.getElementById("hrHint").textContent =
+            "查詢未完成";
+        }
+      } finally {
+        if (requestNumber === hrRequestNumber) {
+          document.getElementById("hrRefresh").disabled =
+            false;
+        }
+      }
+    }
+
+    async function hrInit() {
+      document.getElementById("hrPanel").style.display =
+        "block";
+
+      document.getElementById("mainWrap").style.display =
+        "none";
+
+      var data = await hrApi("hrLeaveInit");
+      var selection = document.getElementById("hrEmployee");
+
+      data.employees.forEach(function(employee) {
+        var option = document.createElement("option");
+
+        option.value = employee.empId;
+        option.textContent =
+          employee.empId + " " + employee.name;
+
+        selection.appendChild(option);
+      });
+
+      selection.disabled = false;
+      selection.onchange = hrLoadSelected;
+
+      document.getElementById("hrRefresh").onclick =
+        hrLoadSelected;
+
+      document.getElementById("hrHint").textContent =
+        "HS021 驗證通過";
+
+      await hrLoadSelected();
+    }
+
+    if (HR_MODE) {
+      document.getElementById("mainWrap").style.display =
+        "none";
+
+      document.getElementById("hrPanel").style.display =
+        "block";
+    }
+
+    // ===== LINE 初始化 =====
+    liff.init({
+      liffId: LIFF_ID
+    })
+      .then(function() {
+        if (!liff.isLoggedIn()) {
+          liff.login({
+            redirectUri: window.location.href
+          });
+
+          return null;
+        }
+
+        if (HR_MODE) {
+          return hrInit().then(function() {
+            return null;
+          });
+        }
+
+        return liff.getProfile();
+      })
+      .then(function(profile) {
+        if (!profile) return;
+
+        var cached = loadLocal(profile.userId);
+
+        if (cached) {
+          render(cached, true);
+        }
+
+        return loadSummary(profile.userId);
+      })
+      .catch(function(error) {
+        showError(
+          error.message || "載入失敗，請重新從 LINE 開啟"
+        );
+
+        if (HR_MODE) {
+          document.getElementById("hrHint").textContent =
+            "無法進入人事入口";
+        }
+      });
   </script>
 </body>
 </html>
