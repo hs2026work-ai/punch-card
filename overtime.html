@@ -20,8 +20,9 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
 #completion>div{background:white;border-radius:12px;padding:28px;max-width:420px;width:100%;box-shadow:0 8px 36px #0003}
 #completion h2{color:#24733c;font-size:26px}#entryStatus{white-space:pre-wrap;color:#a33129}
 @media(max-width:480px){body.late-confirm #quickActions{grid-template-columns:1fr}body.late-confirm #quickActions button{width:100%;flex-basis:100%;white-space:normal}}
+.button-vi{display:block;font-family:Arial,'Times New Roman',sans-serif;font-size:14px;line-height:1.45;margin-top:4px;color:inherit}button.bilingual{white-space:normal;overflow-wrap:normal;min-height:72px}#quickActions{align-items:stretch}@media(max-width:480px){#quickActions .bilingual{flex:1 1 100%!important}}
 </style><script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script></head><body>
-<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main><p class="muted">版本 1.4｜正式版</p><div class="row"><button id="launchTest" type="button" hidden>進入 HS021 專用測試</button><button id="exitTest" type="button" class="secondary" hidden>返回正式模式</button></div>
+<header><strong>宏升工業社｜加班申請</strong><p>主管安排・本人申請・審核紀錄</p></header><main><p class="muted">版本 1.5.1｜正式版</p><div class="row"><button id="launchTest" type="button" hidden>進入 HS021 專用測試</button><button id="exitTest" type="button" class="secondary" hidden>返回正式模式</button></div>
 <section id="testPanel" hidden style="border:3px solid #d6883c;background:#fff4df">
 <h1>HS021 專用測試</h1><p>獨立測試紀錄，不列入正式出勤。此處的角色皆為模擬；實際操作與 LINE 收件人都是 HS021。</p>
 <label>切換測試身分<select id="testRole"><option value="HS005">廠內員工 HS005</option><option value="HS008">行政員工 HS008</option><option value="HS006">廠長 HS006</option><option value="HS017">主管 HS017</option><option value="HS021">人事 HS021</option></select></label>
@@ -44,7 +45,7 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
 <div id="targetNotice" class="notice" hidden><strong id="targetLabel"></strong><p>目前只顯示此連結指定的一筆資料。</p><button id="leaveTarget" class="secondary">返回月份列表</button></div>
 <nav class="tabs" aria-label="操作入口"><button id="manageTab" aria-selected="false" hidden>主管入口<small>主管・人事・廠長</small></button><button id="mineTab" aria-selected="true">個人入口<small>本人 LINE 身分</small></button></nav>
 <section id="accessDenied" hidden><h1>無此權限</h1><p>主管入口僅限廠長、主管、人事。請使用個人入口。</p></section>
-<section id="management" hidden><div class="toolbar"><h1>主管加班安排</h1><button id="newPlan">新增安排</button></div><p class="muted">預設 17:30–20:30。廠長、主管及人事直接安排，送出後由員工回覆同意或無法配合，不另送審。</p></section>
+<section id="management" hidden><div class="toolbar"><h1>主管加班安排</h1><button id="newPlan">新增安排</button></div><p class="muted">預設 17:30–20:30。廠長、主管及人事直接安排，送出後由員工回覆「今日有要加班／今日無加班」，不另送審。本次回覆為預計加班情形；如後續有變動，加班時數依實際出勤及工作情形核對。</p></section>
 <section id="personal"><div class="toolbar"><h1>加班申請暨同意書</h1><button id="newPersonal">填寫個人申請</button></div><p id="agreementText" class="detail agreement"></p><p class="muted">事前與事後都要填日期、時間及工作內容。事後補登另填資料來源與原因；開始後尚未結束的時段，請於結束後填寫。</p></section>
 <section id="punchPendingSection" hidden><h2>加班結束・待本人確認</h2><p class="muted">以下為打卡分頁帶入的待辦，尚未完成的跨月待辦也會保留在這裡。原打卡紀錄不會被修改。</p><div id="punchPendingList"></div></section>
 <section id="punchFormSection" hidden><h2>確認本次實際加班情形</h2><p id="punchWho"></p><p id="punchNote" class="notice"></p><form id="punchForm"><div class="grid"><label>加班日期<input id="punchDate" readonly></label><label>實際開始<input id="punchStart" type="time" required></label><label>實際結束<input id="punchEnd" type="time" required></label><label>日別<select id="punchDay" required><option value="">請依班表選擇</option><option>平日</option><option>休息日</option><option>國定假日</option><option>特別休假日</option></select></label><label class="wide">實際工作內容／加班事由<textarea id="punchWork" required maxlength="300"></textarea></label><label class="wide">如有更正時間，請填原因<textarea id="punchCorrection" maxlength="500"></textarea></label><p id="punchAgreement" class="agreement wide"></p><label class="check wide"><input id="punchAgree" type="checkbox" required><span>本人確認以上為本次實際加班情形。</span></label></div><div class="row formActions"><button type="submit">確認並送出</button><button type="button" id="closePunch" class="secondary">收起</button></div></form></section>
@@ -82,10 +83,13 @@ async function transportRpc(name,...args){
 function random(){return Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');}
 async function run(fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(e){if(quickEntry&&!token){$('quickStatus').textContent=e.message;$('quickReload').hidden=false;msg('');}else msg(e.message,true);}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);if(formMode)gate();}}
 function text(tag,value,cls){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
-function button(label,fn,cls='secondary'){const e=text('button',label,cls);e.type='button';e.onclick=()=>run(fn);return e;}
+function bilingualButton(e,label){const vi={'今日有要加班':'Hôm nay có tăng ca','今日無加班':'Hôm nay không tăng ca'}[label];e.classList.toggle('bilingual',!!vi);if(vi){const span=text('span',vi,'button-vi');span.lang='vi';e.replaceChildren(text('span',label),span);}}
+function button(label,fn,cls='secondary'){const e=text('button',label,cls);bilingualButton(e,label);e.type='button';e.onclick=()=>run(fn);return e;}
 function taipeiNow(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function showTime(s){return s?new Date(s).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'—';}
 let quickRecord=null,recordsLoading=false,loadGeneration=0;
+function daily(r){return r?.replyMode==='DAILY_PLAN'&&r.source==='主管安排';}
+function dailyNote(){return '本次回覆為預計加班情形；如後續有變動，加班時數依實際出勤及工作情形核對。';}
 function showQuick(r,error){
  document.body.classList.add('quick-page');$('testPanel').hidden=true;$('exitTest').hidden=!testMode;document.querySelector('#quickReply h1').textContent=testMode?'【測試】加班回覆':'加班回覆';
  $('quickReload').hidden=false;quickRecord=r||null;$('quickReply').hidden=false;$('app').hidden=true;$('login').hidden=true;$('launchTest').hidden=true;
@@ -94,12 +98,14 @@ function showQuick(r,error){
  const late=r&&activeTarget?.kind==='late',c=r?.lateConfirmation;
  document.body.classList.toggle('late-confirm',!!late);
  const canLate=late&&r.isMine&&r.lateTarget&&c?.version===r.version&&c.status==='待本人補確認'&&r.reply==='未回覆'&&!r.actual&&!['已取消','退回補正'].includes(r.status);
- $('quickAgree').textContent=late?'確認當時已口頭同意':'同意加班';$('quickDecline').textContent=late?'內容有誤':'無法配合';
+ $('quickAgree').textContent=late?'確認當時已口頭同意':daily(r)?'今日有要加班':'同意加班';$('quickDecline').textContent=late?'內容有誤':daily(r)?'今日無加班':'無法配合';
+ bilingualButton($('quickAgree'),$('quickAgree').textContent);bilingualButton($('quickDecline'),$('quickDecline').textContent);
  const canReply=!late&&r&&r.isMine&&r.source==='主管安排'&&!r.actual&&!['已取消','退回補正'].includes(r.status)&&Date.now()<new Date(r.date+'T'+r.start+':00+08:00').getTime();
  $('quickActions').hidden=!(canReply||canLate);
  const canReview=!late&&r&&r.canApprove&&r.status==='待部門審核';$('quickReview').hidden=!canReview;
  document.querySelector('#quickReply h1').textContent=(testMode?'【測試】':'')+(late?'加班補確認':canReview?'加班審核':r&&r.isMine&&r.source==='主管安排'?'加班回覆':'加班資料');
  if(late){$('quickStatus').textContent=error||(c?.status==='已回覆'?'補確認已儲存：'+c.reply+'。':canLate?'請確認您當時是否已口頭同意本次加班安排。本次回覆時間會如實保留。':'本次補確認已失效，請洽人事核對。');return;}
+ if(daily(r)&&!error){document.querySelector('#quickReply h1').textContent='加班意向確認';$('quickDetails').append(text('p',dailyNote(),'notice'));$('quickStatus').textContent=r.reply!=='未回覆'?'已記錄「'+r.reply+'」。':canReply?'請選擇預計加班情形。':'已到加班時段，依實際出勤及工作情形核對，不必事後補按。';return;}
  $('quickStatus').textContent=error||(canReview?'請核對本次加班申請。':r&&!canReply&&(!r.isMine||r.source!=='主管安排')?'狀態：'+r.status:r.status==='已取消'?'本次安排已取消。':!canReply?'本次已非事前回覆時段，請從加班申請入口確認實際加班情形。':r.reply==='同意'?'已同意本次加班。':r.reply==='無法配合'?'已回覆無法配合。':'請確認本次加班安排。');
 }
 function applyHome(home){
@@ -123,6 +129,7 @@ function render(){
   a.append(text('h3',r.date+'　'+r.name+'　'+r.start+'–'+r.end));
   const badges=text('div','','row');[r.status,r.reply,r.source||'舊版安排',r.phase||''].filter(Boolean).forEach(v=>badges.append(text('span',v,'badge'+(v==='無法配合'?' no':''))));a.append(badges,text('p',(r.category||r.dept)+'／'+r.dayType+'\n'+r.work,'detail'));
   if(r.review&&r.approvalPolicy!=='DIRECT_ARRANGEMENT'&&r.approvalPolicy!=='MANAGER_SELF_CONFIRMATION'){a.append(text('p','部門審核：'+(r.review.department?r.review.department.name+' '+showTime(r.review.department.at):'待處理'),'muted detail'));}
+  if(daily(r))a.append(text('p',dailyNote(),'notice'));
   if(r.changeReason)a.append(text('p','最近異動說明：'+r.changeReason));
   if(r.paperNeeded&&!r.paper)a.append(text('p','尚無 LINE 綁定：請安排紙本本人簽署並登錄。','notice'));
   if(r.paper)a.append(text('p','纸本簽署：'+r.paper.signedAt.replace('T',' ')+'／'+r.paper.reference+'；代登：'+r.paper.recordedBy,'muted'));
@@ -131,8 +138,9 @@ function render(){
   if(r.lateConfirmation&&r.lateConfirmation.version===r.version)a.append(text('p',r.lateConfirmation.status==='已回覆'?'補確認：'+r.lateConfirmation.reply+'／'+showTime(r.lateConfirmation.repliedAt):'已補寄通知，待本人補確認。','notice'));
   const actions=text('div','','actions');
   if(tab==='mine'){
-   if(r.source==='主管安排'&&live&&future&&!r.actual){if(r.reply!=='同意')actions.append(button(r.reply==='無法配合'?'改為同意加班':'同意加班',()=>act(r,'reply',{reply:'同意'}),''));if(r.reply!=='無法配合')actions.append(button('無法配合',()=>act(r,'reply',{reply:'無法配合'}),'danger'));}
+   if(r.source==='主管安排'&&live&&future&&!r.actual&&!daily(r)){if(r.reply!=='同意')actions.append(button(r.reply==='無法配合'?'改為同意加班':'同意加班',()=>act(r,'reply',{reply:'同意'}),''));if(r.reply!=='無法配合')actions.append(button('無法配合',()=>act(r,'reply',{reply:'無法配合'}),'danger'));}
    if(r.lateTarget&&r.lateConfirmation?.status==='待本人補確認'&&r.reply==='未回覆'&&!r.actual&&live)actions.append(button('回覆補確認',async()=>{activeTarget=r.lateTarget;showQuick(r);},''));
+   if(daily(r)&&live&&future&&!r.actual){for(const reply of ['今日有要加班','今日無加班'])if(r.reply!==reply)actions.append(button(reply,()=>act(r,'reply',{reply}),reply==='今日有要加班'?'':'secondary'));}
    if(r.source==='個人申請'&&r.status!=='已取消')actions.append(button('修改申請',async()=>openForm('personal',r)));
    if(finished)actions.append(button(r.actual?'更正本人實際出勤':'補登本次實際出勤',async()=>openForm('actual',r)));
    if(r.actual&&r.actual.status==='已核對'){if(!['本人已陳述','確認'].includes(r.actual.employeeStatus))actions.append(button('確認本次實際加班情形',()=>act(r,'confirmActual',{result:'確認'}),''));actions.append(button('提出出勤異議',async()=>{const note=prompt('請說明需更正的情形');if(note)await act(r,'confirmActual',{result:'有異議',note});},'danger'));}
@@ -141,7 +149,7 @@ function render(){
    if(r.canApprove&&r.status==='待部門審核')actions.append(button('退回補正',()=>review(r,'return'),'danger'));
    if(future&&!r.actual&&r.status!=='已取消')actions.append(button('修改安排',async()=>openForm('manage',r)));
    if(finished)actions.append(button(r.actual?'更正實際出勤':'補登實際出勤',async()=>openForm('actual',r)));
-   if(r.canManage&&r.flowVersion===4&&r.source==='主管安排'&&live&&!r.actual&&r.reply==='未回覆')actions.append(button('補寄通知',()=>resendNotice(r)));
+   if(r.canManage&&r.flowVersion===4&&r.source==='主管安排'&&live&&!r.actual&&r.reply==='未回覆'&&(!daily(r)||future))actions.append(button('補寄通知',()=>resendNotice(r)));
    if(r.source==='主管安排'&&future&&live&&!r.actual)actions.append(button('登錄紙本回覆',()=>paper(r)));
    if(r.canApprove&&r.reply==='無法配合'&&!r.ackBy)actions.append(button('已知悉無法配合',()=>act(r,'ack')));
    if(r.delivery.some(d=>['待發送','發送失敗'].includes(d.status)))actions.append(button('處理待發送通知',()=>act(r,'retry')));
@@ -159,15 +167,15 @@ function gate(){$('entryFields').disabled=!$('agreementGate').hidden&&!$('agreed
 function phaseHint(){const past=new Date($('date').value+'T'+$('start').value+':00+08:00').getTime()<=Date.now(),post=formMode==='actual'||formMode==='personal'&&past;$('reasonLabel').hidden=!(editing||post);$('reason').required=!$('reasonLabel').hidden;$('evidenceLabel').hidden=!post;$('evidence').required=post;$('phaseHint').textContent=formMode==='personal'&&['MANAGER','SUPERVISOR'].includes(state.user.role)?'廠長／主管本人申請：送出即為本人確認，直接通知人事，不另送審。':post?'事後資料：請據實填寫實際時間、補登原因與資料來源，送部門審核完成後通知人事。':formMode==='manage'?'送出後直接請員工回覆，不另送審；修改後須由員工重新回覆。':'事前申請：本人送出即留下此次申請意願，送部門審核完成後通知人事。';}
 function renderPeople(){if(!state)return;const group=$('group').value,list=state.people.filter(p=>group==='全部'||group==='個別'||p.category===group),area=$('people');area.replaceChildren();list.forEach(p=>{const label=text('label','','person'),c=document.createElement('input');c.type='checkbox';c.value=p.id;c.checked=group!=='個別';c.disabled=group!=='個別';c.onchange=countPeople;label.append(c,document.createTextNode(p.id+' '+p.name+'（'+(p.category||'未分類')+'）'));area.append(label);});$('selectAll').hidden=$('selectNone').hidden=group!=='個別';countPeople();}
 function countPeople(){$('peopleCount').textContent='已選 '+$('people').querySelectorAll('input:checked').length+' 人';}
-async function act(r,action,data={}){if(['reply','confirmActual'].includes(action)&&!confirm('確認'+(data.reply||data.result)+'？\n'+r.date+' '+r.start+'–'+r.end))return;if(action==='reply')data.guard=r.planTarget;if(action==='confirmActual')data.guard=r.actualTarget;const result=await rpc('updateOvertime',token,r.id,r.revision,action,data);if(activeTarget&&['edit','cancel','recordActual'].includes(action)){activeTarget=null;$('targetNotice').hidden=true;}await refresh();msg(action==='reply'&&data.reply==='無法配合'?'已記錄無法配合，請反映至廠長／主管協調。':result.warning||'已保存操作人員、時間及異動紀錄。');}
+async function act(r,action,data={}){if(['reply','confirmActual'].includes(action)&&!confirm('確認'+(data.reply||data.result)+'？\n'+r.date+' '+r.start+'–'+r.end))return;if(action==='reply')data.guard=r.planTarget;if(action==='confirmActual')data.guard=r.actualTarget;const result=await rpc('updateOvertime',token,r.id,r.revision,action,data);if(activeTarget&&['edit','cancel','recordActual'].includes(action)){activeTarget=null;$('targetNotice').hidden=true;}await refresh();msg(action==='reply'&&daily(r)?'已記錄「'+data.reply+'」。'+dailyNote():action==='reply'&&data.reply==='無法配合'?'已記錄無法配合，請反映至廠長／主管協調。':result.warning||'已保存操作人員、時間及異動紀錄。');}
 async function resendNotice(r){
  const past=Date.now()>=new Date(r.date+'T'+r.start+':00+08:00').getTime();
- const reason=prompt((past?'已過期，將請員工補確認當時是否已口頭同意。':'將重新通知員工回覆同意／無法配合。')+'\n'+r.name+' '+r.date+' '+r.start+'～'+r.end+'\n補寄原因：','原通知未收到');if(!reason?.trim())return;
+ const reason=prompt((past?'已過期，將請員工補確認當時是否已口頭同意。':daily(r)?'將重新通知員工回覆預計加班情形。':'將重新通知員工回覆同意／無法配合。')+'\n'+r.name+' '+r.date+' '+r.start+'～'+r.end+'\n補寄原因：','原通知未收到');if(!reason?.trim())return;
  const result=await rpc('updateOvertime',token,r.id,r.revision,'resendNotice',{reason:reason.trim()});
  completed('補寄已排程',result.warning||'已記錄操作人員與時間，LINE 通知待背景發送。');await refreshAfterSaved();
 }
 async function review(r,action){const note=prompt(action==='return'?'請填退回原因':'請填核對工作內容／時間的結果');if(note)await act(r,action,{note});}
-async function paper(r){const reply=prompt('紙本本人回覆：請輸入「同意」或「無法配合」');if(!reply)return;const signedAt=prompt('紙本實際簽署時間（台灣時間），格式 2026-10-01T16:00');if(!signedAt)return;const reference=prompt('紙本編號／存放位置');if(reference)await act(r,'paperReply',{reply,signedAt,reference});}
+async function paper(r){const reply=prompt(daily(r)?'紙本預計回覆：請輸入「今日有要加班」或「今日無加班」':'紙本本人回覆：請輸入「同意」或「無法配合」');if(!reply)return;const signedAt=prompt('紙本實際簽署時間（台灣時間），格式 2026-10-01T16:00');if(!signedAt)return;const reference=prompt('紙本編號／存放位置');if(reference)await act(r,'paperReply',{reply,signedAt,reference});}
 function completed(title,detail){$('completionTitle').textContent=title;$('completionDetail').textContent=detail;$('completion').hidden=false;$('completionClose').disabled=false;$('completionClose').focus();}
 $('completionClose').onclick=()=>{$('completion').hidden=true;$('recordsSection').scrollIntoView({behavior:'smooth'});};
 async function refreshAfterSaved(){try{await refresh();}catch(e){msg('資料已儲存，但清單更新失敗。請重新整理核對，不必重送。',true);$('completionDetail').textContent+=' 清單暫時未更新，請稍後重新整理，不必重送。';}}
@@ -209,7 +217,7 @@ try{sessionStorage.removeItem('ot:test-entry');}catch(e){}
 function showTestMode(){ $('testPanel').hidden=!testMode||quickEntry;$('exitTest').hidden=!testMode; }
 showTestMode();
 $('launchTest').onclick=()=>{};
-$('exitTest').onclick=()=>{try{sessionStorage.removeItem('ot:test-entry');}catch(e){}location.assign(location.origin+location.pathname+'?appver=140');};
+$('exitTest').onclick=()=>{try{sessionStorage.removeItem('ot:test-entry');}catch(e){}location.assign(location.origin+location.pathname+'?appver=151');};
 const TEST_METHODS=['getOvertimeEntry','quickReplyOvertime','getOvertimeHome','listOvertime','enterOvertime','getOvertimeTarget','createOvertime','submitPersonalOvertime','updateOvertime','listPunchOvertime','testNotifications','retryTestNotifications'];
 async function rpc(name,...args){
  if(name==='testOvertime')throw Error('正式版不提供測試操作。');
@@ -254,7 +262,7 @@ async function sendQuickReply(reply){
  if(!quickRecord)throw Error('請重新開啟加班通知。');
  $('quickStatus').textContent='正在送出，請稍候…';
  const late=activeTarget?.kind==='late';
- const answer=late?(reply==='同意'?'當時已口頭同意':'內容有誤'):reply;
+ const answer=late?(reply==='同意'?'當時已口頭同意':'內容有誤'):daily(quickRecord)?(reply==='同意'?'今日有要加班':'今日無加班'):reply;
  try{const result=await rpc('quickReplyOvertime',token,late?quickRecord.lateTarget:quickRecord.planTarget,answer);if(result.request)showQuick(result.request);else applyHome(result.home);$('quickStatus').textContent=result.message;msg('');}
  catch(e){$('quickStatus').textContent=e.message||'送出失敗，請稍後重試。';}
 }
