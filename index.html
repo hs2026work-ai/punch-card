@@ -1293,7 +1293,7 @@ errorAudio.currentTime = 0;
 
 var currentEarlyReason = '';
 var currentEarlyMinTime = '05:00';
-var currentEarlyMaxTime = '07:59';
+var currentEarlyMaxTime = '12:00';
 var currentEarlyDefaultTime = '07:00';
 var currentNormalCheckInTime = '08:00';
 var currentOvertimeOutReason = '';
@@ -1415,7 +1415,7 @@ if (data.canMarkEarlyCheckIn) {
 showEarlyBtn = true;
 currentEarlyReason = data.earlyCheckInReason;
 currentEarlyMinTime = data.earlyCheckInMinTime || '05:00';
-currentEarlyMaxTime = data.earlyCheckInMaxTime || '07:59';
+currentEarlyMaxTime = data.earlyCheckInMaxTime || '12:00';
 currentEarlyDefaultTime = data.earlyCheckInDefaultTime || '07:00';
 currentNormalCheckInTime = data.normalCheckInTime || '08:00';
 html += '<button type="button" class="mark-early-btn" onclick="openEarlyModal()">⏰ 我今天比較早到，回報實際到班時間</button>';
@@ -1457,7 +1457,7 @@ function refreshEarlyMinuteOptions(preferredMinute) {
 var hourSelect = document.getElementById('earlyHourSelect');
 var minuteSelect = document.getElementById('earlyMinuteSelect');
 var minTime = parseHHMM(currentEarlyMinTime, '05:00');
-var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+var maxTime = parseHHMM(currentEarlyMaxTime, '12:00');
 var selectedHour = Number(hourSelect.value);
 var wanted = preferredMinute === undefined ? Number(minuteSelect.value) : Number(preferredMinute);
 
@@ -1491,7 +1491,7 @@ minuteSelect.value = hasPreferred
 function prepareEarlyTimeSelects() {
 var hourSelect = document.getElementById('earlyHourSelect');
 var minTime = parseHHMM(currentEarlyMinTime, '05:00');
-var maxTime = parseHHMM(currentEarlyMaxTime, '07:59');
+var maxTime = parseHHMM(currentEarlyMaxTime, '12:00');
 var defaultTime = parseHHMM(currentEarlyDefaultTime, '07:00');
 
 hourSelect.innerHTML = '';
