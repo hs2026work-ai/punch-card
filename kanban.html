@@ -1,691 +1,1441 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="場內與行政人員加班、請假資訊管理看板">
-  <title>人員工時管理看板</title>
-  <style>
-    :root {
-      --ink: #172638;
-      --muted: #68778a;
-      --line: #dce3ec;
-      --paper: #ffffff;
-      --canvas: #f3f6fa;
-      --green: #073b7a;
-      --green-soft: #e7eff9;
-      --gold: #f06a0a;
-      --gold-soft: #fff0e4;
-      --red: #b33f3f;
-      --red-soft: #fbeaea;
-      --blue: #16579b;
-      --blue-soft: #e7f0fa;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="場內與行政人員加班、請假資訊管理看板">
+<title>人員工時管理看板</title>
 
-    * { box-sizing: border-box; }
+<style>
+:root{
+ --ink:#172638;
+ --muted:#68778a;
+ --line:#dce3ec;
+ --paper:#fff;
+ --canvas:#f3f6fa;
+ --green:#073b7a;
+ --green-soft:#e7eff9;
+ --gold:#f06a0a;
+ --gold-soft:#fff0e4;
+ --red:#b33f3f;
+ --red-soft:#fbeaea;
+ --blue:#16579b;
+ --blue-soft:#e7f0fa;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;
+ min-width:320px;
+ background:var(--canvas);
+ color:var(--ink);
+ font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+ letter-spacing:0;
+}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+.entry-screen{
+ min-height:100vh;
+ display:grid;
+ place-items:center;
+ padding:24px;
+ background:#f1f4f8;
+}
+.login-box,.department-box{
+ width:min(100%,430px);
+ background:var(--paper);
+ border:1px solid var(--line);
+ border-radius:8px;
+ padding:32px;
+ box-shadow:0 18px 55px rgba(7,59,122,.12);
+}
+.entry-mark{
+ width:46px;
+ height:46px;
+ display:grid;
+ place-items:center;
+ border-radius:7px;
+ background:#073b7a;
+ color:#f47a1f;
+ font-weight:900;
+ margin-bottom:24px;
+}
+.entry-screen h1{font-size:24px;margin-bottom:8px}
+.entry-screen p{
+ color:var(--muted);
+ font-size:13px;
+ line-height:1.6;
+ margin:0 0 24px;
+}
+.field-label{
+ display:block;
+ margin-bottom:8px;
+ font-size:12px;
+ font-weight:700;
+}
+.password-input{
+ width:100%;
+ height:46px;
+ border:1px solid var(--line);
+ border-radius:7px;
+ padding:0 13px;
+ outline:none;
+}
+.password-input:focus{
+ border-color:var(--green);
+ box-shadow:0 0 0 3px rgba(7,59,122,.12);
+}
+.remember-row{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ margin:14px 0 20px;
+ font-size:12px;
+ color:var(--muted);
+}
+.remember-row input{
+ width:17px;
+ height:17px;
+ accent-color:var(--green);
+}
+.primary-button{
+ width:100%;
+ height:46px;
+ border:0;
+ border-radius:7px;
+ background:var(--green);
+ color:#fff;
+ font-weight:800;
+ cursor:pointer;
+}
+.primary-button:hover{background:#052e60}
+.login-error{
+ min-height:20px;
+ margin:8px 0 0!important;
+ color:var(--red)!important;
+}
+.department-box{width:min(100%,650px)}
+.department-options{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:14px;
+}
+.department-card{
+ min-height:164px;
+ padding:22px;
+ text-align:left;
+ cursor:pointer;
+ border:1px solid var(--line);
+ border-radius:8px;
+ background:#fff;
+ color:var(--ink);
+}
+.department-card:hover,.department-card:focus{
+ border-color:var(--gold);
+ box-shadow:0 0 0 3px rgba(240,106,10,.11);
+}
+.department-card strong{
+ display:block;
+ font-size:22px;
+ margin-bottom:10px;
+}
+.department-card span{
+ color:var(--muted);
+ font-size:12px;
+ line-height:1.6;
+}
+.department-card b{
+ display:block;
+ margin-top:20px;
+ color:var(--gold);
+ font-size:12px;
+}
+.text-button{
+ border:0;
+ background:transparent;
+ color:#c2d3e7;
+ padding:0;
+ cursor:pointer;
+ font-size:11px;
+ text-align:left;
+}
+.text-button:hover{color:#fff}
+.shell{
+ min-height:100vh;
+ display:grid;
+ grid-template-columns:224px minmax(0,1fr);
+}
+.sidebar{
+ background:#073b7a;
+ color:#fff;
+ padding:28px 20px;
+ display:flex;
+ flex-direction:column;
+ position:sticky;
+ top:0;
+ height:100vh;
+}
+.brand{
+ display:flex;
+ gap:12px;
+ align-items:center;
+ margin-bottom:42px;
+}
+.brand-mark{
+ width:38px;
+ height:38px;
+ border-radius:7px;
+ display:grid;
+ place-items:center;
+ background:#f06a0a;
+ color:#fff;
+ font-weight:900;
+}
+.brand strong{display:block;font-size:16px}
+.brand small{color:#c2d3e7;font-size:11px}
+.nav-label{color:#9eb9d8;font-size:11px;margin:0 10px 9px}
+.current-dept{
+ border-radius:7px;
+ padding:12px 13px;
+ background:#fff;
+ color:#073b7a;
+ font-weight:800;
+}
+.current-dept span{
+ float:right;
+ color:var(--gold);
+ font-size:11px;
+}
+.sidebar-foot{
+ margin-top:auto;
+ color:#9eb9d8;
+ font-size:11px;
+ line-height:1.8;
+}
+.data-time strong{display:block;color:#fff;font-size:12px}
+.data-time span{
+ display:block;
+ color:#c2d3e7;
+ font-size:11px;
+ line-height:1.5;
+}
+.sidebar-actions{display:grid;gap:2px;margin-top:10px}
+main{
+ padding:30px clamp(18px,3vw,44px) 48px;
+ overflow:hidden;
+}
+.topbar{
+ display:flex;
+ align-items:flex-start;
+ justify-content:space-between;
+ gap:20px;
+}
+h1{
+ font-size:clamp(23px,3vw,31px);
+ margin:0 0 6px;
+ line-height:1.25;
+}
+.subtitle{margin:0;color:var(--muted);font-size:13px}
+.month-wrap{display:flex;align-items:center;gap:9px}
+.month-wrap label{font-size:12px;color:var(--muted)}
+select,.search{
+ height:40px;
+ border:1px solid var(--line);
+ border-radius:7px;
+ background:var(--paper);
+ color:var(--ink);
+ padding:0 12px;
+ outline:none;
+}
+select:focus,.search:focus{
+ border-color:var(--green);
+ box-shadow:0 0 0 3px rgba(7,59,122,.12);
+}
+.refresh-button{
+ height:40px;
+ border:1px solid var(--green);
+ border-radius:7px;
+ padding:0 13px;
+ background:var(--paper);
+ color:var(--green);
+ font-weight:800;
+ cursor:pointer;
+ white-space:nowrap;
+}
+.refresh-button:hover{background:var(--green-soft)}
+.refresh-button:disabled{opacity:.6;cursor:wait}
+.summary-grid{
+ margin-top:28px;
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:12px;
+}
+.stat{
+ background:var(--paper);
+ border:1px solid var(--line);
+ border-radius:8px;
+ padding:18px;
+ min-height:126px;
+ position:relative;
+ overflow:hidden;
+}
+.stat::after{
+ content:"";
+ position:absolute;
+ inset:auto 0 0;
+ height:4px;
+ background:var(--tone);
+}
+.stat-label{color:var(--muted);font-size:12px}
+.stat-value{
+ display:flex;
+ align-items:baseline;
+ gap:5px;
+ margin:16px 0 7px;
+}
+.stat-value strong{font-size:29px;line-height:1}
+.stat-value span{color:var(--muted);font-size:12px}
+.stat-note{font-size:11px;color:var(--muted)}
+.recommendation{
+ margin-top:14px;
+ padding-top:13px;
+ border-top:1px solid var(--line);
+}
+.recommendation-card .recommendation{
+ margin-top:17px;
+ padding-top:0;
+ border-top:0;
+}
+.recommendation-label{
+ display:block;
+ margin-bottom:9px;
+ color:var(--green);
+ font-size:12px;
+ font-weight:800;
+}
+.recommended-names{display:flex;flex-wrap:wrap;gap:7px}
+.recommended-names span{
+ padding:6px 9px;
+ border-radius:5px;
+ background:var(--green-soft);
+ color:var(--green);
+ font-size:13px;
+ font-weight:800;
+}
+.section-head{
+ margin:30px 0 12px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:16px;
+}
+.section-head h2{font-size:17px;margin:0}
+.section-head p{
+ font-size:11px;
+ margin:4px 0 0;
+ color:var(--muted);
+}
+.search{width:205px}
+.content-grid{
+ display:grid;
+ grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);
+ gap:14px;
+}
+.panel{
+ background:var(--paper);
+ border:1px solid var(--line);
+ border-radius:8px;
+ overflow:hidden;
+}
+.panel-title{
+ padding:15px 17px;
+ border-bottom:1px solid var(--line);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+}
+.panel-title strong{font-size:13px}
+.panel-title small{color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{
+ color:var(--muted);
+ background:#fafbfa;
+ font-weight:600;
+ text-align:left;
+ padding:11px 15px;
+}
+td{
+ padding:13px 15px;
+ border-top:1px solid #edf0ed;
+ white-space:nowrap;
+}
+tr:hover td{background:#fbfcfb}
+.person{font-weight:700}
+.muted{color:var(--muted)}
+.hours{font-weight:800;color:var(--green)}
+.notice-status{
+ display:inline-block;
+ padding:4px 7px;
+ border-radius:4px;
+ font-size:10px;
+ font-weight:800;
+}
+.notice-status.done{
+ color:var(--green);
+ background:var(--green-soft);
+}
+.notice-status.pending{
+ color:var(--red);
+ background:var(--red-soft);
+}
+.notice-status.none{color:var(--muted);background:#eef1ee}
+.overtime-panel{overflow-x:auto}
+.overtime-panel table{min-width:960px}
+.tag{
+ display:inline-block;
+ border-radius:4px;
+ padding:3px 7px;
+ font-size:10px;
+ font-weight:700;
+}
+.tag.personal{color:var(--red);background:var(--red-soft)}
+.tag.annual{color:var(--blue);background:var(--blue-soft)}
+.tag.sick{color:var(--gold);background:var(--gold-soft)}
+.ranking{padding:6px 17px 14px}
+.rank-row{
+ display:grid;
+ grid-template-columns:25px 70px 1fr 45px;
+ gap:8px;
+ align-items:center;
+ padding:11px 0;
+ border-bottom:1px solid #edf0ed;
+ font-size:12px;
+}
+.rank-row:last-child{border:0}
+.rank-num{color:var(--muted)}
+.bar{height:7px;background:#edf1ed;border-radius:4px;overflow:hidden}
+.bar i{
+ display:block;
+ height:100%;
+ background:var(--green);
+ border-radius:inherit;
+}
+.rank-hours{text-align:right;font-weight:800}
+.empty{
+ display:none;
+ padding:30px;
+ text-align:center;
+ color:var(--muted);
+}
+.demo-note{margin-top:13px;font-size:10px;color:#7a817c}
+.date-control{display:flex;align-items:center;gap:9px}
+.date-control label{color:var(--muted);font-size:12px}
+.date-control input{
+ height:40px;
+ border:1px solid var(--line);
+ border-radius:7px;
+ background:var(--paper);
+ color:var(--ink);
+ padding:0 11px;
+ outline:none;
+}
+.date-control input:focus{
+ border-color:var(--green);
+ box-shadow:0 0 0 3px rgba(7,59,122,.12);
+}
+.day-summary{
+ padding:12px 16px;
+ background:#f5f8fc;
+ border-bottom:1px solid var(--line);
+ color:var(--green);
+ font-size:12px;
+ font-weight:700;
+}
+.view-tabs{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:8px;
+ max-width:520px;
+ margin-top:24px;
+ padding:5px;
+ background:#e5eaf1;
+ border-radius:8px;
+}
+.view-tab{
+ min-height:44px;
+ border:0;
+ border-radius:6px;
+ cursor:pointer;
+ background:transparent;
+ color:var(--muted);
+ font-weight:800;
+}
+.view-tab:hover{color:var(--green)}
+.view-tab.active{
+ background:var(--paper);
+ color:var(--green);
+ box-shadow:0 2px 7px rgba(7,59,122,.1);
+}
+@media(max-width:980px){
+ .content-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+ body{font-size:17px}
+ .shell{display:block}
+ .sidebar{height:auto;position:static;padding:16px}
+ .brand{margin-bottom:14px}
+ .brand strong{font-size:18px}
+ .brand small{font-size:13px}
+ .nav-label{display:none}
+ .current-dept{margin-bottom:12px;padding:14px;font-size:17px}
+ .sidebar-foot{display:block;margin-top:0}
+ .data-time{padding:10px 0;font-size:13px}
+ .data-time strong{font-size:15px}
+ .sidebar-actions{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  margin-top:2px;
+ }
+ .sidebar-foot .text-button{
+  min-height:44px;
+  padding:10px 4px;
+  font-size:14px;
+ }
+ main{padding:24px 14px 38px}
+ .topbar{display:grid}
+ h1{font-size:28px}
+ .subtitle{font-size:15px;line-height:1.6}
+ .month-wrap{display:grid;gap:7px;margin-top:18px}
+ .month-wrap label,.date-control label{font-size:15px;font-weight:700}
+ .month-wrap input,.date-control input,.search,.refresh-button{
+  width:100%;
+  height:52px;
+  font-size:17px;
+ }
+ .view-tabs{max-width:none;margin-top:20px}
+ .view-tab{min-height:54px;font-size:18px}
+ .summary-grid{grid-template-columns:1fr;max-width:none}
+ .stat{min-height:112px;padding:18px}
+ .stat-label,.stat-note{font-size:14px}
+ .stat-value strong{font-size:34px}
+ .recommendation-label{font-size:16px}
+ .recommended-names{gap:9px}
+ .recommended-names span{padding:9px 12px;font-size:18px}
+ .section-head{display:block;margin-top:32px}
+ .section-head h2{font-size:22px}
+ .section-head p{font-size:14px;line-height:1.5}
+ .search{margin-top:14px}
+ .panel,.overtime-panel{
+  overflow:visible;
+  background:transparent;
+  border:0;
+ }
+ .panel-title{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:7px;
+  margin-bottom:10px;
+  padding:14px;
+ }
+ .panel-title strong{font-size:16px}
+ .panel-title small{font-size:14px}
+ .panel table,.overtime-panel table{min-width:0;display:block}
+ table thead{display:none}
+ table tbody{display:grid;gap:12px}
+ table tr{
+  display:block;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:7px 14px;
+ }
+ table td{
+  display:grid;
+  grid-template-columns:minmax(118px,42%) 1fr;
+  gap:12px;
+  align-items:center;
+  min-height:48px;
+  padding:9px 0;
+  border-top:1px solid #edf1f6;
+  white-space:normal;
+  font-size:16px;
+ }
+ table td:first-child{border-top:0}
+ table td::before{
+  content:attr(data-label);
+  color:var(--muted);
+  font-size:14px;
+  font-weight:700;
+ }
+ .person{font-size:18px}
+ .hours{font-size:20px}
+ .notice-status,.tag{
+  width:fit-content;
+  padding:6px 9px;
+  font-size:14px;
+ }
+ .date-control{display:grid;margin-top:14px}
+ .day-summary{
+  border:1px solid var(--line);
+  border-radius:7px;
+  margin-bottom:10px;
+  padding:14px;
+  font-size:16px;
+  line-height:1.6;
+ }
+ .empty{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:7px;
+  font-size:16px;
+  line-height:1.6;
+ }
+}
+@media(max-width:460px){
+ .login-box,.department-box{padding:24px 20px}
+ .department-options{grid-template-columns:1fr}
+ .department-card{min-height:150px}
+ .department-card strong{font-size:26px}
+ .department-card span,.department-card b{font-size:15px}
+ .login-box h1,.department-box h1{font-size:27px}
+ .entry-screen p,.field-label,.remember-row{font-size:16px}
+ .password-input,.primary-button{height:54px;font-size:18px}
+}
+</style>
 
-    body {
-      margin: 0;
-      min-width: 320px;
-      background: var(--canvas);
-      color: var(--ink);
-      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
-      letter-spacing: 0;
-    }
-
-    button, input, select { font: inherit; }
-
-    .hidden { display: none !important; }
-    .entry-screen {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: #f1f4f8;
-    }
-    .login-box, .department-box {
-      width: min(100%, 430px);
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 32px;
-      box-shadow: 0 18px 55px rgba(7,59,122,.12);
-    }
-    .entry-mark {
-      width: 46px;
-      height: 46px;
-      display: grid;
-      place-items: center;
-      border-radius: 7px;
-      background: #073b7a;
-      color: #f47a1f;
-      font-weight: 900;
-      margin-bottom: 24px;
-    }
-    .entry-screen h1 { font-size: 24px; margin-bottom: 8px; }
-    .entry-screen p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 24px; }
-    .field-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
-    .password-input {
-      width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 7px;
-      padding: 0 13px; outline: none;
-    }
-    .password-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
-    .remember-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 20px; font-size: 12px; color: var(--muted); }
-    .remember-row input { width: 17px; height: 17px; accent-color: var(--green); }
-    .primary-button {
-      width: 100%; height: 46px; border: 0; border-radius: 7px;
-      background: var(--green); color: #fff; font-weight: 800; cursor: pointer;
-    }
-    .primary-button:hover { background: #052e60; }
-    .login-error { min-height: 20px; margin: 8px 0 0 !important; color: var(--red) !important; }
-    .department-box { width: min(100%, 650px); }
-    .department-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .department-card {
-      min-height: 164px; padding: 22px; text-align: left; cursor: pointer;
-      border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
-    }
-    .department-card:hover, .department-card:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,106,10,.11); }
-    .department-card strong { display: block; font-size: 22px; margin-bottom: 10px; }
-    .department-card span { color: var(--muted); font-size: 12px; line-height: 1.6; }
-    .department-card b { display: block; margin-top: 20px; color: var(--gold); font-size: 12px; }
-    .text-button { border: 0; background: transparent; color: #c2d3e7; padding: 0; cursor: pointer; font-size: 11px; text-align: left; }
-    .text-button:hover { color: #fff; }
-
-    .shell {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 224px minmax(0, 1fr);
-    }
-
-    .sidebar {
-      background: #073b7a;
-      color: #fff;
-      padding: 28px 20px;
-      display: flex;
-      flex-direction: column;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-    }
-
-    .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 42px; }
-    .brand-mark {
-      width: 38px; height: 38px; border-radius: 7px;
-      display: grid; place-items: center;
-      background: #f06a0a; color: #fff; font-weight: 900;
-    }
-    .brand strong { display: block; font-size: 16px; }
-    .brand small { color: #c2d3e7; font-size: 11px; }
-
-    .nav-label { color: #9eb9d8; font-size: 11px; margin: 0 10px 9px; }
-    .current-dept {
-      border-radius: 7px; padding: 12px 13px;
-      background: #fff; color: #073b7a; font-weight: 800;
-    }
-    .current-dept span { float: right; color: var(--gold); font-size: 11px; }
-
-    .sidebar-foot { margin-top: auto; color: #9eb9d8; font-size: 11px; line-height: 1.8; }
-    .data-time strong { display: block; color: #fff; font-size: 12px; }
-    .data-time span { display: block; color: #c2d3e7; font-size: 11px; line-height: 1.5; }
-    .sidebar-actions { display: grid; gap: 2px; margin-top: 10px; }
-
-    main { padding: 30px clamp(18px, 3vw, 44px) 48px; overflow: hidden; }
-    .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-    h1 { font-size: clamp(23px, 3vw, 31px); margin: 0 0 6px; line-height: 1.25; }
-    .subtitle { margin: 0; color: var(--muted); font-size: 13px; }
-    .month-wrap { display: flex; align-items: center; gap: 9px; }
-    .month-wrap label { font-size: 12px; color: var(--muted); }
-    select, .search {
-      height: 40px; border: 1px solid var(--line); border-radius: 7px;
-      background: var(--paper); color: var(--ink); padding: 0 12px; outline: none;
-    }
-    select:focus, .search:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
-    .refresh-button {
-      height: 40px; border: 1px solid var(--green); border-radius: 7px;
-      padding: 0 13px; background: var(--paper); color: var(--green);
-      font-weight: 800; cursor: pointer; white-space: nowrap;
-    }
-    .refresh-button:hover { background: var(--green-soft); }
-    .refresh-button:disabled { opacity: .6; cursor: wait; }
-
-    .summary-grid {
-      margin-top: 28px; display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
-    }
-    .stat {
-      background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
-      padding: 18px; min-height: 126px; position: relative; overflow: hidden;
-    }
-    .stat::after { content: ""; position: absolute; inset: auto 0 0; height: 4px; background: var(--tone); }
-    .stat-label { color: var(--muted); font-size: 12px; }
-    .stat-value { display: flex; align-items: baseline; gap: 5px; margin: 16px 0 7px; }
-    .stat-value strong { font-size: 29px; line-height: 1; }
-    .stat-value span { color: var(--muted); font-size: 12px; }
-    .stat-note { font-size: 11px; color: var(--muted); }
-    .recommendation { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); }
-    .recommendation-card .recommendation { margin-top: 17px; padding-top: 0; border-top: 0; }
-    .recommendation-label { display: block; margin-bottom: 9px; color: var(--green); font-size: 12px; font-weight: 800; }
-    .recommended-names { display: flex; flex-wrap: wrap; gap: 7px; }
-    .recommended-names span { padding: 6px 9px; border-radius: 5px; background: var(--green-soft); color: var(--green); font-size: 13px; font-weight: 800; }
-
-    .section-head { margin: 30px 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .section-head h2 { font-size: 17px; margin: 0; }
-    .section-head p { font-size: 11px; margin: 4px 0 0; color: var(--muted); }
-    .search { width: 205px; }
-
-    .content-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: 14px; }
-    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .panel-title { padding: 15px 17px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
-    .panel-title strong { font-size: 13px; }
-    .panel-title small { color: var(--muted); }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { color: var(--muted); background: #fafbfa; font-weight: 600; text-align: left; padding: 11px 15px; }
-    td { padding: 13px 15px; border-top: 1px solid #edf0ed; white-space: nowrap; }
-    tr:hover td { background: #fbfcfb; }
-    .person { font-weight: 700; }
-    .muted { color: var(--muted); }
-    .hours { font-weight: 800; color: var(--green); }
-    .notice-status { display: inline-block; padding: 4px 7px; border-radius: 4px; font-size: 10px; font-weight: 800; }
-    .notice-status.done { color: var(--green); background: var(--green-soft); }
-    .notice-status.pending { color: var(--red); background: var(--red-soft); }
-    .notice-status.none { color: var(--muted); background: #eef1ee; }
-    .overtime-panel { overflow-x: auto; }
-    .overtime-panel table { min-width: 960px; }
-    .tag { display: inline-block; border-radius: 4px; padding: 3px 7px; font-size: 10px; font-weight: 700; }
-    .tag.personal { color: var(--red); background: var(--red-soft); }
-    .tag.annual { color: var(--blue); background: var(--blue-soft); }
-    .tag.sick { color: var(--gold); background: var(--gold-soft); }
-
-    .ranking { padding: 6px 17px 14px; }
-    .rank-row { display: grid; grid-template-columns: 25px 70px 1fr 45px; gap: 8px; align-items: center; padding: 11px 0; border-bottom: 1px solid #edf0ed; font-size: 12px; }
-    .rank-row:last-child { border: 0; }
-    .rank-num { color: var(--muted); }
-    .bar { height: 7px; background: #edf1ed; border-radius: 4px; overflow: hidden; }
-    .bar i { display: block; height: 100%; background: var(--green); border-radius: inherit; }
-    .rank-hours { text-align: right; font-weight: 800; }
-
-    .empty { display: none; padding: 30px; text-align: center; color: var(--muted); }
-    .demo-note { margin-top: 13px; font-size: 10px; color: #7a817c; }
-    .date-control { display: flex; align-items: center; gap: 9px; }
-    .date-control label { color: var(--muted); font-size: 12px; }
-    .date-control input {
-      height: 40px; border: 1px solid var(--line); border-radius: 7px;
-      background: var(--paper); color: var(--ink); padding: 0 11px; outline: none;
-    }
-    .date-control input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7,59,122,.12); }
-    .day-summary { padding: 12px 16px; background: #f5f8fc; border-bottom: 1px solid var(--line); color: var(--green); font-size: 12px; font-weight: 700; }
-    .view-tabs {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-      max-width: 520px; margin-top: 24px; padding: 5px;
-      background: #e5eaf1; border-radius: 8px;
-    }
-    .view-tab {
-      min-height: 44px; border: 0; border-radius: 6px; cursor: pointer;
-      background: transparent; color: var(--muted); font-weight: 800;
-    }
-    .view-tab:hover { color: var(--green); }
-    .view-tab.active { background: var(--paper); color: var(--green); box-shadow: 0 2px 7px rgba(7,59,122,.1); }
-
-    @media (max-width: 980px) {
-      .content-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 700px) {
-      body { font-size: 17px; }
-      .shell { display: block; }
-      .sidebar { height: auto; position: static; padding: 16px; }
-      .brand { margin-bottom: 14px; }
-      .brand strong { font-size: 18px; }
-      .brand small { font-size: 13px; }
-      .nav-label { display: none; }
-      .current-dept { margin-bottom: 12px; padding: 14px; font-size: 17px; }
-      .sidebar-foot { display: block; margin-top: 0; }
-      .data-time { padding: 10px 0; font-size: 13px; }
-      .data-time strong { font-size: 15px; }
-      .sidebar-actions { display: flex; justify-content: space-between; gap: 16px; margin-top: 2px; }
-      .sidebar-foot .text-button { min-height: 44px; padding: 10px 4px; font-size: 14px; }
-      main { padding: 24px 14px 38px; }
-      .topbar { display: grid; }
-      h1 { font-size: 28px; }
-      .subtitle { font-size: 15px; line-height: 1.6; }
-      .month-wrap { display: grid; gap: 7px; margin-top: 18px; }
-      .month-wrap label, .date-control label { font-size: 15px; font-weight: 700; }
-      .month-wrap input, .date-control input, .search, .refresh-button { width: 100%; height: 52px; font-size: 17px; }
-      .view-tabs { max-width: none; margin-top: 20px; }
-      .view-tab { min-height: 54px; font-size: 18px; }
-      .summary-grid { grid-template-columns: 1fr; max-width: none; }
-      .stat { min-height: 112px; padding: 18px; }
-      .stat-label, .stat-note { font-size: 14px; }
-      .stat-value strong { font-size: 34px; }
-      .recommendation-label { font-size: 16px; }
-      .recommended-names { gap: 9px; }
-      .recommended-names span { padding: 9px 12px; font-size: 18px; }
-      .section-head { display: block; margin-top: 32px; }
-      .section-head h2 { font-size: 22px; }
-      .section-head p { font-size: 14px; line-height: 1.5; }
-      .search { margin-top: 14px; }
-      .panel, .overtime-panel { overflow: visible; background: transparent; border: 0; }
-      .panel-title { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; margin-bottom: 10px; padding: 14px; }
-      .panel-title strong { font-size: 16px; }
-      .panel-title small { font-size: 14px; }
-      .panel table, .overtime-panel table { min-width: 0; display: block; }
-      table thead { display: none; }
-      table tbody { display: grid; gap: 12px; }
-      table tr { display: block; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; }
-      table td {
-        display: grid; grid-template-columns: minmax(118px, 42%) 1fr; gap: 12px;
-        align-items: center; min-height: 48px; padding: 9px 0;
-        border-top: 1px solid #edf1f6; white-space: normal; font-size: 16px;
-      }
-      table td:first-child { border-top: 0; }
-      table td::before { content: attr(data-label); color: var(--muted); font-size: 14px; font-weight: 700; }
-      .person { font-size: 18px; }
-      .hours { font-size: 20px; }
-      .notice-status, .tag { width: fit-content; padding: 6px 9px; font-size: 14px; }
-      .date-control { display: grid; margin-top: 14px; }
-      .day-summary { border: 1px solid var(--line); border-radius: 7px; margin-bottom: 10px; padding: 14px; font-size: 16px; line-height: 1.6; }
-      .empty { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; font-size: 16px; line-height: 1.6; }
-    }
-    @media (max-width: 460px) {
-      .login-box, .department-box { padding: 24px 20px; }
-      .department-options { grid-template-columns: 1fr; }
-      .department-card { min-height: 150px; }
-      .department-card strong { font-size: 26px; }
-      .department-card span, .department-card b { font-size: 15px; }
-      .login-box h1, .department-box h1 { font-size: 27px; }
-      .entry-screen p, .field-label, .remember-row { font-size: 16px; }
-      .password-input, .primary-button { height: 54px; font-size: 18px; }
-    }
-  </style>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script async src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
+
 <body>
-  <section class="entry-screen" id="loginView">
-    <div class="login-box">
-      <div class="entry-mark">HR</div>
-      <h1>人員工時看板</h1>
-      <p>正在透過 LINE 確認查看權限，請稍候。</p>
-      <p class="login-error" id="loginError" role="alert">正在連線…</p>
-    </div>
-  </section>
+<section class="entry-screen" id="loginView">
+ <div class="login-box">
+  <div class="entry-mark">HR</div>
+  <h1>人員工時看板</h1>
+  <p>正在透過 LINE 確認查看權限，請稍候。</p>
+  <p class="login-error" id="loginError" role="alert">正在連線…</p>
+  <button class="refresh-button" id="retryLogin" type="button">重新載入</button>
+ </div>
+</section>
 
-  <section class="entry-screen hidden" id="departmentView">
-    <div class="department-box">
-      <div class="entry-mark">HR</div>
-      <h1>選擇查看部門</h1>
-      <p>請選擇要查看的加班時數與每日請假狀況。</p>
-      <div class="department-options">
-        <button class="department-card" data-open-dept="field"><strong>廠內</strong><span>查看廠內人員加班時數、每日請假與當月請假狀況。</span><b>進入廠內看板 →</b></button>
-        <button class="department-card" data-open-dept="admin"><strong>行政</strong><span>查看行政人員加班時數、每日請假與當月請假狀況。</span><b>進入行政看板 →</b></button>
-      </div>
-    </div>
-  </section>
+<section class="entry-screen hidden" id="departmentView">
+ <div class="department-box">
+  <div class="entry-mark">HR</div>
+  <h1>選擇查看部門</h1>
+  <p>請選擇要查看的加班時數與每日請假狀況。</p>
+  <div class="department-options">
+   <button class="department-card" data-open-dept="field">
+    <strong>廠內</strong>
+    <span>查看廠內人員加班時數、每日請假與當月請假狀況。</span>
+    <b>進入廠內看板 →</b>
+   </button>
+   <button class="department-card" data-open-dept="admin">
+    <strong>行政</strong>
+    <span>查看行政人員加班時數、每日請假與當月請假狀況。</span>
+    <b>進入行政看板 →</b>
+   </button>
+  </div>
+ </div>
+</section>
 
-  <div class="shell hidden" id="dashboardView">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">HR</div>
-        <div><strong>人員工時看板</strong><small>Personnel dashboard</small></div>
-      </div>
-      <p class="nav-label">部門檢視</p>
-      <div class="current-dept" id="currentDeptLabel">廠內 <span>目前部門</span></div>
-      <div class="sidebar-foot"><div class="data-time">資料更新時間<strong id="dataUpdatedAt">尚未同步</strong><span id="dataSyncInfo">尚未取得請假資料</span></div><div class="sidebar-actions"><button class="text-button" id="backToDepartments">切換部門</button><button class="text-button" id="logoutButton">切換 LINE 帳號</button></div></div>
-    </aside>
-
-    <main>
-      <header class="topbar">
-        <div>
-          <h1 id="pageTitle">場內人員總覽</h1>
-          <p class="subtitle" id="pageSubtitle">掌握本月場內加班與請假狀況</p>
-        </div>
-        <div class="month-wrap">
-          <label for="month">檢視月份</label>
-          <input id="month" type="month" value="2026-09" aria-label="檢視月份">
-          <button class="refresh-button" id="refreshData" type="button">立即更新</button>
-        </div>
-      </header>
-
-      <nav class="view-tabs" aria-label="看板內容切換">
-        <button class="view-tab active" type="button" data-view="overtime">加班狀況</button>
-        <button class="view-tab" type="button" data-view="leave">請假狀況</button>
-      </nav>
-
-      <div id="overtimeView">
-      <section class="summary-grid" aria-label="統計摘要">
-        <article class="stat" style="--tone: var(--gold)"><span class="stat-label">本月有加班人數</span><div class="stat-value"><strong id="todayOvertime">4</strong><span>人</span></div><span class="stat-note">依當月累計資料統計</span></article>
-        <article class="stat" style="--tone: var(--blue)"><span class="stat-label">選定日期請假人數</span><div class="stat-value"><strong id="todayLeave">2</strong><span>人</span></div><span class="stat-note">含全天與部分時段</span></article>
-        <article class="stat recommendation-card" style="--tone: var(--gold)"><span class="stat-label">建議安排人員</span><div class="recommendation"><div class="recommended-names" id="recommendedNames"></div></div><span class="stat-note">依當月加班時數由少到多</span></article>
-      </section>
-
-      <div class="section-head">
-        <div><h2 id="detailTitle">場內人員加班時數看板</h2><p>依本月累計時數排序</p></div>
-        <input class="search" id="search" type="search" placeholder="搜尋編號或姓名" aria-label="搜尋員工編號或姓名">
-      </div>
-
-      <section class="panel overtime-panel">
-          <div class="panel-title"><strong>人員每月加班統計</strong><small id="recordCount"></small></div>
-          <table>
-            <thead><tr><th>年月</th><th>員工編號</th><th>員工姓名</th><th>當月加班時數</th><th>39 小時是否已通知</th><th>39 小時通知時間</th><th>42 小時是否已通知</th><th>42 小時通知時間</th><th>45 小時看板警示</th></tr></thead>
-            <tbody id="overtimeBody"></tbody>
-          </table>
-          <div class="empty" id="emptyState">找不到符合的人員</div>
-      </section>
-      </div>
-
-      <div id="leaveView" class="hidden">
-      <div class="section-head">
-        <div><h2 id="leaveTitle">廠內人員每日請假狀況</h2><p>選擇日期，查看當天可排班人力</p></div>
-        <div class="date-control"><label for="leaveDate">查看日期</label><input id="leaveDate" type="date" value="2026-09-04" aria-label="選擇請假日期"></div>
-      </div>
-      <section class="panel">
-        <div class="day-summary" id="daySummary"></div>
-        <table>
-          <thead><tr><th>員工編號</th><th>人員</th><th>假別</th><th>請假期間</th><th>當日時段</th></tr></thead>
-          <tbody id="leaveBody"></tbody>
-        </table>
-        <div class="empty" id="leaveEmpty">這一天沒有人請假，可以正常安排作業。</div>
-      </section>
-      </div>
-      <p class="demo-note">加班與請假資料由公司試算表同步，事由不會顯示於網頁。</p>
-    </main>
+<div class="shell hidden" id="dashboardView">
+ <aside class="sidebar">
+  <div class="brand">
+   <div class="brand-mark">HR</div>
+   <div>
+    <strong>人員工時看板</strong>
+    <small>Personnel dashboard</small>
+   </div>
   </div>
 
-  <script>
-    const datasets = {
-      field: {
-        name: '廠內', people: 12, total: 142.5, todayOt: 4, todayLeave: 2, leaveHours: 56, leaveCount: 7,
-        trend: '較上月減少 8.5 小時',
-        overtime: [
-          ['HS005','陳志明',0,'未達門檻','—','未達門檻','—'],
-          ['HS006','林冠宇',0,'未達門檻','—','未達門檻','—'],
-          ['HS007','王俊傑',0,'未達門檻','—','未達門檻','—'],
-          ['HS008','張家豪',3,'未達門檻','—','未達門檻','—'],
-          ['HS009','李柏翰',0,'未達門檻','—','未達門檻','—'],
-          ['HS010','黃信凱',41.5,'未達門檻','—','未達門檻','—'],
-          ['HS011','吳建宏',42.5,'已通知','09 / 22 09:15','未達門檻','—'],
-          ['HS016','周宇翔',46,'已通知','09 / 20 10:05','已通知','09 / 26 08:45']
-        ],
-        ranks: [['陳志明',24.5],['王俊傑',21],['林冠宇',18.5],['李柏翰',16],['張家豪',14.5]],
-        leave: [
-          ['黃信凱','personal','事假','09 / 04','08:00－12:00','4','已核准'], ['吳建宏','annual','特休','09 / 05','全天','8','已核准'],
-          ['林冠宇','sick','病假','09 / 08','13:00－17:00','4','待核准']
-        ]
-      },
-      admin: {
-        name: '行政', people: 8, total: 86, todayOt: 3, todayLeave: 1, leaveHours: 40, leaveCount: 5,
-        trend: '較上月增加 6 小時',
-        overtime: [
-          ['AD001','林怡君',18,'未達門檻','—','未達門檻','—'],
-          ['AD002','蔡佩珊',43,'已通知','09 / 24 14:10','未達門檻','—'],
-          ['AD003','許雅雯',12.5,'未達門檻','—','未達門檻','—'],
-          ['AD004','鄭文凱',45.5,'已通知','09 / 21 11:30','已通知','09 / 28 09:05'],
-          ['AD005','徐嘉玲',10,'未達門檻','—','未達門檻','—'],
-          ['AD006','陳佳慧',8,'未達門檻','—','未達門檻','—']
-        ],
-        ranks: [['蔡佩珊',18],['鄭文凱',16.5],['林怡君',14],['許雅雯',12.5],['徐嘉玲',10]],
-        leave: [
-          ['陳佳慧','annual','特休','09 / 04','全天','8','已核准'], ['許雅雯','personal','事假','09 / 09','13:00－17:00','4','已核准'],
-          ['林怡君','sick','病假','09 / 12','09:00－12:00','3','待核准']
-        ]
-      }
-    };
+  <p class="nav-label">部門檢視</p>
+  <div class="current-dept" id="currentDeptLabel">
+   廠內 <span>目前部門</span>
+  </div>
 
-    const LIFF_ID = '2010875519-qGTjSOUL';
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_Y5BC4QropGOiz2DDfxMRA0U4Ia2yAhCOVqeZfaEqrfsU2kKoPeo1hAV_YYWOxcVBDA/exec';
-    let activeDept = 'field';
-    let refreshTimer = null;
-    let refreshing = false;
-    const $ = id => document.getElementById(id);
+  <div class="sidebar-foot">
+   <div class="data-time">
+    資料更新時間
+    <strong id="dataUpdatedAt">尚未同步</strong>
+    <span id="dataSyncInfo">尚未取得請假資料</span>
+   </div>
+   <div class="sidebar-actions">
+    <button class="text-button" id="backToDepartments">切換部門</button>
+    <button class="text-button" id="logoutButton">切換 LINE 帳號</button>
+   </div>
+  </div>
+ </aside>
 
-    function showOnly(viewId) {
-      ['loginView', 'departmentView', 'dashboardView'].forEach(id => $(id).classList.toggle('hidden', id !== viewId));
-    }
+ <main>
+  <header class="topbar">
+   <div>
+    <h1 id="pageTitle">場內人員總覽</h1>
+    <p class="subtitle" id="pageSubtitle">掌握本月場內加班與請假狀況</p>
+   </div>
+   <div class="month-wrap">
+    <label for="month">檢視月份</label>
+    <input id="month" type="month" aria-label="檢視月份">
+    <button class="refresh-button" id="refreshData" type="button">立即更新</button>
+   </div>
+  </header>
 
-    function showDepartmentChoice() {
-      showOnly('departmentView');
-    }
+  <nav class="view-tabs" aria-label="看板內容切換">
+   <button class="view-tab active" type="button" data-view="overtime">加班狀況</button>
+   <button class="view-tab" type="button" data-view="leave">請假狀況</button>
+  </nav>
 
-    function setWorkView(view) {
-      const showOvertime = view === 'overtime';
-      $('overtimeView').classList.toggle('hidden', !showOvertime);
-      $('leaveView').classList.toggle('hidden', showOvertime);
-      document.querySelectorAll('.view-tab').forEach(button => {
-        const active = button.dataset.view === view;
-        button.classList.toggle('active', active);
-        button.setAttribute('aria-selected', String(active));
-      });
-    }
+  <div id="overtimeView">
+   <section class="summary-grid" aria-label="統計摘要">
+    <article class="stat" style="--tone:var(--gold)">
+     <span class="stat-label">本月有加班人數</span>
+     <div class="stat-value">
+      <strong id="todayOvertime">0</strong><span>人</span>
+     </div>
+     <span class="stat-note">依當月累計資料統計</span>
+    </article>
 
-    function requestDashboardData(idToken) {
-      return new Promise((resolve, reject) => {
-        const callbackName = `dashboardCallback_${Date.now()}`;
-        const script = document.createElement('script');
-        const timeout = setTimeout(() => finish(new Error('資料讀取逾時，請稍後再試。')), 15000);
+    <article class="stat" style="--tone:var(--blue)">
+     <span class="stat-label">選定日期請假人數</span>
+     <div class="stat-value">
+      <strong id="todayLeave">0</strong><span>人</span>
+     </div>
+     <span class="stat-note">含全天與部分時段</span>
+    </article>
 
-        function finish(error, data) {
-          clearTimeout(timeout);
-          delete window[callbackName];
-          script.remove();
-          error ? reject(error) : resolve(data);
-        }
+    <article class="stat recommendation-card" style="--tone:var(--gold)">
+     <span class="stat-label">建議安排人員</span>
+     <div class="recommendation">
+      <div class="recommended-names" id="recommendedNames"></div>
+     </div>
+     <span class="stat-note">依當月加班時數由少到多</span>
+    </article>
+   </section>
 
-        window[callbackName] = data => finish(null, data);
-        script.onerror = () => finish(new Error('無法連線至試算表資料服務。'));
-        script.src = `${APPS_SCRIPT_URL}?action=data&idToken=${encodeURIComponent(idToken)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
-        document.head.appendChild(script);
-      });
-    }
+   <div class="section-head">
+    <div>
+     <h2 id="detailTitle">場內人員加班時數看板</h2>
+     <p>依本月累計時數排序</p>
+    </div>
+    <input class="search" id="search" type="search"
+      placeholder="搜尋編號或姓名" aria-label="搜尋員工編號或姓名">
+   </div>
 
-    function formatApiTime(value) {
-      if (!value) return '—';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return String(value);
-      return new Intl.DateTimeFormat('zh-TW', {
-        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-      }).format(date);
-    }
+   <section class="panel overtime-panel">
+    <div class="panel-title">
+     <strong>人員每月加班統計</strong>
+     <small id="recordCount"></small>
+    </div>
+    <table>
+     <thead>
+      <tr>
+       <th>年月</th>
+       <th>員工編號</th>
+       <th>員工姓名</th>
+       <th>當月加班時數</th>
+       <th>39 小時是否已通知</th>
+       <th>39 小時通知時間</th>
+       <th>42 小時是否已通知</th>
+       <th>42 小時通知時間</th>
+       <th>45 小時看板警示</th>
+      </tr>
+     </thead>
+     <tbody id="overtimeBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState">找不到符合的人員</div>
+   </section>
+  </div>
 
-    function mapApiEmployee(item) {
-      const hours = Number(item.hours || 0);
-      return [
-        item.empId || '',
-        item.empName || '未設定姓名',
-        hours,
-        item.notified39 || (hours >= 39 ? '已達門檻' : '未達門檻'),
-        formatApiTime(item.time39),
-        item.notified42 || (hours >= 42 ? '已達門檻' : '未達門檻'),
-        formatApiTime(item.time42)
-      ];
-    }
+  <div id="leaveView" class="hidden">
+   <div class="section-head">
+    <div>
+     <h2 id="leaveTitle">廠內人員每日請假狀況</h2>
+     <p>選擇日期，查看當天可排班人力</p>
+    </div>
+    <div class="date-control">
+     <label for="leaveDate">查看日期</label>
+     <input id="leaveDate" type="date" aria-label="選擇請假日期">
+    </div>
+   </div>
+   <section class="panel">
+    <div class="day-summary" id="daySummary"></div>
+    <table>
+     <thead>
+      <tr>
+       <th>員工編號</th>
+       <th>人員</th>
+       <th>假別</th>
+       <th>請假期間</th>
+       <th>當日時段</th>
+      </tr>
+     </thead>
+     <tbody id="leaveBody"></tbody>
+    </table>
+    <div class="empty" id="leaveEmpty">這一天沒有人請假，可以正常安排作業。</div>
+   </section>
+  </div>
 
-    function mapApiLeave(item) {
-      return {
-        empId: item.empId || '',
-        empName: item.empName || '未設定姓名',
-        leaveType: item.leaveType || '請假',
-        startDate: item.startDate || '',
-        endDate: item.endDate || item.startDate || '',
-        startTime: item.startTime || '',
-        endTime: item.endTime || ''
-      };
-    }
+  <p class="demo-note">加班與請假資料由公司試算表同步，事由不會顯示於網頁。</p>
+ </main>
+</div>
 
-    function applyLiveOvertimeData(data) {
-      datasets.field.overtime = Array.isArray(data.factory) ? data.factory.map(mapApiEmployee) : [];
-      datasets.admin.overtime = Array.isArray(data.admin) ? data.admin.map(mapApiEmployee) : [];
-      datasets.field.leave = Array.isArray(data.factoryLeave) ? data.factoryLeave.map(mapApiLeave) : [];
-      datasets.admin.leave = Array.isArray(data.adminLeave) ? data.adminLeave.map(mapApiLeave) : [];
-      datasets.field.todayOt = datasets.field.overtime.filter(row => row[2] > 0).length;
-      datasets.admin.todayOt = datasets.admin.overtime.filter(row => row[2] > 0).length;
-      if (data.updatedAt) $('dataUpdatedAt').textContent = data.updatedAt;
-      const allLeave = [...datasets.field.leave, ...datasets.admin.leave];
-      const latestLeave = allLeave.reduce((latest, item) => {
-        if (!latest || item.startDate > latest.startDate) return item;
-        if (item.startDate === latest.startDate && item.empId > latest.empId) return item;
-        return latest;
-      }, null);
-      $('dataSyncInfo').textContent = latestLeave
-        ? `已同步 ${allLeave.length} 筆請假｜最新 ${latestLeave.empId} ${latestLeave.startDate.replaceAll('-', '/')}`
-        : '已同步，但沒有請假資料';
-    }
+<script>
+'use strict';
 
-    async function refreshLiveData(showFeedback = false) {
-      if (refreshing || !window.liff || !liff.isLoggedIn()) return;
-      refreshing = true;
-      const button = $('refreshData');
-      if (showFeedback) {
-        button.disabled = true;
-        button.textContent = '更新中…';
-      }
-      try {
-        const idToken = liff.getIDToken();
-        if (!idToken) throw new Error('LINE 登入資訊已失效。');
-        const data = await requestDashboardData(idToken);
-        if (!data || !data.success || !data.authorized) {
-          throw new Error(data && data.message ? data.message : '資料更新失敗。');
-        }
-        applyLiveOvertimeData(data);
-        if (!$('dashboardView').classList.contains('hidden')) render();
-        if (showFeedback) button.textContent = '已更新';
-      } catch (error) {
-        if (showFeedback) {
-          button.textContent = '更新失敗';
-          alert(error && error.message ? error.message : '資料更新失敗，請重新登入。');
-        }
-      } finally {
-        refreshing = false;
-        if (showFeedback) {
-          setTimeout(() => {
-            button.disabled = false;
-            button.textContent = '立即更新';
-          }, 1400);
-        }
-      }
-    }
+const datasets = {
+ field: {
+  name: '廠內',
+  overtime: [],
+  leave: [],
+  todayOt: 0
+ },
+ admin: {
+  name: '行政',
+  overtime: [],
+  leave: [],
+  todayOt: 0
+ }
+};
 
-    function startAutoRefresh() {
-      if (refreshTimer) clearInterval(refreshTimer);
-      refreshTimer = setInterval(() => refreshLiveData(false), 120000);
-    }
+const LIFF_ID = '2010875519-qGTjSOUL';
 
-    async function startAuthenticatedSession() {
-      try {
-        showOnly('loginView');
-        $('loginError').textContent = '正在確認 LINE 身分並讀取試算表資料…';
-        if (!window.liff) throw new Error('LINE 登入元件載入失敗，請檢查網路。');
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: location.href });
-          return;
-        }
-        const idToken = liff.getIDToken();
-        if (!idToken) throw new Error('無法取得 LINE 登入資訊，請重新登入。');
-        const data = await requestDashboardData(idToken);
-        const apiMessage = data && data.message ? String(data.message) : '';
-        if (
-          apiMessage.includes('IdToken expired') &&
-          sessionStorage.getItem('lineTokenRefreshAttempted') !== 'yes'
-        ) {
-          sessionStorage.setItem('lineTokenRefreshAttempted', 'yes');
-          liff.logout();
-          liff.login({ redirectUri: location.href });
-          return;
-        }
-        if (!data || !data.success || !data.authorized) {
-          throw new Error(apiMessage || '此 LINE 帳號沒有查看權限。');
-        }
-        sessionStorage.removeItem('lineTokenRefreshAttempted');
-        applyLiveOvertimeData(data);
-        $('loginError').textContent = '';
-        showDepartmentChoice();
-        startAutoRefresh();
-      } catch (error) {
-        showOnly('loginView');
-        $('loginError').textContent = error && error.message ? error.message : '資料載入失敗，請稍後重試。';
-      }
-    }
+const APPS_SCRIPT_URL =
+ 'https://script.google.com/macros/s/AKfycby_Y5BC4QropGOiz2DDfxMRA0U4Ia2yAhCOVqeZfaEqrfsU2kKoPeo1hAV_YYWOxcVBDA/exec';
 
-    function openDepartment(dept) {
-      activeDept = dept;
-      $('currentDeptLabel').innerHTML = `${datasets[dept].name} <span>目前部門</span>`;
-      $('search').value = '';
-      setWorkView('overtime');
-      showOnly('dashboardView');
-      render();
-    }
+const $ = id => document.getElementById(id);
 
-    function render() {
-      const d = datasets[activeDept];
-      const query = $('search').value.trim().toLowerCase();
-      const rows = d.overtime.filter(row => `${row[0]} ${row[1]}`.toLowerCase().includes(query));
-      const selectedMonth = $('month').value.slice(-2) || '09';
-      const selectedYear = Number($('month').value.slice(0, 4)) || 2026;
-      const rocMonth = `${selectedYear - 1911}/${selectedMonth}`;
-      $('pageTitle').textContent = `${d.name}人員總覽`;
-      $('pageSubtitle').textContent = `掌握本月${d.name}加班與請假狀況`;
-      $('detailTitle').textContent = `${d.name}人員加班時數看板`;
-      $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
-      const selectedDate = $('leaveDate').value;
-      const dayLeave = d.leave.filter(item => item.startDate <= selectedDate && item.endDate >= selectedDate);
-      const leaveIds = new Set(dayLeave.map(item => item.empId));
-      $('todayOvertime').textContent = d.todayOt;
-      $('todayLeave').textContent = dayLeave.length;
-      const recommended = [...d.overtime]
-        .filter(person => !leaveIds.has(person[0]))
-        .sort((a, b) => a[2] - b[2])
-        .slice(0, 3);
-      $('recommendedNames').innerHTML = recommended.map(person => `<span>${person[1]}</span>`).join('');
-      $('recordCount').textContent = `${rows.length} 筆紀錄`;
+let activeDept = 'field';
+let refreshTimer = null;
+let refreshing = false;
+let lastRefreshAt = 0;
+let loginTask = null;
+let liffInitialized = false;
+let callbackSequence = 0;
+let loadedMonth = '';
+let failedMonth = '';
 
-      $('overtimeBody').innerHTML = rows.map(r => {
-        const statusClass = status => status === '已通知' ? 'done' : status === '待通知' ? 'pending' : 'none';
-        const notice39 = r[4] === '—' ? r[4] : `${selectedMonth}${r[4].slice(2)}`;
-        const notice42 = r[6] === '—' ? r[6] : `${selectedMonth}${r[6].slice(2)}`;
-        const level45 = Number(r[2]) >= 45 ? '45 小時以上' : '未達 45 小時';
-        const level45Class = Number(r[2]) >= 45 ? 'pending' : 'none';
-        return `<tr><td data-label="年月">${rocMonth}</td><td data-label="員工編號" class="muted">${r[0]}</td><td data-label="員工姓名" class="person">${r[1]}</td><td data-label="當月加班時數" class="hours">${Number(r[2]).toFixed(1)} 小時</td><td data-label="39 小時通知"><span class="notice-status ${statusClass(r[3])}">${r[3]}</span></td><td data-label="39 小時通知時間">${notice39}</td><td data-label="42 小時通知"><span class="notice-status ${statusClass(r[5])}">${r[5]}</span></td><td data-label="42 小時通知時間">${notice42}</td><td data-label="45 小時看板警示"><span class="notice-status ${level45Class}">${level45}</span></td></tr>`;
-      }).join('');
-      $('emptyState').style.display = rows.length ? 'none' : 'block';
-      const selectedDay = selectedDate.slice(-2);
-      $('leaveBody').innerHTML = dayLeave.map(item => {
-        const typeClass = item.leaveType.includes('病') ? 'sick' : item.leaveType.includes('特休') ? 'annual' : 'personal';
-        const period = item.startDate === item.endDate ? item.startDate : `${item.startDate} 至 ${item.endDate}`;
-        const time = item.startTime && item.endTime ? `${item.startTime}－${item.endTime}` : '全天';
-        return `<tr><td data-label="員工編號" class="muted">${item.empId}</td><td data-label="人員" class="person">${item.empName}</td><td data-label="假別"><span class="tag ${typeClass}">${item.leaveType}</span></td><td data-label="請假期間">${period}</td><td data-label="當日時段">${time}</td></tr>`;
-      }).join('');
-      $('leaveEmpty').style.display = dayLeave.length ? 'none' : 'block';
-      $('daySummary').textContent = dayLeave.length
-        ? `${selectedMonth} 月 ${selectedDay} 日共有 ${dayLeave.length} 人請假，安排作業時請預留人力。`
-        : `${selectedMonth} 月 ${selectedDay} 日目前無請假紀錄。`;
-    }
+function escapeHtml(value) {
+ return String(value ?? '').replace(
+  /[&<>"']/g,
+  char => ({
+   '&': '&amp;',
+   '<': '&lt;',
+   '>': '&gt;',
+   '"': '&quot;',
+   "'": '&#39;'
+  }[char])
+ );
+}
 
-    document.querySelectorAll('[data-open-dept]').forEach(btn => btn.addEventListener('click', () => openDepartment(btn.dataset.openDept)));
-    document.querySelectorAll('.view-tab').forEach(btn => btn.addEventListener('click', () => setWorkView(btn.dataset.view)));
+function withTimeout(promise, ms, message) {
+ let timer;
 
-    $('search').addEventListener('input', render);
-    $('month').addEventListener('change', () => {
-      const monthValue = $('month').value;
-      $('leaveDate').min = `${monthValue}-01`;
-      const lastDay = new Date(Number(monthValue.slice(0, 4)), Number(monthValue.slice(5, 7)), 0).getDate();
-      $('leaveDate').max = `${monthValue}-${lastDay}`;
-      $('leaveDate').value = `${monthValue}-01`;
-      render();
-    });
-    $('leaveDate').addEventListener('change', render);
-    $('refreshData').addEventListener('click', () => refreshLiveData(true));
-    $('backToDepartments').addEventListener('click', showDepartmentChoice);
-    $('logoutButton').addEventListener('click', () => {
-      if (refreshTimer) clearInterval(refreshTimer);
-      if (window.liff && liff.isLoggedIn()) liff.logout();
-      location.reload();
-    });
+ return Promise.race([
+  promise,
+  new Promise((_, reject) => {
+   timer = setTimeout(() => reject(Error(message)), ms);
+  })
+ ]).finally(() => clearTimeout(timer));
+}
 
-    const now = new Date();
-    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    $('month').value = localToday.slice(0, 7);
-    $('leaveDate').value = localToday;
+async function waitForLiff() {
+ const until = Date.now() + 20000;
 
-    startAuthenticatedSession();
-  </script>
+ while (!window.liff) {
+  if (Date.now() >= until) {
+   throw Error('LINE 元件載入逾時，請確認網路後按重新載入。');
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+ }
+}
+
+function clearMonthData() {
+ loadedMonth = '';
+ failedMonth = '';
+
+ for (const d of Object.values(datasets)) {
+  d.overtime = [];
+  d.leave = [];
+  d.todayOt = 0;
+ }
+}
+
+function showOnly(viewId) {
+ ['loginView', 'departmentView', 'dashboardView'].forEach(id => {
+  $(id).classList.toggle('hidden', id !== viewId);
+ });
+}
+
+function showDepartmentChoice() {
+ showOnly('departmentView');
+}
+
+function setWorkView(view) {
+ const showOvertime = view === 'overtime';
+
+ $('overtimeView').classList.toggle('hidden', !showOvertime);
+ $('leaveView').classList.toggle('hidden', showOvertime);
+
+ document.querySelectorAll('.view-tab').forEach(button => {
+  const active = button.dataset.view === view;
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-selected', String(active));
+ });
+}
+
+function requestDashboardData(
+ idToken,
+ force = false,
+ month = $('month').value
+) {
+ return new Promise((resolve, reject) => {
+  const callbackName =
+   'dashboardCallback_' + Date.now() + '_' + (++callbackSequence);
+
+  const script = document.createElement('script');
+  let settled = false;
+
+  const timeout = setTimeout(() => {
+   finish(Error('資料讀取超過 35 秒，請按重新載入或立即更新。'));
+  }, 35000);
+
+  function finish(error, data) {
+   if (settled) return;
+   settled = true;
+
+   clearTimeout(timeout);
+   script.remove();
+
+   if (error) {
+    // 忽略較晚到達的舊回應。
+    window[callbackName] = () => {};
+
+    setTimeout(() => {
+     delete window[callbackName];
+    }, 60000);
+   } else {
+    delete window[callbackName];
+   }
+
+   error ? reject(error) : resolve(data);
+  }
+
+  window[callbackName] = data => finish(null, data);
+
+  script.onerror = () => {
+   finish(Error('無法連線至試算表資料服務，請確認網路後重試。'));
+  };
+
+  script.src = APPS_SCRIPT_URL + '?' + new URLSearchParams({
+   action: 'data',
+   idToken,
+   callback: callbackName,
+   month,
+   force: force ? '1' : '0',
+   _: String(Date.now())
+  });
+
+  document.head.appendChild(script);
+ });
+}
+
+function formatApiTime(value) {
+ if (!value) return '—';
+
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) return String(value);
+
+ return new Intl.DateTimeFormat('zh-TW', {
+  timeZone: 'Asia/Taipei',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+ }).format(date);
+}
+
+function mapApiEmployee(item) {
+ const hours = Number(item.hours || 0);
+
+ return [
+  item.empId || '',
+  item.empName || '未設定姓名',
+  hours,
+  item.notified39 || (hours >= 39 ? '已達門檻' : '未達門檻'),
+  formatApiTime(item.time39),
+  item.notified42 || (hours >= 42 ? '已達門檻' : '未達門檻'),
+  formatApiTime(item.time42)
+ ];
+}
+
+function mapApiLeave(item) {
+ return {
+  empId: item.empId || '',
+  empName: item.empName || '未設定姓名',
+  leaveType: item.leaveType || '請假',
+  startDate: item.startDate || '',
+  endDate: item.endDate || item.startDate || '',
+  startTime: item.startTime || '',
+  endTime: item.endTime || ''
+ };
+}
+
+function applyLiveOvertimeData(data) {
+ loadedMonth = data.yearMonth || $('month').value;
+ failedMonth = '';
+ lastRefreshAt = Date.now();
+
+ datasets.field.overtime = Array.isArray(data.factory)
+  ? data.factory.map(mapApiEmployee)
+  : [];
+
+ datasets.admin.overtime = Array.isArray(data.admin)
+  ? data.admin.map(mapApiEmployee)
+  : [];
+
+ datasets.field.leave = Array.isArray(data.factoryLeave)
+  ? data.factoryLeave.map(mapApiLeave)
+  : [];
+
+ datasets.admin.leave = Array.isArray(data.adminLeave)
+  ? data.adminLeave.map(mapApiLeave)
+  : [];
+
+ datasets.field.todayOt =
+  datasets.field.overtime.filter(row => row[2] > 0).length;
+
+ datasets.admin.todayOt =
+  datasets.admin.overtime.filter(row => row[2] > 0).length;
+
+ if (data.updatedAt) {
+  $('dataUpdatedAt').textContent = data.updatedAt;
+ }
+
+ const allLeave = [
+  ...datasets.field.leave,
+  ...datasets.admin.leave
+ ];
+
+ const latestLeave = allLeave.reduce((latest, item) => {
+  if (!latest || item.startDate > latest.startDate) return item;
+
+  if (
+   item.startDate === latest.startDate &&
+   item.empId > latest.empId
+  ) {
+   return item;
+  }
+
+  return latest;
+ }, null);
+
+ $('dataSyncInfo').textContent = latestLeave
+  ? `已同步 ${allLeave.length} 筆請假｜最新 ${latestLeave.empId} ${latestLeave.startDate.replaceAll('-', '/')}`
+  : '已同步，但沒有請假資料';
+}
+
+async function refreshLiveData(showFeedback = false) {
+ if (
+  refreshing ||
+  !window.liff ||
+  !liff.isLoggedIn()
+ ) {
+  return;
+ }
+
+ refreshing = true;
+
+ const requestedMonth = $('month').value;
+ const button = $('refreshData');
+
+ button.disabled = true;
+ button.textContent = '更新中…';
+
+ try {
+  const idToken = liff.getIDToken();
+
+  if (!idToken) {
+   throw Error('LINE 登入資訊已失效，請重新登入。');
+  }
+
+  const data = await requestDashboardData(
+   idToken,
+   showFeedback,
+   requestedMonth
+  );
+
+  if (!data || !data.success || !data.authorized) {
+   throw Error(data?.message || '資料更新失敗。');
+  }
+
+  // 使用者切換月份時，不用舊月份回應覆寫新畫面。
+  if (requestedMonth !== $('month').value) return;
+
+  applyLiveOvertimeData(data);
+
+  if (!$('dashboardView').classList.contains('hidden')) {
+   render();
+  }
+ } catch (error) {
+  if (requestedMonth !== $('month').value) return;
+
+  failedMonth = requestedMonth;
+
+  $('dataSyncInfo').textContent =
+   (
+    loadedMonth === requestedMonth
+     ? '更新失敗，畫面保留上次資料：'
+     : '載入失敗：'
+   ) +
+   (error.message || '請重新登入。');
+
+  if (!$('dashboardView').classList.contains('hidden')) {
+   render();
+  }
+ } finally {
+  refreshing = false;
+  button.disabled = false;
+  button.textContent = '立即更新';
+
+  if (requestedMonth !== $('month').value) {
+   void refreshLiveData(false);
+  }
+ }
+}
+
+function startAutoRefresh() {
+ if (refreshTimer) clearInterval(refreshTimer);
+
+ refreshTimer = setInterval(() => {
+  if (!document.hidden) {
+   void refreshLiveData(false);
+  }
+ }, 120000);
+}
+
+async function startAuthenticatedSession() {
+ if (loginTask) return loginTask;
+
+ loginTask = (async () => {
+  const retry = $('retryLogin');
+  retry.disabled = true;
+
+  try {
+   showOnly('loginView');
+   $('loginError').textContent = '正在載入 LINE 登入元件…';
+
+   await waitForLiff();
+
+   if (!liffInitialized) {
+    await withTimeout(
+     liff.init({ liffId: LIFF_ID }),
+     25000,
+     'LINE 登入載入逾時，請按重新載入。'
+    );
+
+    liffInitialized = true;
+   }
+
+   if (!liff.isLoggedIn()) {
+    liff.login({ redirectUri: location.href });
+    return;
+   }
+
+   const idToken = liff.getIDToken();
+
+   if (!idToken) {
+    throw Error('無法取得 LINE 登入資訊，請切換 LINE 帳號後重試。');
+   }
+
+   $('loginError').textContent =
+    '正在確認查看權限並讀取看板資料…';
+
+   const data = await requestDashboardData(idToken);
+   const message = String(data?.message || '');
+
+   if (
+    /IdToken expired|token.*expired/i.test(message) &&
+    sessionStorage.getItem('lineTokenRefreshAttempted') !== 'yes'
+   ) {
+    sessionStorage.setItem('lineTokenRefreshAttempted', 'yes');
+    liff.logout();
+    liff.login({ redirectUri: location.href });
+    return;
+   }
+
+   if (!data || !data.success || !data.authorized) {
+    throw Error(message || '此 LINE 帳號沒有查看權限。');
+   }
+
+   sessionStorage.removeItem('lineTokenRefreshAttempted');
+
+   applyLiveOvertimeData(data);
+   $('loginError').textContent = '';
+
+   showDepartmentChoice();
+   startAutoRefresh();
+  } catch (error) {
+   showOnly('loginView');
+
+   $('loginError').textContent =
+    error.message || '資料載入失敗，請按重新載入。';
+  } finally {
+   retry.disabled = false;
+  }
+ })();
+
+ try {
+  await loginTask;
+ } finally {
+  loginTask = null;
+ }
+}
+
+function openDepartment(dept) {
+ activeDept = dept;
+
+ $('currentDeptLabel').innerHTML =
+  `${datasets[dept].name} <span>目前部門</span>`;
+
+ $('search').value = '';
+
+ setWorkView('overtime');
+ showOnly('dashboardView');
+ render();
+}
+
+function render() {
+ const d = datasets[activeDept];
+ const query = $('search').value.trim().toLowerCase();
+
+ const rows = d.overtime.filter(row =>
+  `${row[0]} ${row[1]}`.toLowerCase().includes(query)
+ );
+
+ const selectedMonth = $('month').value.slice(-2) || '09';
+ const selectedYear = Number($('month').value.slice(0, 4)) || 2026;
+ const rocMonth = `${selectedYear - 1911}/${selectedMonth}`;
+
+ $('pageTitle').textContent = `${d.name}人員總覽`;
+ $('pageSubtitle').textContent = `掌握本月${d.name}加班與請假狀況`;
+ $('detailTitle').textContent = `${d.name}人員加班時數看板`;
+ $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
+
+ const selectedDate = $('leaveDate').value;
+
+ const dayLeave = d.leave.filter(item =>
+  item.startDate <= selectedDate &&
+  item.endDate >= selectedDate
+ );
+
+ const leaveIds = new Set(dayLeave.map(item => item.empId));
+
+ $('todayOvertime').textContent = d.todayOt;
+ $('todayLeave').textContent = leaveIds.size;
+
+ const recommended = [...d.overtime]
+  .filter(person =>
+   person[2] < 42 && !leaveIds.has(person[0])
+  )
+  .sort((a, b) => a[2] - b[2])
+  .slice(0, 3);
+
+ $('recommendedNames').innerHTML = recommended
+  .map(person => `<span>${escapeHtml(person[1])}</span>`)
+  .join('');
+
+ $('recordCount').textContent =
+  loadedMonth !== $('month').value
+   ? (
+      failedMonth === $('month').value
+       ? '載入失敗，請按立即更新'
+       : '正在載入…'
+     )
+   : `${rows.length} 筆紀錄`;
+
+ $('overtimeBody').innerHTML = rows.map(row => {
+  const statusClass = status =>
+   status === '已通知' ? 'done' :
+   status === '待通知' ? 'pending' :
+   'none';
+
+  const notice39 = escapeHtml(row[4]);
+  const notice42 = escapeHtml(row[6]);
+
+  const level45 = Number(row[2]) >= 45
+   ? '45 小時以上'
+   : '未達 45 小時';
+
+  const level45Class = Number(row[2]) >= 45
+   ? 'pending'
+   : 'none';
+
+  return `
+   <tr>
+    <td data-label="年月">${rocMonth}</td>
+    <td data-label="員工編號" class="muted">${escapeHtml(row[0])}</td>
+    <td data-label="員工姓名" class="person">${escapeHtml(row[1])}</td>
+    <td data-label="當月加班時數" class="hours">${Number(row[2]).toFixed(1)} 小時</td>
+    <td data-label="39 小時通知">
+     <span class="notice-status ${statusClass(row[3])}">${escapeHtml(row[3])}</span>
+    </td>
+    <td data-label="39 小時通知時間">${notice39}</td>
+    <td data-label="42 小時通知">
+     <span class="notice-status ${statusClass(row[5])}">${escapeHtml(row[5])}</span>
+    </td>
+    <td data-label="42 小時通知時間">${notice42}</td>
+    <td data-label="45 小時看板警示">
+     <span class="notice-status ${level45Class}">${level45}</span>
+    </td>
+   </tr>
+  `;
+ }).join('');
+
+ $('emptyState').style.display = rows.length ? 'none' : 'block';
+
+ $('emptyState').textContent =
+  loadedMonth !== $('month').value
+   ? (
+      failedMonth === $('month').value
+       ? '資料載入失敗，請按立即更新。'
+       : '正在讀取所選月份資料…'
+     )
+   : '找不到符合的人員';
+
+ const selectedDay = selectedDate.slice(-2);
+
+ $('leaveBody').innerHTML = dayLeave.map(item => {
+  const typeClass = item.leaveType.includes('病')
+   ? 'sick'
+   : item.leaveType.includes('特休')
+    ? 'annual'
+    : 'personal';
+
+  const period = item.startDate === item.endDate
+   ? item.startDate
+   : `${item.startDate} 至 ${item.endDate}`;
+
+  const time = item.startTime && item.endTime
+   ? `${item.startTime}－${item.endTime}`
+   : '全天';
+
+  return `
+   <tr>
+    <td data-label="員工編號" class="muted">${escapeHtml(item.empId)}</td>
+    <td data-label="人員" class="person">${escapeHtml(item.empName)}</td>
+    <td data-label="假別">
+     <span class="tag ${typeClass}">${escapeHtml(item.leaveType)}</span>
+    </td>
+    <td data-label="請假期間">${escapeHtml(period)}</td>
+    <td data-label="當日時段">${escapeHtml(time)}</td>
+   </tr>
+  `;
+ }).join('');
+
+ $('leaveEmpty').style.display =
+  dayLeave.length ? 'none' : 'block';
+
+ $('leaveEmpty').textContent =
+  loadedMonth !== $('month').value
+   ? '所選月份資料尚未載入，請等待或按立即更新。'
+   : '這一天沒有人請假，可以正常安排作業。';
+
+ $('daySummary').textContent = dayLeave.length
+  ? `${selectedMonth} 月 ${selectedDay} 日共有 ${dayLeave.length} 人請假，安排作業時請預留人力。`
+  : `${selectedMonth} 月 ${selectedDay} 日目前無請假紀錄。`;
+}
+
+document.querySelectorAll('[data-open-dept]').forEach(button => {
+ button.addEventListener('click', () => {
+  openDepartment(button.dataset.openDept);
+ });
+});
+
+document.querySelectorAll('.view-tab').forEach(button => {
+ button.addEventListener('click', () => {
+  setWorkView(button.dataset.view);
+ });
+});
+
+$('search').addEventListener('input', render);
+
+$('month').addEventListener('change', () => {
+ const monthValue = $('month').value;
+
+ $('leaveDate').min = `${monthValue}-01`;
+
+ const lastDay = new Date(
+  Number(monthValue.slice(0, 4)),
+  Number(monthValue.slice(5, 7)),
+  0
+ ).getDate();
+
+ $('leaveDate').max = `${monthValue}-${lastDay}`;
+ $('leaveDate').value = `${monthValue}-01`;
+
+ clearMonthData();
+
+ $('dataUpdatedAt').textContent = '載入中…';
+ $('dataSyncInfo').textContent = '正在讀取所選月份…';
+
+ render();
+ void refreshLiveData(false);
+});
+
+$('leaveDate').addEventListener('change', render);
+
+$('refreshData').addEventListener('click', () => {
+ void refreshLiveData(true);
+});
+
+$('backToDepartments').addEventListener(
+ 'click',
+ showDepartmentChoice
+);
+
+$('logoutButton').addEventListener('click', () => {
+ if (refreshTimer) clearInterval(refreshTimer);
+
+ if (window.liff && liff.isLoggedIn()) {
+  liff.logout();
+ }
+
+ location.reload();
+});
+
+const localToday = new Intl.DateTimeFormat('sv-SE', {
+ timeZone: 'Asia/Taipei',
+ year: 'numeric',
+ month: '2-digit',
+ day: '2-digit'
+}).format(new Date());
+
+$('month').value = localToday.slice(0, 7);
+$('leaveDate').value = localToday;
+$('leaveDate').min = localToday.slice(0, 7) + '-01';
+
+const initialYear = Number(localToday.slice(0, 4));
+const initialMonth = Number(localToday.slice(5, 7));
+
+$('leaveDate').max =
+ localToday.slice(0, 7) + '-' +
+ new Date(initialYear, initialMonth, 0).getDate();
+
+$('retryLogin').addEventListener('click', () => {
+ void startAuthenticatedSession();
+});
+
+document.addEventListener('visibilitychange', () => {
+ if (
+  !document.hidden &&
+  lastRefreshAt &&
+  Date.now() - lastRefreshAt > 120000
+ ) {
+  void refreshLiveData(false);
+ }
+});
+
+void startAuthenticatedSession();
+</script>
 </body>
 </html>
