@@ -6,6 +6,9 @@
 <meta name="description" content="場內與行政人員加班、請假資訊管理看板">
 <title>人員工時管理看板</title>
 
+
+
+
 <style>
 :root{
  --ink:#172638;
@@ -113,10 +116,10 @@ button,input,select{font:inherit}
  margin:8px 0 0!important;
  color:var(--red)!important;
 }
-.department-box{width:min(100%,650px)}
+.department-box{width:min(100%,850px)}
 .department-options{
  display:grid;
- grid-template-columns:1fr 1fr;
+ grid-template-columns:repeat(3,minmax(0,1fr));
  gap:14px;
 }
 .department-card{
@@ -601,10 +604,46 @@ tr:hover td{background:#fbfcfb}
  .entry-screen p,.field-label,.remember-row{font-size:16px}
  .password-input,.primary-button{height:54px;font-size:18px}
 }
+
+
+.kpi-main{width:min(1200px,100%);margin:auto;padding:12px 0}
+.kpi-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:24px 0 12px}
+.kpi-toolbar input{height:44px;padding:8px;border:1px solid var(--line);border-radius:7px;font:inherit}
+.kpi-columns{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(0,1.15fr);gap:20px;align-items:start}
+.kpi-form{padding:22px}
+.kpi-form fieldset{margin:0;padding:0;border:0;min-width:0}
+.kpi-form label{display:block;margin:0 0 8px;font-size:14px;font-weight:700}
+.kpi-form select,.kpi-form textarea{width:100%;margin-bottom:20px;font:inherit}
+.kpi-form select{height:48px}
+.kpi-form textarea{border:1px solid var(--line);border-radius:7px;padding:12px;resize:vertical}
+.kpi-form textarea:focus{outline:2px solid var(--blue)}
+.kpi-form fieldset:disabled{opacity:.65}
+.kpi-standard{background:var(--blue-soft);padding:16px;border-radius:7px;margin:0 0 20px}
+.kpi-standard strong{font-size:24px;color:var(--green)}
+.kpi-standard p{font-size:14px;line-height:1.6}
+.kpi-standard small{color:var(--muted)}
+.kpi-message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:24px;line-height:1.6}
+.kpi-message[data-tone="error"]{color:var(--red)}
+.kpi-message[data-tone="success"]{color:var(--green)}
+.kpi-totals{padding:15px 20px;background:#f5f8fc;font-size:13px;line-height:1.7}
+.kpi-record{padding:18px 20px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.kpi-record-head{display:flex;justify-content:space-between;gap:12px;font-weight:800}
+.kpi-record p{font-size:14px;white-space:pre-wrap;line-height:1.6;margin:10px 0}
+.kpi-record small{font-size:12px;color:var(--muted)}
+.kpi-plus{color:var(--blue)}.kpi-minus{color:var(--red)}
+@media(max-width:800px){.kpi-columns{grid-template-columns:1fr}.kpi-main .panel{background:#fff;border:1px solid var(--line)}.kpi-main .panel-title{margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}.kpi-main .topbar{display:flex;flex-wrap:wrap}.kpi-form{padding:16px}.kpi-toolbar input{min-height:48px}.department-options{grid-template-columns:1fr}}
+
+
 </style>
+
+
+
 
 <script async src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
+
+
+
 
 <body>
 <section class="entry-screen" id="loginView">
@@ -617,11 +656,14 @@ tr:hover td{background:#fbfcfb}
  </div>
 </section>
 
+
+
+
 <section class="entry-screen hidden" id="departmentView">
  <div class="department-box">
   <div class="entry-mark">HR</div>
-  <h1>選擇查看部門</h1>
-  <p>請選擇要查看的加班時數與每日請假狀況。</p>
+  <h1>選擇管理功能</h1>
+  <p>請選擇加班、請假看板，或進入工作 KPI 評分。</p>
   <div class="department-options">
    <button class="department-card" data-open-dept="field">
     <strong>廠內</strong>
@@ -633,9 +675,16 @@ tr:hover td{background:#fbfcfb}
     <span>查看行政人員加班時數、每日請假與當月請假狀況。</span>
     <b>進入行政看板 →</b>
    </button>
+   <button class="department-card" id="openKpi" type="button">
+    <strong>工作 KPI</strong><span>選擇員工與評比項目，登錄加分、扣分及具體原因。</span>
+    <b>進入工作 KPI 評分 →</b>
+   </button>
   </div>
  </div>
 </section>
+
+
+
 
 <div class="shell hidden" id="dashboardView">
  <aside class="sidebar">
@@ -647,10 +696,16 @@ tr:hover td{background:#fbfcfb}
    </div>
   </div>
 
+
+
+
   <p class="nav-label">部門檢視</p>
   <div class="current-dept" id="currentDeptLabel">
    廠內 <span>目前部門</span>
   </div>
+
+
+
 
   <div class="sidebar-foot">
    <div class="data-time">
@@ -665,6 +720,9 @@ tr:hover td{background:#fbfcfb}
   </div>
  </aside>
 
+
+
+
  <main>
   <header class="topbar">
    <div>
@@ -678,10 +736,16 @@ tr:hover td{background:#fbfcfb}
    </div>
   </header>
 
+
+
+
   <nav class="view-tabs" aria-label="看板內容切換">
    <button class="view-tab active" type="button" data-view="overtime">加班狀況</button>
    <button class="view-tab" type="button" data-view="leave">請假狀況</button>
   </nav>
+
+
+
 
   <div id="overtimeView">
    <section class="summary-grid" aria-label="統計摘要">
@@ -693,6 +757,9 @@ tr:hover td{background:#fbfcfb}
      <span class="stat-note">依當月累計資料統計</span>
     </article>
 
+
+
+
     <article class="stat" style="--tone:var(--blue)">
      <span class="stat-label">選定日期請假人數</span>
      <div class="stat-value">
@@ -700,6 +767,9 @@ tr:hover td{background:#fbfcfb}
      </div>
      <span class="stat-note">含全天與部分時段</span>
     </article>
+
+
+
 
     <article class="stat recommendation-card" style="--tone:var(--gold)">
      <span class="stat-label">建議安排人員</span>
@@ -710,6 +780,9 @@ tr:hover td{background:#fbfcfb}
     </article>
    </section>
 
+
+
+
    <div class="section-head">
     <div>
      <h2 id="detailTitle">場內人員加班時數看板</h2>
@@ -718,6 +791,9 @@ tr:hover td{background:#fbfcfb}
     <input class="search" id="search" type="search"
       placeholder="搜尋編號或姓名" aria-label="搜尋員工編號或姓名">
    </div>
+
+
+
 
    <section class="panel overtime-panel">
     <div class="panel-title">
@@ -743,6 +819,9 @@ tr:hover td{background:#fbfcfb}
     <div class="empty" id="emptyState">找不到符合的人員</div>
    </section>
   </div>
+
+
+
 
   <div id="leaveView" class="hidden">
    <div class="section-head">
@@ -773,12 +852,62 @@ tr:hover td{background:#fbfcfb}
    </section>
   </div>
 
+
+
+
   <p class="demo-note">加班與請假資料由公司試算表同步，事由不會顯示於網頁。</p>
  </main>
 </div>
 
+
+
+
+
+
+<section class="entry-screen hidden" id="kpiView">
+ <main class="kpi-main">
+  <header class="topbar">
+   <div><h1>工作 KPI 評分</h1><p class="subtitle">加分同員工、同項目每月一次；扣分每次獨立記錄。</p></div>
+   <button class="refresh-button" id="kpiBack" type="button">返回功能選單</button>
+  </header>
+  <div class="kpi-toolbar">
+   <label for="kpiMonth">評比月份</label><input id="kpiMonth" type="month" required>
+   <button class="refresh-button" id="kpiReload" type="button">重新載入</button>
+  </div>
+  <p id="kpiMessage" class="kpi-message" role="status" aria-live="polite"></p>
+  <div class="kpi-columns">
+   <section class="panel">
+    <div class="panel-title"><strong>新增評比</strong><small id="kpiReviewer">確認主管身分中</small></div>
+    <form id="kpiForm" class="kpi-form">
+     <fieldset id="kpiFields" disabled>
+      <label for="kpiEmployee">員工編號＋姓名</label>
+      <select id="kpiEmployee" required><option value="">請先載入員工資料</option></select>
+      <label for="kpiType">加分／扣分</label>
+      <select id="kpiType"><option value="plus">加分</option><option value="minus">扣分</option></select>
+      <label for="kpiItem">評比項目</label>
+      <select id="kpiItem" required></select>
+      <div class="kpi-standard"><strong id="kpiScore"></strong><p id="kpiStandardReason"></p><small id="kpiRule"></small></div>
+      <label for="kpiReason">具體說明原因（必填）</label>
+      <textarea id="kpiReason" rows="5" maxlength="1000" required placeholder="請描述本次實際發生的情況，不要只填標準原因。"></textarea>
+      <button class="primary-button" id="kpiSubmit" type="submit">送出評比</button>
+     </fieldset>
+    </form>
+   </section>
+   <section class="panel kpi-history">
+    <div class="panel-title"><strong>本月評比紀錄</strong><small id="kpiRecordCount"></small></div>
+    <div class="kpi-totals" id="kpiTotals"></div>
+    <div id="kpiRecords"></div>
+   </section>
+  </div>
+ </main>
+</section>
+
+
 <script>
 'use strict';
+
+
+
 
 const datasets = {
  field: {
@@ -795,12 +924,24 @@ const datasets = {
  }
 };
 
+
+
+
 const LIFF_ID = '2010875519-qGTjSOUL';
+
+
+
 
 const APPS_SCRIPT_URL =
  'https://script.google.com/macros/s/AKfycby_Y5BC4QropGOiz2DDfxMRA0U4Ia2yAhCOVqeZfaEqrfsU2kKoPeo1hAV_YYWOxcVBDA/exec';
 
+
+
+
 const $ = id => document.getElementById(id);
+
+
+
 
 let activeDept = 'field';
 let refreshTimer = null;
@@ -811,6 +952,9 @@ let liffInitialized = false;
 let callbackSequence = 0;
 let loadedMonth = '';
 let failedMonth = '';
+
+
+
 
 function escapeHtml(value) {
  return String(value ?? '').replace(
@@ -825,8 +969,14 @@ function escapeHtml(value) {
  );
 }
 
+
+
+
 function withTimeout(promise, ms, message) {
  let timer;
+
+
+
 
  return Promise.race([
   promise,
@@ -836,21 +986,36 @@ function withTimeout(promise, ms, message) {
  ]).finally(() => clearTimeout(timer));
 }
 
+
+
+
 async function waitForLiff() {
  const until = Date.now() + 20000;
+
+
+
 
  while (!window.liff) {
   if (Date.now() >= until) {
    throw Error('LINE 元件載入逾時，請確認網路後按重新載入。');
   }
 
+
+
+
   await new Promise(resolve => setTimeout(resolve, 100));
  }
 }
 
+
+
+
 function clearMonthData() {
  loadedMonth = '';
  failedMonth = '';
+
+
+
 
  for (const d of Object.values(datasets)) {
   d.overtime = [];
@@ -859,21 +1024,36 @@ function clearMonthData() {
  }
 }
 
+
+
+
 function showOnly(viewId) {
- ['loginView', 'departmentView', 'dashboardView'].forEach(id => {
+ ['loginView', 'departmentView', 'dashboardView', 'kpiView'].forEach(id => {
   $(id).classList.toggle('hidden', id !== viewId);
  });
 }
+
+
+
 
 function showDepartmentChoice() {
  showOnly('departmentView');
 }
 
+
+
+
 function setWorkView(view) {
  const showOvertime = view === 'overtime';
 
+
+
+
  $('overtimeView').classList.toggle('hidden', !showOvertime);
  $('leaveView').classList.toggle('hidden', showOvertime);
+
+
+
 
  document.querySelectorAll('.view-tab').forEach(button => {
   const active = button.dataset.view === view;
@@ -881,6 +1061,9 @@ function setWorkView(view) {
   button.setAttribute('aria-selected', String(active));
  });
 }
+
+
+
 
 function requestDashboardData(
  idToken,
@@ -891,23 +1074,41 @@ function requestDashboardData(
   const callbackName =
    'dashboardCallback_' + Date.now() + '_' + (++callbackSequence);
 
+
+
+
   const script = document.createElement('script');
   let settled = false;
+
+
+
 
   const timeout = setTimeout(() => {
    finish(Error('資料讀取超過 35 秒，請按重新載入或立即更新。'));
   }, 35000);
 
+
+
+
   function finish(error, data) {
    if (settled) return;
    settled = true;
 
+
+
+
    clearTimeout(timeout);
    script.remove();
+
+
+
 
    if (error) {
     // 忽略較晚到達的舊回應。
     window[callbackName] = () => {};
+
+
+
 
     setTimeout(() => {
      delete window[callbackName];
@@ -916,14 +1117,26 @@ function requestDashboardData(
     delete window[callbackName];
    }
 
+
+
+
    error ? reject(error) : resolve(data);
   }
 
+
+
+
   window[callbackName] = data => finish(null, data);
+
+
+
 
   script.onerror = () => {
    finish(Error('無法連線至試算表資料服務，請確認網路後重試。'));
   };
+
+
+
 
   script.src = APPS_SCRIPT_URL + '?' + new URLSearchParams({
    action: 'data',
@@ -934,15 +1147,27 @@ function requestDashboardData(
    _: String(Date.now())
   });
 
+
+
+
   document.head.appendChild(script);
  });
 }
 
+
+
+
 function formatApiTime(value) {
  if (!value) return '—';
 
+
+
+
  const date = new Date(value);
  if (Number.isNaN(date.getTime())) return String(value);
+
+
+
 
  return new Intl.DateTimeFormat('zh-TW', {
   timeZone: 'Asia/Taipei',
@@ -954,8 +1179,14 @@ function formatApiTime(value) {
  }).format(date);
 }
 
+
+
+
 function mapApiEmployee(item) {
  const hours = Number(item.hours || 0);
+
+
+
 
  return [
   item.empId || '',
@@ -967,6 +1198,9 @@ function mapApiEmployee(item) {
   formatApiTime(item.time42)
  ];
 }
+
+
+
 
 function mapApiLeave(item) {
  return {
@@ -980,44 +1214,77 @@ function mapApiLeave(item) {
  };
 }
 
+
+
+
 function applyLiveOvertimeData(data) {
  loadedMonth = data.yearMonth || $('month').value;
  failedMonth = '';
  lastRefreshAt = Date.now();
 
+
+
+
  datasets.field.overtime = Array.isArray(data.factory)
   ? data.factory.map(mapApiEmployee)
   : [];
+
+
+
 
  datasets.admin.overtime = Array.isArray(data.admin)
   ? data.admin.map(mapApiEmployee)
   : [];
 
+
+
+
  datasets.field.leave = Array.isArray(data.factoryLeave)
   ? data.factoryLeave.map(mapApiLeave)
   : [];
+
+
+
 
  datasets.admin.leave = Array.isArray(data.adminLeave)
   ? data.adminLeave.map(mapApiLeave)
   : [];
 
+
+
+
  datasets.field.todayOt =
   datasets.field.overtime.filter(row => row[2] > 0).length;
+
+
+
 
  datasets.admin.todayOt =
   datasets.admin.overtime.filter(row => row[2] > 0).length;
 
+
+
+
  if (data.updatedAt) {
   $('dataUpdatedAt').textContent = data.updatedAt;
  }
+
+
+
 
  const allLeave = [
   ...datasets.field.leave,
   ...datasets.admin.leave
  ];
 
+
+
+
  const latestLeave = allLeave.reduce((latest, item) => {
   if (!latest || item.startDate > latest.startDate) return item;
+
+
+
 
   if (
    item.startDate === latest.startDate &&
@@ -1026,13 +1293,22 @@ function applyLiveOvertimeData(data) {
    return item;
   }
 
+
+
+
   return latest;
  }, null);
+
+
+
 
  $('dataSyncInfo').textContent = latestLeave
   ? `已同步 ${allLeave.length} 筆請假｜最新 ${latestLeave.empId} ${latestLeave.startDate.replaceAll('-', '/')}`
   : '已同步，但沒有請假資料';
 }
+
+
+
 
 async function refreshLiveData(showFeedback = false) {
  if (
@@ -1043,20 +1319,38 @@ async function refreshLiveData(showFeedback = false) {
   return;
  }
 
+
+
+
  refreshing = true;
+
+
+
 
  const requestedMonth = $('month').value;
  const button = $('refreshData');
 
+
+
+
  button.disabled = true;
  button.textContent = '更新中…';
+
+
+
 
  try {
   const idToken = liff.getIDToken();
 
+
+
+
   if (!idToken) {
    throw Error('LINE 登入資訊已失效，請重新登入。');
   }
+
+
+
 
   const data = await requestDashboardData(
    idToken,
@@ -1064,14 +1358,26 @@ async function refreshLiveData(showFeedback = false) {
    requestedMonth
   );
 
+
+
+
   if (!data || !data.success || !data.authorized) {
    throw Error(data?.message || '資料更新失敗。');
   }
 
+
+
+
   // 使用者切換月份時，不用舊月份回應覆寫新畫面。
   if (requestedMonth !== $('month').value) return;
 
+
+
+
   applyLiveOvertimeData(data);
+
+
+
 
   if (!$('dashboardView').classList.contains('hidden')) {
    render();
@@ -1079,7 +1385,13 @@ async function refreshLiveData(showFeedback = false) {
  } catch (error) {
   if (requestedMonth !== $('month').value) return;
 
+
+
+
   failedMonth = requestedMonth;
+
+
+
 
   $('dataSyncInfo').textContent =
    (
@@ -1089,6 +1401,9 @@ async function refreshLiveData(showFeedback = false) {
    ) +
    (error.message || '請重新登入。');
 
+
+
+
   if (!$('dashboardView').classList.contains('hidden')) {
    render();
   }
@@ -1097,14 +1412,23 @@ async function refreshLiveData(showFeedback = false) {
   button.disabled = false;
   button.textContent = '立即更新';
 
+
+
+
   if (requestedMonth !== $('month').value) {
    void refreshLiveData(false);
   }
  }
 }
 
+
+
+
 function startAutoRefresh() {
  if (refreshTimer) clearInterval(refreshTimer);
+
+
+
 
  refreshTimer = setInterval(() => {
   if (!document.hidden) {
@@ -1113,18 +1437,33 @@ function startAutoRefresh() {
  }, 120000);
 }
 
+
+
+
 async function startAuthenticatedSession() {
  if (loginTask) return loginTask;
+
+
+
 
  loginTask = (async () => {
   const retry = $('retryLogin');
   retry.disabled = true;
 
+
+
+
   try {
    showOnly('loginView');
    $('loginError').textContent = '正在載入 LINE 登入元件…';
 
+
+
+
    await waitForLiff();
+
+
+
 
    if (!liffInitialized) {
     await withTimeout(
@@ -1133,25 +1472,46 @@ async function startAuthenticatedSession() {
      'LINE 登入載入逾時，請按重新載入。'
     );
 
+
+
+
     liffInitialized = true;
    }
+
+
+
 
    if (!liff.isLoggedIn()) {
     liff.login({ redirectUri: location.href });
     return;
    }
 
+
+
+
    const idToken = liff.getIDToken();
+
+
+
 
    if (!idToken) {
     throw Error('無法取得 LINE 登入資訊，請切換 LINE 帳號後重試。');
    }
 
+
+
+
    $('loginError').textContent =
     '正在確認查看權限並讀取看板資料…';
 
+
+
+
    const data = await requestDashboardData(idToken);
    const message = String(data?.message || '');
+
+
+
 
    if (
     /IdToken expired|token.*expired/i.test(message) &&
@@ -1163,19 +1523,34 @@ async function startAuthenticatedSession() {
     return;
    }
 
+
+
+
    if (!data || !data.success || !data.authorized) {
     throw Error(message || '此 LINE 帳號沒有查看權限。');
    }
 
+
+
+
    sessionStorage.removeItem('lineTokenRefreshAttempted');
+
+
+
 
    applyLiveOvertimeData(data);
    $('loginError').textContent = '';
+
+
+
 
    showDepartmentChoice();
    startAutoRefresh();
   } catch (error) {
    showOnly('loginView');
+
+
+
 
    $('loginError').textContent =
     error.message || '資料載入失敗，請按重新載入。';
@@ -1184,6 +1559,9 @@ async function startAuthenticatedSession() {
   }
  })();
 
+
+
+
  try {
   await loginTask;
  } finally {
@@ -1191,47 +1569,86 @@ async function startAuthenticatedSession() {
  }
 }
 
+
+
+
 function openDepartment(dept) {
  activeDept = dept;
+
+
+
 
  $('currentDeptLabel').innerHTML =
   `${datasets[dept].name} <span>目前部門</span>`;
 
+
+
+
  $('search').value = '';
+
+
+
 
  setWorkView('overtime');
  showOnly('dashboardView');
  render();
 }
 
+
+
+
 function render() {
  const d = datasets[activeDept];
  const query = $('search').value.trim().toLowerCase();
+
+
+
 
  const rows = d.overtime.filter(row =>
   `${row[0]} ${row[1]}`.toLowerCase().includes(query)
  );
 
+
+
+
  const selectedMonth = $('month').value.slice(-2) || '09';
  const selectedYear = Number($('month').value.slice(0, 4)) || 2026;
- const rocMonth = `${selectedYear - 1911}/${selectedMonth}`;
+ const rocMonth = `${selectedYear - 1911} 年 ${Number(selectedMonth)} 月`;
+
+
+
 
  $('pageTitle').textContent = `${d.name}人員總覽`;
  $('pageSubtitle').textContent = `掌握本月${d.name}加班與請假狀況`;
  $('detailTitle').textContent = `${d.name}人員加班時數看板`;
  $('leaveTitle').textContent = `${d.name}人員每日請假狀況`;
 
+
+
+
  const selectedDate = $('leaveDate').value;
+
+
+
 
  const dayLeave = d.leave.filter(item =>
   item.startDate <= selectedDate &&
   item.endDate >= selectedDate
  );
 
+
+
+
  const leaveIds = new Set(dayLeave.map(item => item.empId));
+
+
+
 
  $('todayOvertime').textContent = d.todayOt;
  $('todayLeave').textContent = leaveIds.size;
+
+
+
 
  const recommended = [...d.overtime]
   .filter(person =>
@@ -1240,9 +1657,15 @@ function render() {
   .sort((a, b) => a[2] - b[2])
   .slice(0, 3);
 
+
+
+
  $('recommendedNames').innerHTML = recommended
   .map(person => `<span>${escapeHtml(person[1])}</span>`)
   .join('');
+
+
+
 
  $('recordCount').textContent =
   loadedMonth !== $('month').value
@@ -1253,22 +1676,37 @@ function render() {
      )
    : `${rows.length} 筆紀錄`;
 
+
+
+
  $('overtimeBody').innerHTML = rows.map(row => {
   const statusClass = status =>
    status === '已通知' ? 'done' :
    status === '待通知' ? 'pending' :
    'none';
 
+
+
+
   const notice39 = escapeHtml(row[4]);
   const notice42 = escapeHtml(row[6]);
+
+
+
 
   const level45 = Number(row[2]) >= 45
    ? '45 小時以上'
    : '未達 45 小時';
 
+
+
+
   const level45Class = Number(row[2]) >= 45
    ? 'pending'
    : 'none';
+
+
+
 
   return `
    <tr>
@@ -1291,7 +1729,13 @@ function render() {
   `;
  }).join('');
 
+
+
+
  $('emptyState').style.display = rows.length ? 'none' : 'block';
+
+
+
 
  $('emptyState').textContent =
   loadedMonth !== $('month').value
@@ -1302,7 +1746,13 @@ function render() {
      )
    : '找不到符合的人員';
 
+
+
+
  const selectedDay = selectedDate.slice(-2);
+
+
+
 
  $('leaveBody').innerHTML = dayLeave.map(item => {
   const typeClass = item.leaveType.includes('病')
@@ -1311,13 +1761,22 @@ function render() {
     ? 'annual'
     : 'personal';
 
+
+
+
   const period = item.startDate === item.endDate
    ? item.startDate
    : `${item.startDate} 至 ${item.endDate}`;
 
+
+
+
   const time = item.startTime && item.endTime
    ? `${item.startTime}－${item.endTime}`
    : '全天';
+
+
+
 
   return `
    <tr>
@@ -1332,18 +1791,30 @@ function render() {
   `;
  }).join('');
 
+
+
+
  $('leaveEmpty').style.display =
   dayLeave.length ? 'none' : 'block';
+
+
+
 
  $('leaveEmpty').textContent =
   loadedMonth !== $('month').value
    ? '所選月份資料尚未載入，請等待或按立即更新。'
    : '這一天沒有人請假，可以正常安排作業。';
 
+
+
+
  $('daySummary').textContent = dayLeave.length
   ? `${selectedMonth} 月 ${selectedDay} 日共有 ${dayLeave.length} 人請假，安排作業時請預留人力。`
   : `${selectedMonth} 月 ${selectedDay} 日目前無請假紀錄。`;
 }
+
+
+
 
 document.querySelectorAll('[data-open-dept]').forEach(button => {
  button.addEventListener('click', () => {
@@ -1351,18 +1822,33 @@ document.querySelectorAll('[data-open-dept]').forEach(button => {
  });
 });
 
+
+
+
 document.querySelectorAll('.view-tab').forEach(button => {
  button.addEventListener('click', () => {
   setWorkView(button.dataset.view);
  });
 });
 
+
+
+
 $('search').addEventListener('input', render);
+
+
+
 
 $('month').addEventListener('change', () => {
  const monthValue = $('month').value;
 
+
+
+
  $('leaveDate').min = `${monthValue}-01`;
+
+
+
 
  const lastDay = new Date(
   Number(monthValue.slice(0, 4)),
@@ -1370,38 +1856,71 @@ $('month').addEventListener('change', () => {
   0
  ).getDate();
 
- $('leaveDate').max = `${monthValue}-${lastDay}`;
+
+
+
+ $('leaveDate').max = `${monthValue}-${String(lastDay).padStart(2, '0')}`;
  $('leaveDate').value = `${monthValue}-01`;
+
+
+
 
  clearMonthData();
 
+
+
+
  $('dataUpdatedAt').textContent = '載入中…';
  $('dataSyncInfo').textContent = '正在讀取所選月份…';
+
+
+
 
  render();
  void refreshLiveData(false);
 });
 
+
+
+
 $('leaveDate').addEventListener('change', render);
+
+
+
 
 $('refreshData').addEventListener('click', () => {
  void refreshLiveData(true);
 });
+
+
+
 
 $('backToDepartments').addEventListener(
  'click',
  showDepartmentChoice
 );
 
+
+
+
 $('logoutButton').addEventListener('click', () => {
  if (refreshTimer) clearInterval(refreshTimer);
+
+
+
 
  if (window.liff && liff.isLoggedIn()) {
   liff.logout();
  }
 
+
+
+
  location.reload();
 });
+
+
+
 
 const localToday = new Intl.DateTimeFormat('sv-SE', {
  timeZone: 'Asia/Taipei',
@@ -1410,20 +1929,35 @@ const localToday = new Intl.DateTimeFormat('sv-SE', {
  day: '2-digit'
 }).format(new Date());
 
+
+
+
 $('month').value = localToday.slice(0, 7);
 $('leaveDate').value = localToday;
 $('leaveDate').min = localToday.slice(0, 7) + '-01';
 
+
+
+
 const initialYear = Number(localToday.slice(0, 4));
 const initialMonth = Number(localToday.slice(5, 7));
+
+
+
 
 $('leaveDate').max =
  localToday.slice(0, 7) + '-' +
  new Date(initialYear, initialMonth, 0).getDate();
 
+
+
+
 $('retryLogin').addEventListener('click', () => {
  void startAuthenticatedSession();
 });
+
+
+
 
 document.addEventListener('visibilitychange', () => {
  if (
@@ -1434,6 +1968,211 @@ document.addEventListener('visibilitychange', () => {
   void refreshLiveData(false);
  }
 });
+
+
+
+
+
+
+/* 新的 KPI 網頁應用程式 /exec 網址，部署 Code.gs 後只需替換此處。 */
+const KPI_API_URL = 'https://script.google.com/macros/s/AKfycbyjSsVfh_TDFJAWufYnzj4qWeYTM69bJz_5yAIhqQfPbqowUWybnTS-k7aFU5Luv-fzag/exec';
+let kpiBoot = null;
+let kpiLoadSequence = 0;
+let kpiBusy = false;
+let kpiCallbackSequence = 0;
+
+
+function kpiMessage(text,tone) {
+ $('kpiMessage').textContent=text;
+ $('kpiMessage').dataset.tone=tone||'';
+}
+function kpiEndpoint() {
+ if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(KPI_API_URL)) {
+  throw Error('請先在 HTML 的 KPI_API_URL 填入新增 KPI 後台的 /exec 網址。');
+ }
+ return KPI_API_URL;
+}
+function kpiToken() {
+ const token=window.liff && liff.isLoggedIn() && liff.getIDToken();
+ if (!token) throw Error('LINE 登入已失效，請切換 LINE 帳號後重新登入。');
+ return token;
+}
+function kpiRead(action,params) {
+ const endpoint=kpiEndpoint(), idToken=kpiToken();
+ return new Promise(function(resolve,reject) {
+  const callback='kpiCb_'+Date.now()+'_'+(++kpiCallbackSequence);
+  const script=document.createElement('script');
+  let settled=false;
+  function finish(error,data) {
+   if (settled) return;
+   settled=true;clearTimeout(timer);script.remove();
+   window[callback]=function(){};
+   setTimeout(function(){delete window[callback];},60000);
+   if(error) reject(error);
+   else if(!data || !data.success) reject(Error(data && data.message || 'KPI 資料讀取失敗。'));
+   else resolve(data);
+  }
+  const timer=setTimeout(function(){finish(Error('KPI 讀取逾時，請重新載入。'));},40000);
+  window[callback]=function(data){finish(null,data);};
+  script.onerror=function(){finish(Error('無法讀取 KPI 後台，請確認部署網址及存取設定。'));};
+  script.src=endpoint+'?'+new URLSearchParams(Object.assign({},params,{
+   action:action,idToken:idToken,callback:callback,_:String(Date.now())
+  })).toString();
+  document.head.appendChild(script);
+ });
+}
+function kpiSetBusy(value) {
+ kpiBusy=value;
+ $('kpiFields').disabled=value || !kpiBoot;
+ $('kpiMonth').disabled=value;
+ $('kpiReload').disabled=value;
+ $('kpiBack').disabled=value;
+ $('kpiSubmit').textContent=value?'送出中，請稍候…':'送出評比';
+}
+async function openKpi() {
+ showOnly('kpiView');
+ if (!$('kpiMonth').value) $('kpiMonth').value=localToday.slice(0,7);
+ await kpiLoad();
+}
+async function kpiLoad() {
+ if(kpiBusy)return;
+ const sequence=++kpiLoadSequence,month=$('kpiMonth').value;
+ const selectedEmployee=$('kpiEmployee').value,selectedItem=$('kpiItem').value;
+ kpiBoot=null;$('kpiFields').disabled=true;$('kpiReviewer').textContent='確認主管身分中';
+ $('kpiRecords').textContent='載入中…';$('kpiTotals').textContent='';$('kpiRecordCount').textContent='';
+ kpiMessage('正在讀取員工與評分標準…');
+ try {
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw Error('請選擇評比月份。');
+  const data=await kpiRead('boot',{month:month});
+  if(sequence!==kpiLoadSequence || month!==$('kpiMonth').value)return;
+  kpiBoot=data;
+  const select=$('kpiEmployee');
+  select.replaceChildren(new Option('請選擇員工',''));
+  data.employees.forEach(function(emp){select.add(new Option(emp.empId+' '+emp.empName,emp.empId));});
+  select.value=selectedEmployee;
+  $('kpiReviewer').textContent='評比人：'+data.manager.empId+' '+data.manager.name;
+  kpiItems(selectedItem);
+  kpiRenderRecords();
+  $('kpiFields').disabled=false;
+  kpiMessage('已載入。請確認月份、員工與原因後送出。');
+ }catch(error){
+  if(sequence!==kpiLoadSequence)return;
+  $('kpiReviewer').textContent='尚未取得評分權限';
+  $('kpiRecords').textContent='未取得資料。';
+  kpiMessage(error.message,'error');
+ }
+}
+function kpiItems(preferred) {
+ const select=$('kpiItem'),type=$('kpiType').value;
+ select.replaceChildren(new Option('請選擇評比項目',''));
+ if(kpiBoot) {
+  const empId=$('kpiEmployee').value;
+  kpiBoot.standards[type].forEach(function(item){
+   const used=type==='plus' && kpiBoot.records.some(function(r){
+    return r.type==='plus' && r.empId===empId && r.item===item.item;
+   });
+   const option=new Option(item.item+(used?'（本月已加分）':''),item.item);
+   option.disabled=used;
+   select.add(option);
+  });
+ }
+ const option=Array.from(select.options).find(function(o){return o.value===preferred && !o.disabled;});
+ if(option) select.value=preferred;
+ kpiDescribe();
+}
+function kpiDescribe() {
+ const type=$('kpiType').value;
+ const standard=kpiBoot && kpiBoot.standards[type].find(function(s){return s.item===$('kpiItem').value;});
+ $('kpiScore').textContent=standard?(standard.score>0?'+':'')+standard.score+' 分':'選擇項目後顯示分數';
+ $('kpiStandardReason').textContent=standard?standard.reason:'';
+ $('kpiRule').textContent=type==='plus'?'同員工、同項目，每月最多一次。':'每次獨立記錄；重試同一筆送出不會重複新增。';
+}
+function kpiRenderRecords() {
+ const records=kpiBoot ? kpiBoot.records : [];
+ $('kpiRecordCount').textContent=records.length+' 筆';
+ const plus=records.filter(function(r){return r.type==='plus';}).reduce(function(n,r){return n+r.score;},0);
+ const minus=records.filter(function(r){return r.type==='minus';}).reduce(function(n,r){return n+r.score;},0);
+ $('kpiTotals').textContent='全體本月紀錄合計：加分 +'+plus+' 分 ／ 扣分 '+minus+' 分';
+ $('kpiRecords').replaceChildren();
+ if(!records.length){$('kpiRecords').textContent='這個月尚無評比紀錄。';return;}
+ records.forEach(function(r){
+  const article=document.createElement('article');article.className='kpi-record';
+  const head=document.createElement('div');head.className='kpi-record-head';
+  const person=document.createElement('span');person.textContent=r.empId+' '+r.empName;
+  const score=document.createElement('span');score.className=r.type==='plus'?'kpi-plus':'kpi-minus';
+  score.textContent=(r.score>0?'+':'')+r.score+' 分';
+  head.append(person,score);
+  const detail=document.createElement('p');detail.textContent=r.item+'\n'+r.reason;
+  const info=document.createElement('small');info.textContent=r.time+' ｜評比人：'+r.reviewer;
+  article.append(head,detail,info);$('kpiRecords').append(article);
+ });
+}
+function kpiRequestKey(payload) {
+ const key='kpiPending:'+kpiBoot.manager.empId;
+ const fingerprint=JSON.stringify(payload);
+ let prior;
+ try{prior=JSON.parse(sessionStorage.getItem(key)||'null');}catch(error){}
+ const id=prior && prior.fingerprint===fingerprint ? prior.id :
+  (window.crypto && crypto.randomUUID ? crypto.randomUUID() :
+   'kpi_'+Date.now()+'_'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+ try{sessionStorage.setItem(key,JSON.stringify({fingerprint:fingerprint,id:id}));}catch(error){}
+ return {id:id,key:key};
+}
+async function kpiSend(event) {
+ event.preventDefault();
+ if(kpiBusy || !kpiBoot)return;
+ if(!$('kpiForm').reportValidity())return;
+ const standard=kpiBoot.standards[$('kpiType').value].find(function(s){return s.item===$('kpiItem').value;});
+ if(!standard){kpiMessage('請選擇有效的評比項目。','error');return;}
+ const payload={
+  month:$('kpiMonth').value,empId:$('kpiEmployee').value,type:$('kpiType').value,
+  item:standard.item,expectedScore:standard.score,reason:$('kpiReason').value.trim()
+ };
+ if(!payload.reason){kpiMessage('請填寫具體原因。','error');return;}
+ const pending=kpiRequestKey(payload);
+ let saved=false,result=null,sendError=null;
+ kpiSetBusy(true);kpiMessage('正在送出，請勿關閉頁面…');
+ try {
+  const controller=new AbortController();
+  const timer=setTimeout(function(){controller.abort();},60000);
+  try{
+   const response=await fetch(kpiEndpoint(),{
+    method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    credentials:'omit',redirect:'follow',signal:controller.signal,
+    body:JSON.stringify(Object.assign({},payload,{action:'submit',idToken:kpiToken(),requestId:pending.id}))
+   });
+   if(!response.ok)throw Error('後台連線失敗（'+response.status+'）。');
+   result=await response.json();
+   if(!result || typeof result.success!=='boolean')throw Error('後台回應格式不正確。');
+   saved=result.success;
+   if(!saved)sendError=Error(result.message||'評比未送出。');
+  }catch(error){
+   // 某些瀏覽器無法讀取跨網域 POST 回應，或連線中斷：用只讀查詢確認是否已寫入。
+   try {
+    const status=await kpiRead('status',{requestId:pending.id});
+    saved=status.found;
+   }catch(statusError){}
+   if(!saved)sendError=Error('尚無法確認送出結果，請保留內容並再次按送出；同一筆重試不會重複新增。');
+  }finally{clearTimeout(timer);}
+ }catch(error){sendError=error;}
+ finally{kpiSetBusy(false);}
+ if(!saved){kpiMessage(sendError && sendError.message || '送出失敗，請稍後重試。','error');return;}
+ try{sessionStorage.removeItem(pending.key);}catch(error){}
+ $('kpiReason').value='';
+ await kpiLoad();
+ const sheet=payload.type==='plus'?'加分紀錄':'扣分紀錄';
+ if(kpiBoot) kpiMessage(result && result.message || '已確認寫入「'+sheet+'」。','success');
+ else kpiMessage('已確認寫入「'+sheet+'」，但紀錄重新載入失敗，請按重新載入。','success');
+}
+$('openKpi').addEventListener('click',function(){void openKpi();});
+$('kpiBack').addEventListener('click',showDepartmentChoice);
+$('kpiReload').addEventListener('click',function(){void kpiLoad();});
+$('kpiMonth').addEventListener('change',function(){void kpiLoad();});
+$('kpiType').addEventListener('change',function(){kpiItems('');});
+$('kpiEmployee').addEventListener('change',function(){kpiItems('');});
+$('kpiItem').addEventListener('change',kpiDescribe);
+$('kpiForm').addEventListener('submit',function(event){void kpiSend(event);});
+
 
 void startAuthenticatedSession();
 </script>
