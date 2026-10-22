@@ -1533,6 +1533,7 @@
 
 
         el("myKpiEntry").style.display = "inline-block";
+        if (!HR_MODE) myKpiWarm();
 
 
         if (HR_MODE) {
@@ -1592,6 +1593,9 @@
     var myKpiSequence = 0;
     var myKpiCallbackSequence = 0;
     var myKpiReturnState = null;
+    var myKpiMemory = {};
+    var myKpiInFlight = {};
+    var myKpiOwnerToken = '';
 
 
     function myKpiTodayMonth() {
@@ -1603,7 +1607,7 @@
       el("myKpiMessage").textContent=text || "";
       el("myKpiMessage").dataset.error=isError ? "true" : "false";
     }
-    function myKpiRequest(month) {
+    function myKpiRequestUncached(month,force) {
       return new Promise(function(resolve,reject){
         var token=window.liff && liff.isLoggedIn() && liff.getIDToken();
         if(!token){reject(Error("請重新從 LINE 登入，並確認 LIFF 有 openid 權限。"));return;}
@@ -1621,11 +1625,46 @@
         window[callback]=function(data){finish(null,data);};
         script.onerror=function(){finish(Error("無法連線至 KPI 後台，請確認已更新 Code.gs 並部署新版本。"));};
         script.src=MY_KPI_API_URL+"?"+new URLSearchParams({
-          action:"myKpi",idToken:token,month:month,callback:callback,_:String(Date.now())
+          action:"myKpi",idToken:token,month:month,force:force?"1":"0",callback:callback,_:String(Date.now())
         }).toString();
         document.head.appendChild(script);
       });
     }
+
+
+    function myKpiSyncOwner(){
+      var token=window.liff && liff.isLoggedIn() && liff.getIDToken() || "";
+      if(token!==myKpiOwnerToken){
+        myKpiMemory={};myKpiInFlight={};myKpiOwnerToken=token;
+      }
+      return token;
+    }
+    function myKpiRequest(month,force){
+      var token=myKpiSyncOwner();
+      var key=month+(force?":force":":normal");
+      if(myKpiInFlight[key])return myKpiInFlight[key];
+      var pending=myKpiRequestUncached(month,force).then(function(data){
+        if(token===myKpiOwnerToken){
+          var prior=myKpiMemory[month];
+          if(!prior || String(prior.data.updatedAt)<=String(data.updatedAt)){
+            myKpiMemory[month]={ts:Date.now(),data:data};
+          }
+        }
+        return data;
+      }).finally(function(){
+        if(token===myKpiOwnerToken && myKpiInFlight[key]===pending)delete myKpiInFlight[key];
+      });
+      myKpiInFlight[key]=pending;return pending;
+    }
+    function myKpiWarm(){
+      if(!myKpiSyncOwner())return;
+      var month=myKpiTodayMonth();
+      var cached=myKpiMemory[month];
+      if(cached && Date.now()-cached.ts<20000)return;
+      void myKpiRequest(month,false).catch(function(){});
+    }
+
+
     function myKpiMonthOptions(months,selected){
       var current=myKpiTodayMonth();
       var values=Array.from(new Set([current,selected].concat(months || []))).filter(function(m){
@@ -1681,21 +1720,30 @@
         box.append(head,reason,time);list.appendChild(box);
       });
     }
-    async function myKpiLoad(){
+    async function myKpiLoad(force){
       var sequence=++myKpiSequence;
       var month=el("myKpiMonth").value || myKpiTodayMonth();
+      myKpiSyncOwner();
+      var cached=myKpiMemory[month];
+      if(cached && Date.now()-cached.ts>=120000)cached=null;
       el("myKpiRefresh").disabled=true;
-      el("myKpiRefresh").textContent="讀取中…";
-      myKpiClear();myKpiMessage("正在讀取你的工作 KPI…");
+      el("myKpiRefresh").textContent="更新中…";
+      if(cached){
+        myKpiRender(cached.data);
+        myKpiMessage("先顯示上次資料，正在確認最新分數…");
+      }else{
+        myKpiClear();myKpiMessage("正在讀取你的工作 KPI…");
+      }
       try{
-        var data=await myKpiRequest(month);
+        var data=await myKpiRequest(month,!!force);
         if(sequence!==myKpiSequence || el("myKpiWrap").style.display==="none")return;
         if(data.month!==el("myKpiMonth").value)return;
         myKpiRender(data);
       }catch(error){
         if(sequence!==myKpiSequence)return;
-        myKpiMessage(error.message || "工作 KPI 讀取失敗，請稍後重試。",true);
-        el("myKpiRecords").textContent="未取得資料";
+        myKpiMessage((cached?"更新失敗，目前保留上次資料。":"")+
+          (error.message || "工作 KPI 讀取失敗，請稍後重試。"),true);
+        if(!cached)el("myKpiRecords").textContent="未取得資料";
       }finally{
         if(sequence===myKpiSequence){
           el("myKpiRefresh").disabled=false;
@@ -1726,7 +1774,7 @@
     el("myKpiEntry").addEventListener("click",myKpiOpen);
     el("myKpiBack").addEventListener("click",myKpiBack);
     el("myKpiMonth").addEventListener("change",function(){void myKpiLoad();});
-    el("myKpiRefresh").addEventListener("click",function(){void myKpiLoad();});
+    el("myKpiRefresh").addEventListener("click",function(){void myKpiLoad(true);});
 
 
   </script>
