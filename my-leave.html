@@ -661,7 +661,7 @@
         <div id="menstrualInfo"></div>
       </div>
 
-
+<div id="otherLeaveCards"></div>
 
 
       <div class="policy-note">
@@ -997,23 +997,82 @@
 
 
       if (effectiveFemale(data)) {
-        el("menstrualCard").style.display = "block";
+  el("menstrualCard").style.display = "block";
+
+  el("menstrualInfo").textContent = data.menstrual
+    ? "已休 " +
+      fh(data.menstrual.used || 0) +
+      "時｜剩餘 " +
+      hd(data.menstrual.remaining || 0) +
+      "｜共 " +
+      hd(data.menstrual.total || 0)
+    : "目前尚無生理假額度資料";
+} else {
+  el("menstrualCard").style.display = "none";
+}
 
 
+// ===== 其他假勤顯示：貼在這裡 =====
+var otherWrap = el("otherLeaveCards");
+otherWrap.innerHTML = "";
+
+(data.otherLeaves || []).forEach(function(item) {
+
+  var card = document.createElement("div");
+  card.className = "extra-card";
+
+  var title = document.createElement("div");
+  title.className = "extra-title";
+  title.textContent = item.type || "其他假勤";
+
+  var info = document.createElement("div");
+
+  var used = num(item.used);
+  var total = num(item.total);
+  var remaining = num(item.remaining);
+
+  var text = "已休 " + fh(used) + "時";
+
+  if (total > 0) {
+    text +=
+      "｜剩餘 " + hd(remaining) +
+      "｜共 " + hd(total);
+  } else {
+    text += "｜無固定額度";
+  }
+
+  info.textContent = text;
+
+  card.appendChild(title);
+  card.appendChild(info);
+
+  if (item.startDate || item.endDate) {
+    var period = document.createElement("div");
+    period.className = "detail";
+
+    period.textContent =
+      "資格期間：" +
+      (item.startDate || "—") +
+      " ～ " +
+      (item.endDate || "—");
+
+    card.appendChild(period);
+  }
+
+  if (item.note) {
+    var note = document.createElement("div");
+    note.className = "subquota";
+    note.textContent = "備註：" + item.note;
+    card.appendChild(note);
+  }
+
+  otherWrap.appendChild(card);
+});
 
 
-        el("menstrualInfo").textContent = data.menstrual
-          ? "已休 " +
-            fh(data.menstrual.used || 0) +
-            "時｜剩餘 " +
-            hd(data.menstrual.remaining || 0) +
-            "｜共 " +
-            hd(data.menstrual.total || 0)
-          : "目前尚無生理假額度資料";
-      } else {
-        el("menstrualCard").style.display = "none";
-      }
-
+// 原本請假紀錄繼續
+var recordList = el("recordList");
+recordList.innerHTML = "";
 
 
 
