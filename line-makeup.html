@@ -200,7 +200,7 @@ button:disabled {
 }
 
 
-/* V8.7.1 中越雙語排版 */
+/* V8.7.2 中越雙語排版 */
 button,.modal-btn{white-space:normal;line-height:1.5;overflow-wrap:anywhere;}
 label,.hint,.modal-text,.status{line-height:1.65;overflow-wrap:anywhere;}
 .modal-box{max-width:440px;max-height:90vh;overflow-y:auto;}
@@ -246,7 +246,7 @@ select{max-width:100%;}
 </div>
 
 <div class="version">
-    V8.7.1・獨立假日上下班補登版
+    V8.7.2・獨立假日上下班補登版
 </div>
 
 
@@ -264,7 +264,7 @@ select{max-width:100%;}
 </div>
 
 
-<label for="makeupDate">
+<div id="makeupDateArea"><label for="makeupDate">
     補登日期
 </label>
 
@@ -277,7 +277,7 @@ select{max-width:100%;}
 
 <div class="hint green-hint">
     僅可選擇今天或過去日期，不可選未來日期。
-</div>
+</div></div>
 
 
 <label for="makeupType">
@@ -303,7 +303,7 @@ select{max-width:100%;}
         提前上班
     </option>
 
-    <option value="假日上下班補登">假日上下班補登</option>
+    <option value="假日上下班補登">假日上下班打卡（公司Wi-Fi／即時）</option>
 
     <option value="加班(外出)">
         加班（外出）晚回來
@@ -398,7 +398,11 @@ select{max-width:100%;}
 </div>
 
 
-<div id="checkinBlock" class="hidden"><label for="holidayPunchType">補登類型</label><select id="holidayPunchType" onchange="refreshHolidayTimesV870()"><option value="上班">上班</option><option value="下班">下班</option></select><label for="checkinTime">實際時間</label><select id="checkinTime"></select><div class="hint">僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，每半小時一格。已有同類型紀錄不覆寫，補登列時數為0。</div></div>
+<div id="checkinBlock" class="hidden">
+<label for="holidayPunchType">打卡類型</label><select id="holidayPunchType"><option value="上班">上班</option><option value="下班">下班</option></select>
+<div class="hint">此項僅限連接公司 Wi-Fi 使用。選擇上班或下班後，按確認打卡；日期與時間由系統記錄當下時間，不能自行修改。</div>
+<div class="hint green-hint">僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，實際時間不取整、不以半小時回推。</div>
+</div>
 <div
     id="overtimeBlock"
     class="hidden"
@@ -474,9 +478,24 @@ select{max-width:100%;}
 
 
 <script>
+// 已設定公司的 Cloudflare 驗證入口。
+var OFFICE_HOLIDAY_GATEWAY_URL = 'https://hs-holiday-checkin.hs-2026work.workers.dev/';
 
-// V8.7.1：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
+
+// V8.7.2：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
 var VI_ATTENDANCE_V871 = {
+  '假日上下班打卡（公司Wi-Fi／即時）':'Chấm công vào ca / tan ca ngày nghỉ (Wi-Fi công ty, giờ hiện tại)',
+  '打卡類型':'Loại chấm công',
+  '確認打卡':'Xác nhận chấm công',
+  '此項僅限連接公司 Wi-Fi 使用。選擇上班或下班後，按確認打卡；日期與時間由系統記錄當下時間，不能自行修改。':'Chỉ dùng khi kết nối Wi-Fi công ty. Chọn vào ca hoặc tan ca rồi xác nhận; hệ thống tự ghi ngày giờ hiện tại, không thể chỉnh sửa.',
+  '僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，實際時間不取整、不以半小時回推。':'Chỉ áp dụng thứ Bảy, Chủ nhật và ngày lễ. Vào ca: 08:00–17:00; tan ca: 08:00–20:30. Ghi đúng giờ thực tế, không làm tròn theo 30 phút.',
+  '請先連接公司 Wi-Fi，再使用假日上下班打卡':'Vui lòng kết nối Wi-Fi công ty trước khi chấm công ngày nghỉ',
+  '此項須連接公司 Wi-Fi 並從新版 LINE 頁面打卡':'Vui lòng kết nối Wi-Fi công ty và chấm công từ trang LINE mới',
+  '公司網路驗證入口尚未完成設定':'Cổng xác minh mạng công ty chưa được thiết lập',
+  '公司網路驗證已過期，請重新送出':'Xác minh mạng công ty đã hết hạn, vui lòng gửi lại',
+  '公司網路驗證失敗，未寫入打卡':'Xác minh mạng công ty thất bại, chưa lưu chấm công',
+  '已完成假日上班打卡':'Đã chấm công vào ca ngày nghỉ',
+  '已完成假日下班打卡':'Đã chấm công tan ca ngày nghỉ',
   '正在讀取時間...':'Đang tải giờ...',
   '💡 XB-R60 掃描器已啟用輸入法防呆，可直接感應員工 QR Code':'💡 Máy quét XB-R60 đã được hỗ trợ xử lý bàn phím; có thể quét trực tiếp mã QR nhân viên',
   '📝 請假申請 Xin nghi phep':'📝 Đơn xin nghỉ phép',
@@ -775,13 +794,7 @@ function initializeDate() {
   var input = document.getElementById('makeupDate');
   input.value = input.max = getLocalDateString(new Date());
 }
-function refreshHolidayTimesV870() {
-  var select = document.getElementById('checkinTime'), saved = select.value;
-  var max = document.getElementById('holidayPunchType').value === '下班' ? 1230 : 1020;
-  select.innerHTML = '';
-  for (var m=480;m<=max;m+=30) { var option=document.createElement('option'); option.value=option.textContent=pad2(Math.floor(m/60))+':'+pad2(m%60); select.appendChild(option); }
-  if (Array.from(select.options).some(function(o){return o.value===saved;})) select.value=saved;
-}
+function refreshHolidayTimesV870() { /* 即時打卡不再建立時間選單。 */ }
 function initializeTimeSelects() {
   refreshHolidayTimesV870();
   [['earlyHour',5,7,'時'],['overtimeHour',0,23,'時'],['overtimeMinute',0,59,'分']].forEach(function (spec) {
@@ -796,6 +809,8 @@ function initializeTimeSelects() {
 }
 function handleMakeupTypeChange() {
   var type = document.getElementById('makeupType').value;
+  document.getElementById('makeupDateArea').classList.toggle('hidden',type==='假日上下班補登');
+  document.getElementById('submitBtn').textContent=type==='假日上下班補登'?'確認打卡':'送出補登';
   var blocks = { '中午未休息': 'lunchBlock', '下午未休息': 'afternoonBlock', '提前上班': 'earlyBlock', '假日上下班補登': 'checkinBlock', '加班(外出)': 'overtimeBlock' };
   Object.keys(blocks).forEach(function (key) { document.getElementById(blocks[key]).classList.toggle('hidden', key !== type); });
 }
@@ -817,17 +832,14 @@ async function submitMakeup() {
   var day = document.getElementById('makeupDate').value, type = document.getElementById('makeupType').value;
   var button = document.getElementById('submitBtn');
   try {
-    if (!day || !type) throw new Error('請選擇補登日期與項目');
-    if (day > getLocalDateString(new Date())) throw new Error('不可補登未來日期');
+    if (!type || (type!=='假日上下班補登' && !day)) throw new Error('請選擇補登日期與項目');
+    if (type!=='假日上下班補登' && day > getLocalDateString(new Date())) throw new Error('不可補登未來日期');
     if (!currentEmpId) throw new Error('尚未取得員工資料');
     var payload = { action: 'p85Makeup', workDate: day, reason: type, token: pageParams.get('flow') === 'late' ? pageParams.get('token') || '' : '' };
     if (type === '假日上下班補登') {
-      payload.holidayPunchType = document.getElementById('holidayPunchType').value;
-      payload.holidayTime = document.getElementById('checkinTime').value;
-      var minutes = Number(payload.holidayTime.slice(0,2))*60+Number(payload.holidayTime.slice(3));
-      var max = payload.holidayPunchType === '下班' ? 1230 : 1020;
-      if (!/^(?:[01]\d|2[0-3]):(?:00|30)$/.test(payload.holidayTime) || minutes<480 || minutes>max) throw new Error('假日補登時間超出範圍');
-      if (new Date(day+'T'+payload.holidayTime+':00+08:00')>new Date()) throw new Error('不可補登未來時間');
+      payload.holidayPunchType=document.getElementById('holidayPunchType').value;
+      if(['上班','下班'].indexOf(payload.holidayPunchType)<0)throw new Error('請選擇假日上班或下班');
+      delete payload.workDate;
     }
     if (type === '提前上班') payload.earlyTime = document.getElementById('earlyHour').value + ':' + document.getElementById('earlyMinute').value;
     if (type === '加班(外出)') {
@@ -838,13 +850,13 @@ async function submitMakeup() {
     }
     isSubmitting = true; button.disabled = true; button.textContent = '送出中…'; showStatus('', false);
     var data = await callApi(payload);
-    var text = '✅ ' + data.message + '\n' + currentEmpName + '（' + currentEmpId + '）\n日期：' + day + '\n項目：' + getMakeupLabel(type);
+    var text = '✅ ' + data.message + '\n' + currentEmpName + '（' + currentEmpId + '）\n日期：' + (data.workDate || day) + '\n項目：' + getMakeupLabel(type);
     if (payload.overtimeOutTime) text += '\n實際下班：' + payload.overtimeOutTime;
-    if (payload.holidayTime) text += '\n類型：' + payload.holidayPunchType + '\n實際時間：' + payload.holidayTime + '\n補登列時數：0';
+    if (type==='假日上下班補登') text += '\n類型：' + data.holidayPunchType + '\n實際時間：' + data.holidayTime + '\n補登列時數：0';
     if (payload.earlyTime) text += '\n實際到班：' + payload.earlyTime;
     showStatus(text, false); button.textContent = '已完成';
   } catch (err) {
-    showStatus(p861ErrorText_(err), true); isSubmitting = false; button.disabled = false; button.textContent = '送出補登';
+    showStatus(p861ErrorText_(err), true); isSubmitting = false; button.disabled = false; button.textContent = type==='假日上下班補登'?'確認打卡':'送出補登';
   }
 }
 async function submitRejection() {
@@ -861,7 +873,7 @@ async function submitRejection() {
     status.textContent = p861ErrorText_(err); isSubmitting = false; button.disabled = false; button.textContent = '送出拒絕原因';
   }
 }
-// V8.7.1：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
+// V8.7.2：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
 async function p861Step_(stage, fn) {
   try { return await fn(); }
   catch (cause) {
@@ -883,7 +895,7 @@ function p861ErrorText_(err) {
   var message = String(err && err.message || err || '未知錯誤');
   message = message.replace(/https?:\/\/[^\s"'<>]+/g, function (url) { return url.split(/[?#]/)[0] + '（參數已隱藏）'; });
   message = message.replace(/\b(access_token|id_token|testSession|token|test)\s*[:=]\s*[^&\s"'<>]+/gi, '$1=（已隱藏）');
-  return '⚠️ V8.7.1｜' + code + '（' + (stages[code] || code) + '）\n' +
+  return '⚠️ V8.7.2｜' + code + '（' + (stages[code] || code) + '）\n' +
     (err && err.p861Name ? err.p861Name + '：' : '') + message +
     (err && err.p861Code ? '\n錯誤代碼：' + err.p861Code : '') +
     '\n請提供這段錯誤訊息，先不要重建測試。';
@@ -914,6 +926,11 @@ async function callApi(payload) {
     var value = String(APPS_SCRIPT_URL || '').trim();
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(value)) {
       throw new Error('APPS_SCRIPT_URL 不是完整的 Apps Script /exec 網址，請確認沒有 Markdown 括號或多餘文字');
+    }
+    if(payload.action==='p85Makeup' && payload.reason==='假日上下班補登') {
+      var gateway=String(OFFICE_HOLIDAY_GATEWAY_URL || '').trim();
+      if(!/^https:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9/_-]*)?$/.test(gateway))throw new Error('公司網路驗證入口尚未完成設定');
+      return gateway;
     }
     return value;
   });
@@ -949,7 +966,7 @@ async function initializeLiff() {
       initializeDate(); initializeTimeSelects();
       document.getElementById('makeupType').addEventListener('change', handleMakeupTypeChange);
       document.getElementById('loading').style.whiteSpace = 'pre-wrap';
-      document.getElementById('loading').textContent = 'V8.7.1：正在連接 LINE…';
+      document.getElementById('loading').textContent = 'V8.7.2：正在連接 LINE…';
     });
     await p861Step_('SDK', function () {
       if (typeof liff === 'undefined' || typeof liff.init !== 'function') throw new Error('LINE SDK 未載入，請確認網路後重新開啟');
@@ -961,7 +978,7 @@ async function initializeLiff() {
       await p861Step_('LOGIN', function () { return liff.login({ redirectUri: p861LoginReturnUrl_() }); });
       return;
     }
-    document.getElementById('loading').textContent = 'V8.7.1：LINE 已初始化，正在讀取員工／補登資料…';
+    document.getElementById('loading').textContent = 'V8.7.2：LINE 已初始化，正在讀取員工／補登資料…';
     if (pageParams.get('flow') === 'reject') {
       var detail = await callApi({ action: 'p85RejectDetail', token: pageParams.get('token') });
       document.getElementById('rejectSummary').textContent = detail.summary;
@@ -993,6 +1010,7 @@ async function initializeLiff() {
         document.getElementById('reason').value = '忘記打下班卡';
         handleMakeupTypeChange();
       }
+      handleMakeupTypeChange();
       document.getElementById('formWrap').style.display = 'block';
     }
     document.getElementById('loading').style.display = 'none';
