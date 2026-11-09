@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宏升工業社 - 打卡專用掃描機 V8.6.9</title>
+<title>宏升工業社 - 打卡專用掃描機 V8.7.0</title>
 <style>
 body {
 font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -466,7 +466,7 @@ margin-bottom: 4px;
 <option value="中午未休息">中午未休息</option>
 <option value="下午未休息">下午未休息</option>
 <option value="提前上班">提前上班（05:00～07:30）</option>
-<option value="上班補登">上班補登（08:00～17:00）</option>
+<option value="假日上下班補登">假日上下班補登</option>
 <option value="加班(外出)">加班(外出)晚回來</option>
 </select>
 </div>
@@ -508,29 +508,30 @@ margin-bottom: 4px;
 
 
 <div class="modal-overlay" id="webCheckinOverlay" role="dialog" aria-modal="true" aria-labelledby="webCheckinTitle">
-<div class="modal-box"><div class="modal-title" id="webCheckinTitle">上班補登</div>
+<div class="modal-box"><div class="modal-title" id="webCheckinTitle">假日上下班補登</div>
 <div class="makeup-countdown" aria-live="polite">⏱️ 60 秒內無操作將返回主畫面</div>
 <p class="modal-text" id="webCheckinEmployee"></p><p class="modal-text" id="webCheckinDate"></p>
-<label for="webCheckinTime" style="color:#333;">實際到班時間</label>
-<select id="webCheckinTime" style="width:100%;padding:12px;font-size:20px;margin-top:10px;"></select>
-<p class="modal-text small-note">08:00～17:00，每半小時一格，加班時數為 0。當日已有上班紀錄時不新增、不覆寫。</p>
+<label for="webCheckinTime" style="color:#333;">實際時間</label>
+<label for="webHolidayDirection" style="color:#333;">補登類型</label><select id="webHolidayDirection" onchange="refreshWebHolidayTimesV870()" style="width:100%;padding:12px;margin-top:10px;"><option value="上班">上班</option><option value="下班">下班</option></select><select id="webCheckinTime" style="width:100%;padding:12px;font-size:20px;margin-top:10px;"></select>
+<p class="modal-text small-note">僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，每半小時一格。同類型不重複、不覆寫；補登列時數為0。</p>
 <div class="modal-actions"><button type="button" class="modal-btn cancel" onclick="closeAllOverlaysAndResume()">取消</button><button type="button" class="modal-btn confirm" id="webCheckinConfirm" onclick="submitWebCheckinV869()">確定送出</button></div>
 </div></div>
 
 <script>
 
 var webCheckinDayV869 = '';
+function refreshWebHolidayTimesV870() {
+ var select=document.getElementById('webCheckinTime'),saved=select.value,max=document.getElementById('webHolidayDirection').value==='下班'?1230:1020;
+ select.innerHTML='';
+ for(var m=480;m<=max;m+=30){var option=document.createElement('option');option.value=option.textContent=pad2(Math.floor(m/60))+':'+pad2(m%60);select.appendChild(option);}
+ if(Array.from(select.options).some(function(o){return o.value===saved;}))select.value=saved;
+}
 function openWebCheckinV869(day, label) {
   webCheckinDayV869 = day;
   document.getElementById('webCheckinEmployee').textContent = label;
   document.getElementById('webCheckinDate').textContent = day;
-  var select = document.getElementById('webCheckinTime');
-  select.innerHTML = '';
-  for (var m = 480; m <= 1020; m += 30) {
-    var option = document.createElement('option');
-    option.value = option.textContent = pad2(Math.floor(m/60)) + ':' + pad2(m%60);
-    select.appendChild(option);
-  }
+  document.getElementById('webHolidayDirection').value='上班';
+  refreshWebHolidayTimesV870();
   var button = document.getElementById('webCheckinConfirm');
   button.disabled = false; button.textContent = '確定送出';
   document.getElementById('webCheckinOverlay').classList.add('show');
@@ -542,11 +543,13 @@ function submitWebCheckinV869() {
   var params = new URLSearchParams(window.location.search);
   if (params.has('test') || params.has('testSession') || params.get('flow') === 'test') { alert('測試請從原 HS021 LINE 隔離入口開啟，未寫入正式資料'); return; }
   var time = document.getElementById('webCheckinTime').value;
-  if (!/^(?:(?:0[89]|1[0-6]):(?:00|30)|17:00)$/.test(time)) { alert('請選擇 08:00～17:00，每半小時一格'); return; }
+  var direction=document.getElementById('webHolidayDirection').value;
+  var minutes=Number(time.slice(0,2))*60+Number(time.slice(3)),max=direction==='下班'?1230:1020;
+  if(!/^(?:[01]\d|2[0-3]):(?:00|30)$/.test(time)||minutes<480||minutes>max){alert('假日補登時間超出範圍');return;}
   var actual = new Date(webCheckinDayV869 + 'T' + time + ':00+08:00');
   if (isNaN(actual.getTime()) || actual > new Date()) { alert('到班日期或時間不可晚於目前時間'); return; }
   button.disabled = true; button.textContent = '送出中…';
-  callApi({id:currentId,ts:currentTs,reason:'上班補登',workDate:webCheckinDayV869,checkinTime:time});
+  callApi({id:currentId,ts:currentTs,reason:'假日上下班補登',workDate:webCheckinDayV869,holidayPunchType:direction,holidayTime:time});
 }
 
 var ACCESS_CODE = '162103';
@@ -1207,7 +1210,8 @@ function callApi(params) {
         + '&ts=' + encodeURIComponent(safeTs)
 + (params.reason ? '&reason=' + encodeURIComponent(params.reason) : '')
 + (params.earlyTime ? '&earlyTime=' + encodeURIComponent(params.earlyTime) : '')
-+ (params.checkinTime ? '&checkinTime=' + encodeURIComponent(params.checkinTime) : '')
++ (params.holidayPunchType ? '&holidayPunchType=' + encodeURIComponent(params.holidayPunchType) : '')
++ (params.holidayTime ? '&holidayTime=' + encodeURIComponent(params.holidayTime) : '')
 + (params.workDate ? '&workDate=' + encodeURIComponent(params.workDate) : '')
 + (params.overtimeOutMode ? '&overtimeOutMode=' + encodeURIComponent(params.overtimeOutMode) : '')
 + (params.overtimeOutTime ? '&overtimeOutTime=' + encodeURIComponent(params.overtimeOutTime) : '')
@@ -1436,8 +1440,8 @@ html += '<div style="margin-top:16px;padding:14px;background:#fff3e0;border:1px 
 
 if (data.message && !isAbnormalPunch) {
 html += '<div class="cheer">' + data.message;
-// 提前上班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
-if (data.reason === '上班補登') html += '<div style="margin-top:8px;font-size:16px;">實際到班：' + escapeText(data.checkinTime || '') + '，加班時數：0</div>';
+// 提前假日上下班補登：選擇時間及計算後的時數顯示在「已標記提前上班」正下方
+if (data.reason === '假日上下班補登') html += '<div style="margin-top:8px;font-size:16px;">實際時間：' + escapeText(data.holidayPunchType || '') + ' ' + escapeText(data.holidayTime || '') + '，加班時數：0</div>';
 if (data.isEarlyCheckInMakeup && data.earlyTime) {
 html += '<div style="margin-top:8px;font-size:16px;line-height:1.5;">' +
 data.earlyTime + ' ～ ' + (data.normalCheckInTime || currentNormalCheckInTime) +
@@ -1872,7 +1876,7 @@ currentMakeupReportTs = Date.now();
 }
 // skipMakeupIdInput 為 true 時，沿用掃描時已設定好的 currentId / currentTs
 
-if (reason === '上班補登') {
+if (reason === '假日上下班補登') {
   var checkinDay = selectedDate;
   var checkinLabel = document.getElementById('standaloneMakeupId').selectedOptions[0].textContent;
   if (skipMakeupIdInput) {
