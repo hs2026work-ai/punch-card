@@ -199,6 +199,16 @@ button:disabled {
     line-height: 1.8;
 }
 
+
+/* V8.7.1 中越雙語排版 */
+button,.modal-btn{white-space:normal;line-height:1.5;overflow-wrap:anywhere;}
+label,.hint,.modal-text,.status{line-height:1.65;overflow-wrap:anywhere;}
+.modal-box{max-width:440px;max-height:90vh;overflow-y:auto;}
+.modal-overlay{overflow-y:auto;}
+.overlay .card{max-height:90vh;overflow-y:auto;}
+select{max-width:100%;}
+.bilingual-select-caption{font-size:13px;color:#555;line-height:1.6;margin:5px 0 9px;overflow-wrap:anywhere;}
+
 </style>
 
 </head>
@@ -236,7 +246,7 @@ button:disabled {
 </div>
 
 <div class="version">
-    V8.7.0・獨立假日上下班補登版
+    V8.7.1・獨立假日上下班補登版
 </div>
 
 
@@ -465,6 +475,288 @@ button:disabled {
 
 <script>
 
+// V8.7.1：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
+var VI_ATTENDANCE_V871 = {
+  '正在讀取時間...':'Đang tải giờ...',
+  '💡 XB-R60 掃描器已啟用輸入法防呆，可直接感應員工 QR Code':'💡 Máy quét XB-R60 đã được hỗ trợ xử lý bàn phím; có thể quét trực tiếp mã QR nhân viên',
+  '📝 請假申請 Xin nghi phep':'📝 Đơn xin nghỉ phép',
+  '獨立假日上下班補登版':'Phiên bản bổ sung giờ vào ca / tan ca ngày nghỉ',
+  '已完成假日上班補登':'Đã bổ sung giờ vào ca ngày nghỉ',
+  '已完成假日下班補登':'Đã bổ sung giờ tan ca ngày nghỉ',
+  '該日已有上班紀錄，未新增或覆寫；如需更正請洽人事':'Ngày này đã có bản ghi vào ca. Không thêm hoặc ghi đè; hãy liên hệ nhân sự nếu cần sửa.',
+  '該日已有下班紀錄，未新增或覆寫；如需更正請洽人事':'Ngày này đã có bản ghi tan ca. Không thêm hoặc ghi đè; hãy liên hệ nhân sự nếu cần sửa.',
+  '已收到的掃描不必重掃；請保持此頁開啟，下一位可繼續掃描。':'Không cần quét lại mã đã nhận. Giữ trang này mở; người tiếp theo có thể tiếp tục quét.',
+  '有紀錄需要管理員核對':'Có bản ghi cần quản lý kiểm tra',
+  '掃描紀錄已保留，等待網路恢復':'Đã giữ bản ghi quét, đang chờ kết nối mạng',
+  '已接收，正在確認存檔':'Đã nhận, đang xác nhận lưu',
+  '本機沒有待確認的紀錄':'Máy này không có bản ghi đang chờ xác nhận',
+  '管理員：查看同步狀態':'Quản lý: xem trạng thái đồng bộ',
+  '等待確認存檔':'Đang chờ xác nhận lưu',
+  '需人工核對':'Cần kiểm tra thủ công',
+  '發生錯誤，請重新掃描':'Có lỗi, vui lòng quét lại',
+  '請重新掃描':'Vui lòng quét lại',
+  '快速佇列暫時無法使用，改用一般打卡處理...':'Hàng đợi nhanh tạm thời không khả dụng, đang dùng cách chấm công thông thường...',
+  '缺少測試連結，沒有改用正式入口':'Thiếu liên kết thử nghiệm, không chuyển sang hệ thống chính thức',
+  '缺少測試連結，沒有送出正式補登':'Thiếu liên kết thử nghiệm, chưa gửi bản ghi vào hệ thống chính thức',
+  '載入 LINE SDK':'Tải LINE SDK',
+  'LINE 初始化':'Khởi tạo LINE',
+  '讀取入口參數':'Đọc tham số truy cập',
+  'LINE 登入轉址':'Chuyển hướng đăng nhập LINE',
+  '取得 LINE 登入憑證':'Lấy thông tin xác thực LINE',
+  '檢查後端網址':'Kiểm tra địa chỉ máy chủ',
+  '讀取後端回應':'Đọc phản hồi máy chủ',
+  '解析後端回應':'Phân tích phản hồi máy chủ',
+  '錯誤代碼':'Mã lỗi',
+  '已標記提前上班':'Đã ghi nhận đi làm sớm',
+  '已完成中午未休息補登':'Đã bổ sung làm việc trong giờ nghỉ trưa',
+  '已完成下午未休息補登':'Đã bổ sung làm việc trong giờ nghỉ chiều',
+  '已完成提前上班補登':'Đã bổ sung giờ đi làm sớm',
+  '該日已有':'Ngày này đã có',
+  '請假申請':'Đơn xin nghỉ phép',
+  '出勤':'Chấm công',
+  '確認':'Xác nhận',
+  '僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，每半小時一格。已有同類型紀錄不覆寫，補登列時數為0。':'Chỉ áp dụng thứ Bảy, Chủ nhật và ngày lễ. Vào ca: 08:00–17:00; tan ca: 08:00–20:30, mỗi 30 phút. Không ghi đè bản ghi đã có; số giờ ghi thêm là 0.',
+  '僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，每半小時一格。同類型不重複、不覆寫；補登列時數為0。':'Chỉ áp dụng thứ Bảy, Chủ nhật và ngày lễ. Vào ca: 08:00–17:00; tan ca: 08:00–20:30, mỗi 30 phút. Không ghi trùng hoặc ghi đè; số giờ ghi thêm là 0.',
+  '僅可選擇今天或過去日期，不可選未來日期。':'Chỉ chọn hôm nay hoặc ngày trước đó, không chọn ngày trong tương lai.',
+  '可選今天或過去日期，不可選未來日期':'Chọn hôm nay hoặc ngày trước đó, không chọn ngày trong tương lai.',
+  '當日已有上班紀錄時不新增、不覆寫。':'Không thêm hoặc ghi đè nếu ngày đó đã có bản ghi vào ca.',
+  '若補登日期為今天，不可選擇晚於目前時間的時段':'Nếu bổ sung cho hôm nay, không chọn giờ muộn hơn thời điểm hiện tại.',
+  '若補登日期是今天，晚回來時間不能晚於目前時間。':'Nếu bổ sung cho hôm nay, giờ tan ca không được muộn hơn hiện tại.',
+  '如果要補昨天或更早的紀錄，請先回上一頁修改「補登日期」。':'Nếu bổ sung cho hôm qua hoặc trước đó, hãy quay lại để đổi ngày.',
+  '若補登日期為今天，晚回來時間不得晚於目前時間。':'Nếu bổ sung cho hôm nay, giờ tan ca không được muộn hơn hiện tại.',
+  '事由請填寫清楚。補登後立即寫入，並通知相關人員。':'Ghi rõ lý do. Bản ghi được lưu ngay và thông báo cho người liên quan.',
+  '拒絕原因會通知員工與人事。打卡紀錄仍保留，由人事確認後手動更正或刪除。':'Lý do từ chối sẽ được gửi cho nhân viên và nhân sự. Bản ghi vẫn được giữ để nhân sự kiểm tra, sửa hoặc xóa.',
+  '此筆已拒絕，原打卡紀錄仍保留，由人事處理。':'Đã từ chối. Bản ghi gốc vẫn được giữ để nhân sự xử lý.',
+  '請說明這筆補登有哪些問題':'Vui lòng nêu vấn đề của bản ghi bổ sung này',
+  '例如：送貨晚回、客戶現場處理、忘記打下班卡':'Ví dụ: giao hàng về muộn, xử lý tại khách hàng, quên chấm công tan ca',
+  '例如：至客戶現場安裝、送貨':'Ví dụ: lắp đặt tại khách hàng, giao hàng',
+  '請填寫事由，例如送貨晚回或忘記打下班卡':'Vui lòng ghi lý do, ví dụ giao hàng về muộn hoặc quên chấm công tan ca',
+  '您這筆是 07:30 前的上班打卡，如果您確實有提前上班，請記得補登「提前上班」，才能認列加班時數喔！':'Bạn đã chấm công trước 07:30. Nếu thực sự làm sớm, hãy bổ sung mục “Đi làm sớm” để được ghi nhận giờ tăng ca.',
+  '我今天比較早到，回報實際到班時間':'Tôi đi làm sớm hôm nay, báo giờ vào ca thực tế',
+  '若未請假請記得補請，未請假將視為遲到或曠職':'Nếu chưa xin nghỉ, hãy bổ sung đơn; nếu không sẽ bị tính đi muộn hoặc nghỉ không phép',
+  '請選擇補登日期與項目':'Vui lòng chọn ngày và mục chấm công bổ sung',
+  '請選擇你實際到班的時間':'Vui lòng chọn giờ vào ca thực tế',
+  '請選擇實際到班時間':'Vui lòng chọn giờ vào ca thực tế',
+  '請先選擇員工':'Vui lòng chọn nhân viên trước',
+  '員工資料載入中...':'Đang tải thông tin nhân viên...',
+  '尚未取得員工資料':'Chưa lấy được thông tin nhân viên',
+  '補登日期格式錯誤，請重新選擇':'Ngày không hợp lệ, vui lòng chọn lại',
+  '補登日期不可選擇未來日期':'Không thể bổ sung cho ngày trong tương lai',
+  '不可補登未來日期或時間':'Không thể bổ sung ngày hoặc giờ trong tương lai',
+  '不可補登未來日期':'Không thể bổ sung cho ngày trong tương lai',
+  '不可補登未來時間':'Không thể bổ sung giờ trong tương lai',
+  '到班日期或時間不可晚於目前時間':'Ngày hoặc giờ vào ca không được muộn hơn hiện tại',
+  '下班時間不可晚於目前時間':'Giờ tan ca không được muộn hơn hiện tại',
+  '下班時間必須晚於上班時間':'Giờ tan ca phải sau giờ vào ca',
+  '假日補登時間超出範圍':'Giờ bổ sung ngày nghỉ nằm ngoài phạm vi cho phép',
+  '假日補登時間須為00或30分':'Phút phải là 00 hoặc 30',
+  '假日上班僅限08:00～17:00':'Giờ vào ca ngày nghỉ chỉ từ 08:00 đến 17:00',
+  '假日下班僅限08:00～20:30':'Giờ tan ca ngày nghỉ chỉ từ 08:00 đến 20:30',
+  '請選擇假日上班或下班':'Vui lòng chọn vào ca hoặc tan ca ngày nghỉ',
+  '此項僅供週六、週日或國定假日補登；請確認日期或國定假日分頁':'Mục này chỉ dùng cho thứ Bảy, Chủ nhật hoặc ngày lễ; hãy kiểm tra ngày hoặc danh sách ngày lễ',
+  '未新增或覆寫；如需更正請洽人事':'Không thêm hoặc ghi đè; hãy liên hệ nhân sự nếu cần sửa',
+  '未重複新增或覆寫；如需更正請洽人事':'Không ghi trùng hoặc ghi đè; hãy liên hệ nhân sự nếu cần sửa',
+  '請將打卡試算表時區設為 Asia/Taipei':'Vui lòng đặt múi giờ bảng chấm công thành Asia/Taipei',
+  '請將專案時區設為 Asia/Taipei':'Vui lòng đặt múi giờ dự án thành Asia/Taipei',
+  '員工綁定缺失或重複，請洽人事':'Liên kết nhân viên bị thiếu hoặc trùng, vui lòng liên hệ nhân sự',
+  '尚未綁定員工，請先在 LINE 輸入「綁定 員工編號 姓名」':'Chưa liên kết nhân viên. Vui lòng liên hệ nhân sự để liên kết tài khoản LINE',
+  'LINE 登入已失效，請重新登入':'Phiên LINE đã hết hạn, vui lòng đăng nhập lại',
+  'LINE 登入已失效，請重新開啟頁面':'Phiên LINE đã hết hạn, vui lòng mở lại trang',
+  'LINE 登入已失效，請關閉後從原 LINE 測試訊息重新開啟':'Phiên LINE đã hết hạn; đóng trang và mở lại từ tin nhắn LINE ban đầu',
+  'LINE SDK 未載入，請確認網路後重新開啟':'Không tải được LINE SDK; kiểm tra mạng và mở lại',
+  '連線失敗，請確認網路後重新掃描':'Kết nối thất bại, kiểm tra mạng rồi quét lại',
+  '請提供這段錯誤訊息，先不要重建測試。':'Vui lòng gửi thông báo lỗi này cho người phụ trách; chưa cần tạo lại bài kiểm tra.',
+  '系統忙碌中，請稍等幾秒後重新掃描一次':'Hệ thống bận, đợi vài giây rồi quét lại',
+  '授權碼錯誤，請重新輸入':'Mã truy cập không đúng, vui lòng nhập lại',
+  '請輸入授權碼':'Vui lòng nhập mã truy cập',
+  '授權碼':'Mã truy cập',
+  '確定要補登':'Xác nhận bổ sung',
+  '不會影響今天的打卡紀錄':'Không thay đổi bản ghi chấm công hôm nay',
+  '補登（不影響今天打卡）':'Chấm công bổ sung (không thay đổi bản ghi hôm nay)',
+  '假日上下班補登':'Bổ sung giờ vào ca / tan ca ngày nghỉ',
+  '中午未休息':'Làm việc trong giờ nghỉ trưa',
+  '下午未休息':'Làm việc trong giờ nghỉ chiều',
+  '提前上班':'Đi làm sớm',
+  '加班（外出）晚回來':'Tăng ca bên ngoài, về muộn',
+  '加班(外出)晚回來':'Tăng ca bên ngoài, về muộn',
+  '加班(外出)':'Tăng ca bên ngoài',
+  '晚回來補登通知':'Thông báo bổ sung giờ về muộn',
+  '晚回來時間':'Giờ về muộn',
+  '晚回來':'Về muộn',
+  '加班開始':'Bắt đầu tăng ca',
+  '加班結束':'Kết thúc tăng ca',
+  '上班':'Vào ca',
+  '下班':'Tan ca',
+  '補登成功':'Đã lưu chấm công bổ sung',
+  '打卡成功':'Chấm công thành công',
+  '打卡異常':'Chấm công bất thường',
+  '無法打卡':'Không thể chấm công',
+  '已完成假日':'Đã bổ sung ngày nghỉ: ',
+  '已完成':'Đã hoàn tất',
+  '補登完成':'Đã lưu chấm công bổ sung',
+  '補登日期':'Ngày cần bổ sung',
+  '補登項目':'Mục cần bổ sung',
+  '補登類型':'Loại chấm công',
+  '補登列時數':'Số giờ ghi thêm',
+  '加班時數':'Số giờ tăng ca',
+  '實際到班時間':'Giờ vào ca thực tế',
+  '實際下班時間':'Giờ tan ca thực tế',
+  '實際時間':'Giờ thực tế',
+  '實際到班':'Vào ca thực tế',
+  '實際下班':'Tan ca thực tế',
+  '實際回報':'Thời điểm gửi thực tế',
+  '員工編號':'Mã nhân viên',
+  '員工姓名':'Họ tên nhân viên',
+  '員工資料':'Thông tin nhân viên',
+  '請選擇員工':'Vui lòng chọn nhân viên',
+  '姓名':'Họ tên',
+  '事由':'Lý do',
+  '原因':'Lý do',
+  '拒絕原因（必填）':'Lý do từ chối (bắt buộc)',
+  '拒絕原因最多 500 字':'Lý do từ chối tối đa 500 ký tự',
+  '請填寫拒絕原因':'Vui lòng ghi lý do từ chối',
+  '送出拒絕原因':'Gửi lý do từ chối',
+  '已送出拒絕原因':'Đã gửi lý do từ chối',
+  '請填寫事由':'Vui lòng ghi lý do',
+  '請選擇補登日期':'Vui lòng chọn ngày cần bổ sung',
+  '請選擇時間':'Vui lòng chọn giờ',
+  '請選擇...':'Vui lòng chọn...',
+  '送出補登':'Gửi chấm công bổ sung',
+  '送出中':'Đang gửi',
+  '確定送出':'Xác nhận gửi',
+  '下一步':'Tiếp theo',
+  '取消':'Hủy',
+  '關閉':'Đóng',
+  '出勤補登':'Chấm công bổ sung',
+  '載入中，請稍候...':'Đang tải, vui lòng chờ...',
+  '請感應員工 QR Code':'Vui lòng quét mã QR nhân viên',
+  '請感應 QR Code':'Vui lòng quét mã QR',
+  '已掃描，資料處理中...':'Đã quét, đang xử lý...',
+  '秒後恢復掃描':'giây nữa sẽ tiếp tục quét',
+  '秒內無操作將自動返回主畫面':'giây không thao tác sẽ tự quay lại màn hình chính',
+  '秒內無操作將返回主畫面':'giây không thao tác sẽ quay lại màn hình chính',
+  '音效已靜音（點此開啟）':'Đã tắt âm thanh (nhấn để bật)',
+  '音效開啟（點此靜音）':'Âm thanh đang bật (nhấn để tắt)',
+  '重新核對':'Kiểm tra lại',
+  '查看明細':'Xem chi tiết',
+  '目前沒有待確認紀錄':'Hiện không có bản ghi cần xác nhận',
+  '正在核對':'Đang kiểm tra',
+  '打卡紀錄':'Bản ghi chấm công',
+  '已接收':'Đã nhận',
+  '請勿重複掃描':'Không quét lại liên tục',
+  '正在確認存檔；下一位請掃描':'Đang xác nhận lưu; người tiếp theo có thể quét',
+  '尚未確認存檔，不代表打卡失敗。':'Chưa xác nhận lưu, không có nghĩa là chấm công thất bại.',
+  '可繼續感應員工 QR Code。':'Có thể tiếp tục quét mã QR nhân viên.',
+  '請管理員查看明細，確認後再決定是否需要補登。':'Vui lòng nhờ quản lý kiểm tra chi tiết trước khi bổ sung.',
+  '中午休息時間為':'Giờ nghỉ trưa là',
+  '下午休息時間為':'Giờ nghỉ chiều là',
+  '若此時段實際有工作，':'Nếu thực tế có làm việc trong khoảng thời gian này,',
+  '請使用此項補登。':'hãy dùng mục này để bổ sung.',
+  '可補登':'Có thể bổ sung',
+  '系統以':'Hệ thống tính theo',
+  '為單位計算。':'mỗi đơn vị.',
+  '小時':'giờ',
+  '分鐘':'phút',
+  '日期':'Ngày',
+  '項目':'Mục',
+  '類型':'Loại',
+  '狀態':'Trạng thái',
+  '時間':'Giờ',
+  '異常':'Bất thường',
+  '準備頁面':'Chuẩn bị trang',
+  '連線到 Apps Script':'Kết nối Apps Script',
+  '後端處理結果':'Kết quả xử lý',
+  '正在連接 LINE':'Đang kết nối LINE',
+  'LINE 已初始化，正在讀取員工／補登資料':'Đã kết nối LINE, đang tải thông tin nhân viên và chấm công',
+  '參數已隱藏':'Đã ẩn tham số',
+  '已隱藏':'Đã ẩn',
+  '未知錯誤':'Lỗi không xác định',
+  '補登':'Bổ sung chấm công'
+};
+
+function attendanceVietnameseV871(text) {
+  var original=String(text || '');
+  var source=original.replace(/([\u3400-\u9fff，。：；！？])\s+(?=[\u3400-\u9fff，。：；！？])/g,'$1');
+  var keys=Object.keys(VI_ATTENDANCE_V871).sort(function(a,b){return b.length-a.length;});
+  // 先以佔位符處理，避免短詞再次翻譯已完成的越南文。
+  var placeholders=[];
+  keys.forEach(function(key){
+    if(source.indexOf(key)<0)return;
+    var marker='\uE000'+placeholders.length+'\uE001';placeholders.push(VI_ATTENDANCE_V871[key]);
+    source=source.split(key).join(marker);
+  });
+  source=source.replace(/\uE000(\d+)\uE001/g,function(_,n){return ' '+placeholders[Number(n)]+' ';});
+  source=source.replace(/(\d+)\s*分/g,'$1 phút').replace(/(\d+)\s*[點時]/g,'$1 giờ');
+  return placeholders.length || source!==original.replace(/([\u3400-\u9fff，。：；！？])\s+(?=[\u3400-\u9fff，。：；！？])/g,'$1') ? source.replace(/[ \t]+/g,' ').trim() : original;
+}
+
+function attendanceBilingualV871(text) {
+  var chinese=String(text || ''), vietnamese=attendanceVietnameseV871(chinese);
+  return vietnamese!==chinese ? chinese+' / '+vietnamese : chinese;
+}
+
+(function(){
+  if(typeof window==='undefined'||typeof document==='undefined'||!document.createTreeWalker)return;
+  var rendered=new WeakMap(),attributes=new WeakMap();
+  function excluded(el){return !el || !!el.closest('script,style,textarea,input,code,pre,[data-no-translate]');}
+  function translateNode(node){
+    if(excluded(node.parentElement))return;
+    var original=node.nodeValue;
+    if(rendered.get(node)===original)return;
+    var result=attendanceBilingualV871(original);
+    rendered.set(node,result);if(result!==original)node.nodeValue=result;
+  }
+  function translateAttributes(el){
+    if(!el||el.nodeType!==1)return;
+    var previous=attributes.get(el)||{};
+    ['placeholder','aria-label','title'].forEach(function(name){
+      var original=el.getAttribute(name);if(!original||previous[name]===original)return;
+      var result=attendanceBilingualV871(original);previous[name]=result;
+      if(result!==original)el.setAttribute(name,result);
+    });attributes.set(el,previous);
+  }
+  function walk(root){
+    if(root.nodeType===3){translateNode(root);return;}
+    translateAttributes(root);
+    var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),node;
+    while((node=walker.nextNode()))translateNode(node);
+    if(root.querySelectorAll)root.querySelectorAll('[placeholder],[aria-label],[title]').forEach(translateAttributes);
+  }
+  // 長選項在原生下拉框可能被截斷，於下方完整顯示目前選項的雙語文字。
+  function captions(){
+    if(!document.getElementById)return;
+    ['makeupType','standaloneMakeupSelect','holidayPunchType','webHolidayDirection'].forEach(function(id){
+      var select=document.getElementById(id);
+      if(!select||!select.selectedOptions||!select.selectedOptions[0])return;
+      var caption=document.getElementById(id+'BilingualCaption');
+      if(!caption){
+        caption=document.createElement('div');caption.id=id+'BilingualCaption';
+        caption.className='bilingual-select-caption';caption.setAttribute('data-no-translate','');caption.setAttribute('aria-live','polite');
+        select.insertAdjacentElement('afterend',caption);
+      }
+      var label=select.selectedOptions[0].textContent;
+      if(caption.textContent!==label)caption.textContent=label;
+    });
+  }
+  function start(){
+    walk(document.body);
+    captions();
+    new MutationObserver(function(changes){changes.forEach(function(change){
+      if(change.type==='characterData')translateNode(change.target);
+      else if(change.type==='attributes')translateAttributes(change.target);
+      else change.addedNodes.forEach(walk);
+    });captions();}).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title']});
+    document.addEventListener('change',captions);
+    document.title=attendanceBilingualV871(document.title);
+  }
+  var originalAlert=window.alert,originalConfirm=window.confirm;
+  window.alert=function(message){return originalAlert.call(window,attendanceBilingualV871(message));};
+  window.confirm=function(message){return originalConfirm.call(window,attendanceBilingualV871(message));};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
+
+
 // V8.5：沿用原補登 LIFF 與 GitHub Pages 頁面，不新增另一個網頁。
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz03a4On-LbR8oI8kRVxdgt2jP9VZMAKAQPKO6igxSm0Bbcc0j8uVbtNAF3_uvIeYYZIw/exec';
 var LIFF_ID = '2010875519-nrqXot3W';
@@ -569,7 +861,7 @@ async function submitRejection() {
     status.textContent = p861ErrorText_(err); isSubmitting = false; button.disabled = false; button.textContent = '送出拒絕原因';
   }
 }
-// V8.7.0：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
+// V8.7.1：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
 async function p861Step_(stage, fn) {
   try { return await fn(); }
   catch (cause) {
@@ -591,7 +883,7 @@ function p861ErrorText_(err) {
   var message = String(err && err.message || err || '未知錯誤');
   message = message.replace(/https?:\/\/[^\s"'<>]+/g, function (url) { return url.split(/[?#]/)[0] + '（參數已隱藏）'; });
   message = message.replace(/\b(access_token|id_token|testSession|token|test)\s*[:=]\s*[^&\s"'<>]+/gi, '$1=（已隱藏）');
-  return '⚠️ V8.7.0｜' + code + '（' + (stages[code] || code) + '）\n' +
+  return '⚠️ V8.7.1｜' + code + '（' + (stages[code] || code) + '）\n' +
     (err && err.p861Name ? err.p861Name + '：' : '') + message +
     (err && err.p861Code ? '\n錯誤代碼：' + err.p861Code : '') +
     '\n請提供這段錯誤訊息，先不要重建測試。';
@@ -657,7 +949,7 @@ async function initializeLiff() {
       initializeDate(); initializeTimeSelects();
       document.getElementById('makeupType').addEventListener('change', handleMakeupTypeChange);
       document.getElementById('loading').style.whiteSpace = 'pre-wrap';
-      document.getElementById('loading').textContent = 'V8.7.0：正在連接 LINE…';
+      document.getElementById('loading').textContent = 'V8.7.1：正在連接 LINE…';
     });
     await p861Step_('SDK', function () {
       if (typeof liff === 'undefined' || typeof liff.init !== 'function') throw new Error('LINE SDK 未載入，請確認網路後重新開啟');
@@ -669,7 +961,7 @@ async function initializeLiff() {
       await p861Step_('LOGIN', function () { return liff.login({ redirectUri: p861LoginReturnUrl_() }); });
       return;
     }
-    document.getElementById('loading').textContent = 'V8.7.0：LINE 已初始化，正在讀取員工／補登資料…';
+    document.getElementById('loading').textContent = 'V8.7.1：LINE 已初始化，正在讀取員工／補登資料…';
     if (pageParams.get('flow') === 'reject') {
       var detail = await callApi({ action: 'p85RejectDetail', token: pageParams.get('token') });
       document.getElementById('rejectSummary').textContent = detail.summary;
