@@ -2176,5 +2176,130 @@ $('kpiForm').addEventListener('submit',function(event){void kpiSend(event);});
 
 void startAuthenticatedSession();
 </script>
+<style>th{white-space:normal;min-width:105px}.department-card strong{font-size:20px}.department-card span{display:block}.stat-label{line-height:1.5}.current-dept span{float:none;display:block}.view-tab{white-space:normal}.kpi-form label{line-height:1.6}.kpi-form select{max-width:100%}.month-wrap{flex-wrap:wrap}</style>
+<script>
+/* 中越文介面對照：只處理顯示文字，不改表單值、API 資料及評分規則。 */
+(() => {
+ const dictionary = {
+ '人員工時管理看板':'Bảng quản lý giờ làm việc',
+ '人員工時看板':'Bảng giờ làm việc nhân viên',
+ '正在透過 LINE 確認查看權限，請稍候。':'Đang xác minh quyền truy cập qua LINE, vui lòng chờ.',
+ '正在連線…':'Đang kết nối…','重新載入':'Tải lại',
+ '選擇管理功能':'Chọn chức năng quản lý',
+ '請選擇加班、請假看板，或進入工作 KPI 評分。':'Chọn bảng tăng ca, nghỉ phép hoặc đánh giá KPI công việc.',
+ '廠內':'Xưởng','場內':'Xưởng','行政':'Hành chính','工作 KPI':'KPI công việc',
+ '查看廠內人員加班時數、每日請假與當月請假狀況。':'Xem giờ tăng ca và tình hình nghỉ phép hằng ngày, trong tháng của nhân viên xưởng.',
+ '查看行政人員加班時數、每日請假與當月請假狀況。':'Xem giờ tăng ca và tình hình nghỉ phép hằng ngày, trong tháng của nhân viên hành chính.',
+ '進入廠內看板 →':'Mở bảng thông tin xưởng →','進入行政看板 →':'Mở bảng thông tin hành chính →',
+ '選擇員工與評比項目，登錄加分、扣分及具體原因。':'Chọn nhân viên, tiêu chí đánh giá, ghi điểm cộng, điểm trừ và lý do cụ thể.',
+ '進入工作 KPI 評分 →':'Mở đánh giá KPI công việc →','部門檢視':'Xem theo bộ phận','目前部門':'Bộ phận hiện tại',
+ '資料更新時間':'Thời gian cập nhật dữ liệu','尚未同步':'Chưa đồng bộ','尚未取得請假資料':'Chưa có dữ liệu nghỉ phép',
+ '切換部門':'Đổi bộ phận','切換 LINE 帳號':'Đổi tài khoản LINE','檢視月份':'Tháng cần xem','立即更新':'Cập nhật ngay',
+ '看板內容切換':'Chuyển nội dung bảng','加班狀況':'Tình hình tăng ca','請假狀況':'Tình hình nghỉ phép','統計摘要':'Tóm tắt thống kê',
+ '本月有加班人數':'Số người có tăng ca trong tháng','人':'người','依當月累計資料統計':'Thống kê theo dữ liệu tích lũy trong tháng',
+ '選定日期請假人數':'Số người nghỉ phép ngày đã chọn','含全天與部分時段':'Gồm nghỉ cả ngày và một phần ngày',
+ '建議安排人員':'Nhân viên đề xuất bố trí','依當月加班時數由少到多':'Theo giờ tăng ca tháng, từ ít đến nhiều',
+ '依本月累計時數排序':'Sắp xếp theo tổng giờ trong tháng','搜尋編號或姓名':'Tìm mã hoặc họ tên','搜尋員工編號或姓名':'Tìm mã nhân viên hoặc họ tên',
+ '人員每月加班統計':'Thống kê tăng ca hằng tháng','年月':'Năm / tháng','員工編號':'Mã nhân viên','員工姓名':'Họ tên nhân viên',
+ '當月加班時數':'Giờ tăng ca trong tháng','39 小時是否已通知':'Đã thông báo mốc 39 giờ?','39 小時通知時間':'Thời gian thông báo mốc 39 giờ',
+ '42 小時是否已通知':'Đã thông báo mốc 42 giờ?','42 小時通知時間':'Thời gian thông báo mốc 42 giờ',
+ '39 小時通知':'Thông báo mốc 39 giờ','42 小時通知':'Thông báo mốc 42 giờ','45 小時看板警示':'Cảnh báo mốc 45 giờ',
+ '找不到符合的人員':'Không tìm thấy nhân viên phù hợp','選擇日期，查看當天可排班人力':'Chọn ngày để xem nhân lực có thể bố trí',
+ '查看日期':'Ngày cần xem','選擇請假日期':'Chọn ngày nghỉ phép','人員':'Nhân viên','假別':'Loại nghỉ phép','請假期間':'Thời gian nghỉ phép','當日時段':'Khung giờ trong ngày',
+ '這一天沒有人請假，可以正常安排作業。':'Ngày này không có người nghỉ phép, có thể bố trí công việc bình thường.',
+ '加班與請假資料由公司試算表同步，事由不會顯示於網頁。':'Dữ liệu tăng ca và nghỉ phép được đồng bộ từ bảng tính công ty; lý do không hiển thị trên trang.',
+ '工作 KPI 評分':'Đánh giá KPI công việc','加分同員工、同項目每月一次；扣分每次獨立記錄。':'Mỗi nhân viên, mỗi tiêu chí chỉ được cộng điểm một lần mỗi tháng; mỗi lần trừ điểm được ghi riêng.',
+ '返回功能選單':'Về danh sách chức năng','評比月份':'Tháng đánh giá','新增評比':'Thêm đánh giá','確認主管身分中':'Đang xác minh người quản lý',
+ '員工編號＋姓名':'Mã nhân viên + họ tên','請先載入員工資料':'Vui lòng tải dữ liệu nhân viên trước','加分／扣分':'Cộng / trừ điểm','加分':'Cộng điểm','扣分':'Trừ điểm',
+ '評比項目':'Tiêu chí đánh giá','具體說明原因（必填）':'Giải thích lý do cụ thể (bắt buộc)',
+ '請描述本次實際發生的情況，不要只填標準原因。':'Mô tả tình huống thực tế lần này, không chỉ ghi lý do mẫu.',
+ '送出評比':'Gửi đánh giá','本月評比紀錄':'Lịch sử đánh giá tháng này','請選擇員工':'Chọn nhân viên','請選擇評比項目':'Chọn tiêu chí đánh giá',
+ '選擇項目後顯示分數':'Điểm sẽ hiển thị sau khi chọn tiêu chí','同員工、同項目，每月最多一次。':'Mỗi nhân viên, mỗi tiêu chí: tối đa một lần mỗi tháng.',
+ '每次獨立記錄；重試同一筆送出不會重複新增。':'Mỗi lần được ghi riêng; gửi lại cùng một đánh giá sẽ không tạo bản trùng.',
+ '這個月尚無評比紀錄。':'Tháng này chưa có đánh giá.','送出中，請稍候…':'Đang gửi, vui lòng chờ…',
+ '正在讀取員工與評分標準…':'Đang tải nhân viên và tiêu chuẩn chấm điểm…','請選擇評比月份。':'Vui lòng chọn tháng đánh giá.',
+ '已載入。請確認月份、員工與原因後送出。':'Đã tải. Kiểm tra tháng, nhân viên và lý do trước khi gửi.',
+ '尚未取得評分權限':'Chưa có quyền đánh giá','未取得資料。':'Chưa lấy được dữ liệu.',
+ '請選擇有效的評比項目。':'Vui lòng chọn tiêu chí đánh giá hợp lệ.','請填寫具體原因。':'Vui lòng ghi lý do cụ thể.',
+ '正在送出，請勿關閉頁面…':'Đang gửi, vui lòng không đóng trang…','後台回應格式不正確。':'Định dạng phản hồi máy chủ không đúng.',
+ '評比未送出。':'Chưa gửi được đánh giá.','送出失敗，請稍後重試。':'Gửi thất bại, vui lòng thử lại sau.',
+ '尚無法確認送出結果，請保留內容並再次按送出；同一筆重試不會重複新增。':'Chưa xác nhận được kết quả. Giữ nội dung và gửi lại; cùng một đánh giá sẽ không bị ghi trùng.',
+ 'LINE 元件載入逾時，請確認網路後按重新載入。':'Tải LINE quá thời gian, kiểm tra mạng rồi tải lại.',
+ '資料讀取超過 35 秒，請按重新載入或立即更新。':'Tải dữ liệu quá 35 giây, vui lòng tải lại hoặc cập nhật ngay.',
+ '無法連線至試算表資料服務，請確認網路後重試。':'Không kết nối được dữ liệu bảng tính, kiểm tra mạng rồi thử lại.',
+ '未設定姓名':'Chưa có họ tên','已達門檻':'Đã đạt ngưỡng','未達門檻':'Chưa đạt ngưỡng','請假':'Nghỉ phép',
+ '已通知':'Đã thông báo','待通知':'Chờ thông báo','未通知':'Chưa thông báo','是':'Có','否':'Không',
+ '45 小時以上':'Từ 45 giờ trở lên','未達 45 小時':'Chưa đủ 45 giờ','全天':'Cả ngày',
+ '事假':'Nghỉ việc riêng','病假':'Nghỉ ốm','普通傷病假':'Nghỉ ốm thông thường','特休':'Nghỉ phép năm','特別休假':'Nghỉ phép năm','特別假':'Nghỉ phép năm',
+ '生理假':'Nghỉ do kinh nguyệt','婚假':'Nghỉ kết hôn','喪假':'Nghỉ tang','公假':'Nghỉ công vụ','產假':'Nghỉ thai sản','陪產假':'Nghỉ khi vợ sinh',
+ '家庭照顧假':'Nghỉ chăm sóc gia đình','其他假勤':'Nghỉ phép khác','已同步，但沒有請假資料':'Đã đồng bộ, không có dữ liệu nghỉ phép',
+ '更新中…':'Đang cập nhật…','LINE 登入資訊已失效，請重新登入。':'Phiên LINE hết hạn, vui lòng đăng nhập lại.',
+ '資料更新失敗。':'Cập nhật dữ liệu thất bại.','請重新登入。':'Vui lòng đăng nhập lại.',
+ '正在載入 LINE 登入元件…':'Đang tải thành phần đăng nhập LINE…','LINE 登入載入逾時，請按重新載入。':'Đăng nhập LINE quá thời gian, vui lòng tải lại.',
+ '無法取得 LINE 登入資訊，請切換 LINE 帳號後重試。':'Không lấy được thông tin LINE, đổi tài khoản rồi thử lại.',
+ '正在確認查看權限並讀取看板資料…':'Đang xác minh quyền và tải dữ liệu bảng…','此 LINE 帳號沒有查看權限。':'Tài khoản LINE này không có quyền xem.',
+ '資料載入失敗，請按重新載入。':'Tải dữ liệu thất bại, vui lòng tải lại.','載入失敗，請按立即更新':'Tải thất bại, vui lòng cập nhật ngay',
+ '正在載入…':'Đang tải…','載入中…':'Đang tải…','資料載入失敗，請按立即更新。':'Tải dữ liệu thất bại, vui lòng cập nhật ngay.',
+ '正在讀取所選月份資料…':'Đang tải dữ liệu tháng đã chọn…','正在讀取所選月份…':'Đang tải tháng đã chọn…',
+ '所選月份資料尚未載入，請等待或按立即更新。':'Chưa tải dữ liệu tháng đã chọn, vui lòng chờ hoặc cập nhật ngay.',
+ 'LINE 登入已失效，請切換 LINE 帳號後重新登入。':'Phiên LINE hết hạn, vui lòng đổi tài khoản và đăng nhập lại.',
+ 'KPI 資料讀取失敗。':'Tải dữ liệu KPI thất bại.','KPI 讀取逾時，請重新載入。':'Tải KPI quá thời gian, vui lòng tải lại.',
+ '無法讀取 KPI 後台，請確認部署網址及存取設定。':'Không tải được KPI, vui lòng kiểm tra địa chỉ và quyền truy cập.'
+ };
+ const pair = (zh,vi) => zh + ' / ' + vi;
+ function translate(text) {
+  const value=text.trim();
+  if(!value || value.includes(' / ')) return text;
+  let vi=dictionary[value],m;
+  if(!vi && (m=value.match(/^(廠內|場內|行政)人員總覽$/))) vi='Tổng quan nhân viên '+dictionary[m[1]];
+  if(!vi && (m=value.match(/^掌握本月(廠內|場內|行政)加班與請假狀況$/))) vi='Tăng ca và nghỉ phép tháng này: '+dictionary[m[1]];
+  if(!vi && (m=value.match(/^(廠內|場內|行政)人員加班時數看板$/))) vi='Bảng giờ tăng ca: '+dictionary[m[1]];
+  if(!vi && (m=value.match(/^(廠內|場內|行政)人員每日請假狀況$/))) vi='Nghỉ phép hằng ngày: '+dictionary[m[1]];
+  if(!vi && (m=value.match(/^([+-]?\d+(?:\.\d+)?)\s*(小時|分|筆|筆紀錄)$/))) vi=m[1]+' '+({'小時':'giờ','分':'điểm','筆':'bản ghi','筆紀錄':'bản ghi'}[m[2]]);
+  if(!vi && (m=value.match(/^(\d+) 年 (\d+) 月$/))) vi='Tháng '+m[2]+'/'+(Number(m[1])+1911);
+  if(!vi && (m=value.match(/^評比人：(.*)$/))) vi='Người đánh giá: '+m[1];
+  if(!vi && (m=value.match(/^(.*)（本月已加分）$/))) vi=m[1]+' (đã cộng điểm tháng này)';
+  if(!vi && (m=value.match(/^全體本月紀錄合計：加分 \+(.*) 分 ／ 扣分 (.*) 分$/))) vi='Tổng toàn bộ tháng này: cộng +'+m[1]+' điểm; trừ '+m[2]+' điểm';
+  if(!vi && (m=value.match(/^已同步 (\d+) 筆請假｜最新 (.*)$/))) vi='Đã đồng bộ '+m[1]+' đơn nghỉ | Mới nhất '+m[2];
+  if(!vi && (m=value.match(/^(\d+) 月 (\d+) 日共有 (\d+) 人請假，安排作業時請預留人力。$/))) vi='Ngày '+m[2]+'/'+m[1]+': '+m[3]+' người nghỉ; vui lòng dự trù nhân lực.';
+  if(!vi && (m=value.match(/^(\d+) 月 (\d+) 日目前無請假紀錄。$/))) vi='Ngày '+m[2]+'/'+m[1]+': chưa có ghi nhận nghỉ phép.';
+  if(!vi && (m=value.match(/^(.*) ｜評比人：(.*)$/))) vi=m[1]+' | Người đánh giá: '+m[2];
+  if(!vi && (m=value.match(/^已確認寫入「(加分紀錄|扣分紀錄)」(.*)$/))) vi='Đã xác nhận lưu '+(m[1]==='加分紀錄'?'điểm cộng':'điểm trừ')+(m[2].includes('失敗')?'; tải lại lịch sử thất bại, vui lòng tải lại.':'.');
+  if(!vi && (m=value.match(/^後台連線失敗（(.*)）。$/))) vi='Kết nối máy chủ thất bại ('+m[1]+').';
+  if(!vi && (m=value.match(/^(更新失敗，畫面保留上次資料：|載入失敗：)(.*)$/))) vi=(m[1].startsWith('更新')?'Cập nhật thất bại, giữ dữ liệu trước: ':'Tải thất bại: ')+(dictionary[m[2]]||m[2]);
+  return vi ? text.replace(value,pair(value,vi)) : text;
+ }
+ function scan(root) {
+  if(root.nodeType===3) {
+   if(root.parentElement?.closest('script,style,textarea,[contenteditable],.person,.recommended-names,#kpiStandardReason,.kpi-record p'))return;
+   const result=translate(root.nodeValue);if(result!==root.nodeValue)root.nodeValue=result;
+   return;
+  }
+  if(root.nodeType!==1 || root.matches('script,style'))return;
+  for(const attribute of ['placeholder','aria-label','data-label']) {
+   if(root.hasAttribute(attribute)){
+    const old=root.getAttribute(attribute),next=translate(old);
+    if(old!==next)root.setAttribute(attribute,next);
+   }
+  }
+  // 明確保留選項 value，避免翻譯文字改變未設定 value 的選項值。
+  if(root.tagName==='OPTION' && !root.hasAttribute('value'))root.setAttribute('value',root.value);
+  if(root.tagName!=='TEXTAREA')for(const child of Array.from(root.childNodes))scan(child);
+ }
+ const observer=new MutationObserver(changes=>{
+  observer.disconnect();
+  for(const change of changes){
+   if(change.type==='childList')change.addedNodes.forEach(scan);
+   else scan(change.target);
+  }
+  observe();
+ });
+ function observe(){observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','data-label']});}
+ scan(document.body);
+ document.title=translate(document.title);
+ observe();
+})();
+
+</script>
 </body>
 </html>
