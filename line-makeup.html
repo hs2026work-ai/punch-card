@@ -710,6 +710,7 @@ function attendanceVietnameseV871(text) {
 }
 
 function attendanceBilingualV871(text) {
+  if (text === COMPANY_WIFI_NOTICE) return text;
   var chinese=String(text || ''), vietnamese=attendanceVietnameseV871(chinese);
   return vietnamese!==chinese ? chinese+' / '+vietnamese : chinese;
 }
@@ -786,7 +787,7 @@ function getLocalDateString(date) {
   var taipei = new Date(date.getTime() + 8 * 3600000);
   return taipei.getUTCFullYear() + '-' + pad2(taipei.getUTCMonth() + 1) + '-' + pad2(taipei.getUTCDate());
 }
-var COMPANY_WIFI_NOTICE = '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
+var COMPANY_WIFI_NOTICE = '未連公司WIFI。連上公司 Wi-Fi 後，請關閉 LINE，再從 LINE 重新開啟打卡頁面。\nChưa kết nối Wi-Fi công ty. Sau khi kết nối Wi-Fi công ty, vui lòng đóng LINE, rồi mở lại LINE và vào trang chấm công.';
 
 function isCompanyWifiDenial(message) {
   var text = String(message || '').normalize('NFKC').replace(/[\u2010-\u2015]/g, '-');
