@@ -787,6 +787,16 @@ function getLocalDateString(date) {
   return taipei.getUTCFullYear() + '-' + pad2(taipei.getUTCMonth() + 1) + '-' + pad2(taipei.getUTCDate());
 }
 function showStatus(message, isError) {
+  var text = String(message || '');
+
+  if (/未連公司\s*wi[\s-]*fi/i.test(text)) {
+    text = '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
+  }
+
+  var el = document.getElementById('statusMsg');
+  el.textContent = text;
+  el.className = isError ? 'error' : 'success';
+}
   var el = document.getElementById('statusMsg');
   el.textContent = message; el.className = isError ? 'error' : 'success';
 }
