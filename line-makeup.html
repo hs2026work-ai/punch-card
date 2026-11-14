@@ -25,7 +25,7 @@
     content="0"
 >
 
-<title>宏升工業社 - 補登 V8.7.4</title>
+<title>宏升工業社 - 補登 V8.7.4-r2</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -200,7 +200,7 @@ button:disabled {
 }
 
 
-/* V8.7.4 中越雙語排版 */
+/* V8.7.4-r2 中越雙語排版 */
 button,.modal-btn{white-space:normal;line-height:1.5;overflow-wrap:anywhere;}
 label,.hint,.modal-text,.status{line-height:1.65;overflow-wrap:anywhere;}
 .modal-box{max-width:440px;max-height:90vh;overflow-y:auto;}
@@ -246,7 +246,7 @@ select{max-width:100%;}
 </div>
 
 <div class="version">
-    V8.7.4・獨立假日上下班補登版
+    V8.7.4-r2・獨立假日上下班補登版
 </div>
 
 
@@ -399,6 +399,10 @@ select{max-width:100%;}
 
 
 <div id="checkinBlock" class="hidden">
+<div class="hint" data-no-translate>
+  <span lang="zh-TW">若開啟本頁後才連上公司 Wi-Fi，請先關閉 LINE，再重新開啟 LINE，回到打卡頁面。</span><br>
+  <span lang="vi">Nếu bạn mở trang này rồi mới kết nối Wi-Fi công ty, hãy đóng LINE, sau đó mở lại LINE và vào lại trang chấm công.</span>
+</div>
 <label for="holidayPunchType">打卡類型</label><select id="holidayPunchType"><option value="上班">上班</option><option value="下班">下班</option></select>
 <div class="hint">此項僅限連接公司 Wi-Fi 使用。選擇上班或下班後，按確認打卡；日期與時間由系統記錄當下時間，不能自行修改。</div>
 <div class="hint green-hint">僅供週六、週日及國定假日。上班08:00～17:00，下班08:00～20:30，實際時間不取整、不以半小時回推。</div>
@@ -482,7 +486,7 @@ select{max-width:100%;}
 var OFFICE_HOLIDAY_GATEWAY_URL = 'https://hs-holiday-checkin.hs-2026work.workers.dev/';
 
 
-// V8.7.4：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
+// V8.7.4-r2：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
 var VI_ATTENDANCE_V871 = {
   '假日上下班打卡（公司Wi-Fi／即時）':'Chấm công vào ca / tan ca ngày nghỉ (Wi-Fi công ty, giờ hiện tại)',
   '打卡類型':'Loại chấm công',
@@ -884,7 +888,7 @@ async function submitRejection() {
     status.textContent = p861ErrorText_(err); isSubmitting = false; button.disabled = false; button.textContent = '送出拒絕原因';
   }
 }
-// V8.7.4：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
+// V8.7.4-r2：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
 async function p861Step_(stage, fn) {
   try { return await fn(); }
   catch (cause) {
@@ -907,7 +911,7 @@ function p861ErrorText_(err) {
   var code = err && err.p861Stage || 'PAGE';
   message = message.replace(/https?:\/\/[^\s"'<>]+/g, function (url) { return url.split(/[?#]/)[0] + '（參數已隱藏）'; });
   message = message.replace(/\b(access_token|id_token|testSession|token|test)\s*[:=]\s*[^&\s"'<>]+/gi, '$1=（已隱藏）');
-  return '⚠️ V8.7.4｜' + code + '（' + (stages[code] || code) + '）\n' +
+  return '⚠️ V8.7.4-r2｜' + code + '（' + (stages[code] || code) + '）\n' +
     (err && err.p861Name ? err.p861Name + '：' : '') + message +
     (err && err.p861Code ? '\n錯誤代碼：' + err.p861Code : '') +
     '\n請提供這段錯誤訊息，先不要重建測試。';
@@ -988,7 +992,7 @@ async function initializeLiff() {
       initializeDate(); initializeTimeSelects();
       document.getElementById('makeupType').addEventListener('change', handleMakeupTypeChange);
       document.getElementById('loading').style.whiteSpace = 'pre-wrap';
-      document.getElementById('loading').textContent = 'V8.7.4：正在連接 LINE…';
+      document.getElementById('loading').textContent = 'V8.7.4-r2：正在連接 LINE…';
     });
     await p861Step_('SDK', function () {
       if (typeof liff === 'undefined' || typeof liff.init !== 'function') throw new Error('LINE SDK 未載入，請確認網路後重新開啟');
@@ -1000,7 +1004,7 @@ async function initializeLiff() {
       await p861Step_('LOGIN', function () { return liff.login({ redirectUri: p861LoginReturnUrl_() }); });
       return;
     }
-    document.getElementById('loading').textContent = 'V8.7.4：LINE 已初始化，正在讀取員工／補登資料…';
+    document.getElementById('loading').textContent = 'V8.7.4-r2：LINE 已初始化，正在讀取員工／補登資料…';
     if (pageParams.get('flow') === 'reject') {
       var detail = await callApi({ action: 'p85RejectDetail', token: pageParams.get('token') });
       document.getElementById('rejectSummary').textContent = detail.summary;
