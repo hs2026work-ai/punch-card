@@ -25,7 +25,7 @@
     content="0"
 >
 
-<title>宏升工業社 - 補登</title>
+<title>宏升工業社 - 補登 V8.7.4</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -200,7 +200,7 @@ button:disabled {
 }
 
 
-/* V8.7.2 中越雙語排版 */
+/* V8.7.4 中越雙語排版 */
 button,.modal-btn{white-space:normal;line-height:1.5;overflow-wrap:anywhere;}
 label,.hint,.modal-text,.status{line-height:1.65;overflow-wrap:anywhere;}
 .modal-box{max-width:440px;max-height:90vh;overflow-y:auto;}
@@ -246,7 +246,7 @@ select{max-width:100%;}
 </div>
 
 <div class="version">
-    V8.7.2・獨立假日上下班補登版
+    V8.7.4・獨立假日上下班補登版
 </div>
 
 
@@ -482,7 +482,7 @@ select{max-width:100%;}
 var OFFICE_HOLIDAY_GATEWAY_URL = 'https://hs-holiday-checkin.hs-2026work.workers.dev/';
 
 
-// V8.7.2：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
+// V8.7.4：只翻譯畫面文字，不修改表單value、員工身份、API或儲存內容。
 var VI_ATTENDANCE_V871 = {
   '假日上下班打卡（公司Wi-Fi／即時）':'Chấm công vào ca / tan ca ngày nghỉ (Wi-Fi công ty, giờ hiện tại)',
   '打卡類型':'Loại chấm công',
@@ -786,19 +786,19 @@ function getLocalDateString(date) {
   var taipei = new Date(date.getTime() + 8 * 3600000);
   return taipei.getUTCFullYear() + '-' + pad2(taipei.getUTCMonth() + 1) + '-' + pad2(taipei.getUTCDate());
 }
-function showStatus(message, isError) {
-  var text = String(message || '');
+var COMPANY_WIFI_NOTICE = '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
 
-  if (/未連公司\s*wi[\s-]*fi/i.test(text)) {
-    text = '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
-  }
-
-  var el = document.getElementById('statusMsg');
-  el.textContent = text;
-  el.className = isError ? 'error' : 'success';
+function isCompanyWifiDenial(message) {
+  var text = String(message || '').normalize('NFKC').replace(/[\u2010-\u2015]/g, '-');
+  return /(?:未連(?:接|到)?|請先連(?:接|到)?)\s*公司\s*wi[\s-]*fi/i.test(text) ||
+    /Cloudflare\s*網路檢查未通過/i.test(text) ||
+    /Chưa kết nối Wi[\s-]*Fi công ty/i.test(text);
 }
+
+function showStatus(message, isError) {
   var el = document.getElementById('statusMsg');
-  el.textContent = message; el.className = isError ? 'error' : 'success';
+  el.textContent = isError && isCompanyWifiDenial(message) ? COMPANY_WIFI_NOTICE : message;
+  el.className = isError ? 'error' : 'success';
 }
 function initializeDate() {
   var input = document.getElementById('makeupDate');
@@ -883,7 +883,7 @@ async function submitRejection() {
     status.textContent = p861ErrorText_(err); isSubmitting = false; button.disabled = false; button.textContent = '送出拒絕原因';
   }
 }
-// V8.7.2：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
+// V8.7.4：保留測試參數，顯示可定位的初始化／API 錯誤；不顯示登入憑證。
 async function p861Step_(stage, fn) {
   try { return await fn(); }
   catch (cause) {
@@ -895,13 +895,8 @@ async function p861Step_(stage, fn) {
   }
 }
 function p861ErrorText_(err) {
-  var wifiMessage = String(
-    err && err.message || err || ''
-  );
-
-  if (wifiMessage.indexOf('未連公司WIFI') !== -1) {
-    return '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
-  }
+  var message = String(err && err.message || err || '未知錯誤');
+  if (isCompanyWifiDenial(message)) return COMPANY_WIFI_NOTICE;
   var stages = {
     'PAGE': '準備頁面', 'SDK': '載入 LINE SDK', 'LIFF-INIT': 'LINE 初始化',
     'PARAMS': '讀取入口參數', 'LOGIN': 'LINE 登入轉址', 'TOKEN': '取得 LINE 登入憑證',
@@ -909,10 +904,9 @@ function p861ErrorText_(err) {
     'API-READ': '讀取後端回應', 'API-JSON': '解析後端回應', 'API-RESULT': '後端處理結果'
   };
   var code = err && err.p861Stage || 'PAGE';
-  var message = String(err && err.message || err || '未知錯誤');
   message = message.replace(/https?:\/\/[^\s"'<>]+/g, function (url) { return url.split(/[?#]/)[0] + '（參數已隱藏）'; });
   message = message.replace(/\b(access_token|id_token|testSession|token|test)\s*[:=]\s*[^&\s"'<>]+/gi, '$1=（已隱藏）');
-  return '⚠️ V8.7.2｜' + code + '（' + (stages[code] || code) + '）\n' +
+  return '⚠️ V8.7.4｜' + code + '（' + (stages[code] || code) + '）\n' +
     (err && err.p861Name ? err.p861Name + '：' : '') + message +
     (err && err.p861Code ? '\n錯誤代碼：' + err.p861Code : '') +
     '\n請提供這段錯誤訊息，先不要重建測試。';
@@ -957,8 +951,18 @@ async function callApi(payload) {
       body: JSON.stringify(payload), cache: 'no-store'
     });
   });
-  var text = await p861Step_('API-READ', function () {
-    if (!response.ok) throw new Error('Apps Script 回傳 HTTP ' + response.status + '，請確認網頁部署狀態');
+  var text = await p861Step_('API-READ', async function () {
+    if (!response.ok) {
+      if (response.status === 403 && payload.action === 'p85Makeup' && payload.reason === '假日上下班補登') {
+        var body = await response.text();
+        try {
+          var denial = JSON.parse(body);
+          if (denial && typeof denial === 'object') body = denial.message || '';
+        } catch (_) { /* 公司網路入口也可能回傳純文字。 */ }
+        if (isCompanyWifiDenial(body)) throw new Error(COMPANY_WIFI_NOTICE);
+      }
+      throw new Error('Apps Script 回傳 HTTP ' + response.status + '，請確認網頁部署狀態');
+    }
     return response.text();
   });
   var data = await p861Step_('API-JSON', function () {
@@ -983,7 +987,7 @@ async function initializeLiff() {
       initializeDate(); initializeTimeSelects();
       document.getElementById('makeupType').addEventListener('change', handleMakeupTypeChange);
       document.getElementById('loading').style.whiteSpace = 'pre-wrap';
-      document.getElementById('loading').textContent = 'V8.7.2：正在連接 LINE…';
+      document.getElementById('loading').textContent = 'V8.7.4：正在連接 LINE…';
     });
     await p861Step_('SDK', function () {
       if (typeof liff === 'undefined' || typeof liff.init !== 'function') throw new Error('LINE SDK 未載入，請確認網路後重新開啟');
@@ -995,7 +999,7 @@ async function initializeLiff() {
       await p861Step_('LOGIN', function () { return liff.login({ redirectUri: p861LoginReturnUrl_() }); });
       return;
     }
-    document.getElementById('loading').textContent = 'V8.7.2：LINE 已初始化，正在讀取員工／補登資料…';
+    document.getElementById('loading').textContent = 'V8.7.4：LINE 已初始化，正在讀取員工／補登資料…';
     if (pageParams.get('flow') === 'reject') {
       var detail = await callApi({ action: 'p85RejectDetail', token: pageParams.get('token') });
       document.getElementById('rejectSummary').textContent = detail.summary;
