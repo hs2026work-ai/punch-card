@@ -885,6 +885,13 @@ async function p861Step_(stage, fn) {
   }
 }
 function p861ErrorText_(err) {
+  var wifiMessage = String(
+    err && err.message || err || ''
+  );
+
+  if (wifiMessage.indexOf('未連公司WIFI') !== -1) {
+    return '未連公司WIFI / Chưa kết nối Wi-Fi công ty';
+  }
   var stages = {
     'PAGE': '準備頁面', 'SDK': '載入 LINE SDK', 'LIFF-INIT': 'LINE 初始化',
     'PARAMS': '讀取入口參數', 'LOGIN': 'LINE 登入轉址', 'TOKEN': '取得 LINE 登入憑證',
